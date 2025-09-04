@@ -18,6 +18,7 @@ class MakeAppointment extends Component
 {
     public $chosen_services = [];
     public $forward_days = [];
+    public $days_with_appointments = []; // Dias que já têm agendamentos do cliente
     public $available_times = [];
     public $selected_day = null;
     public $selected_time = null;
@@ -340,6 +341,17 @@ public function confirmTime()
             return;
         }
         
+        // Verificar se o cliente já tem agendamento na data selecionada
+        $existing_appointment = \App\Models\Appointment::where('customer_id', \Illuminate\Support\Facades\Auth::id())
+            ->where('appointment_date', $this->selected_day)
+            ->whereIn('status', ['Confirmado', 'Pendente'])
+            ->first();
+            
+        if ($existing_appointment) {
+            $this->addError('selected_day', 'Você já possui um agendamento marcado para esta data. Apenas um agendamento por dia é permitido.');
+            return;
+        }
+        
     } catch (\Exception $e) {
         \Illuminate\Support\Facades\Log::error('ERRO no confirmTime: ' . $e->getMessage());
         $this->addError('general', 'Erro interno. Tente novamente.');
@@ -535,10 +547,20 @@ if ($total > 0 && $requireAdvance) {
 }
 public function render()
 {
+    // Buscar dias que já têm agendamentos do cliente atual
+    $this->days_with_appointments = \App\Models\Appointment::where('customer_id', \Illuminate\Support\Facades\Auth::id())
+        ->whereIn('status', ['Confirmado', 'Pendente'])
+        ->pluck('appointment_date')
+        ->map(function($date) {
+            return date('Y-m-d', strtotime($date));
+        })
+        ->toArray();
+
     return view('livewire.cliente.make-appointment', [
         'chosen_service_ids' => $this->chosen_service_ids,
         'plan_services' => $this->plan_services,
         'allowed_days' => $this->allowed_days,
+        'days_with_appointments' => $this->days_with_appointments,
         // ...outras variáveis simples...
     ]);
 }

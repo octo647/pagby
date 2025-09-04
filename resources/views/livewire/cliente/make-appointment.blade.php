@@ -64,18 +64,29 @@
                     
                     $show_as_allowed = $all_included ? $is_allowed : true;
                     
+                    // Verificar se já existe agendamento neste dia
+                    $has_appointment = in_array($day, $days_with_appointments ?? []);
+                    
                 @endphp
                 
                 <button 
                     wire:click="$set('selected_day', '{{ $day }}')" 
                     class="w-16 h-16 sm:w-20 sm:h-20 flex flex-col items-center justify-center rounded-full border transition-all duration-200
-                        {{ (isset($selected_day) && $selected_day === $day) ? 'bg-blue-600 text-white' : ($show_as_allowed ? 'border-blue-300 hover:bg-blue-200' : 'border-gray-400 bg-gray-200 text-gray-500 line-through') }}"
-                    @if(!$show_as_allowed)
+                        {{ $has_appointment ? 'border-red-500 bg-red-100 text-red-700 cursor-not-allowed' : 
+                           ((isset($selected_day) && $selected_day === $day) ? 'bg-blue-600 text-white' : 
+                           ($show_as_allowed ? 'border-blue-300 hover:bg-blue-200' : 'border-gray-400 bg-gray-200 text-gray-500 line-through')) }}"
+                    @if($has_appointment)
+                        disabled
+                        title="Você já possui um agendamento nesta data"
+                    @elseif(!$show_as_allowed)
                         title="Seu plano não cobre este dia. O serviço será cobrado normalmente."
                     @endif
                 >
                     <span class="font-bold text-sm sm:text-base">{{ \Carbon\Carbon::parse($day)->format('d/m') }}</span>
                     <span class="text-xs">{{ \Carbon\Carbon::parse($day)->locale('pt_BR')->isoFormat('ddd') }}</span>
+                    @if($has_appointment)
+                        <span class="text-xs font-bold">AGENDADO</span>
+                    @endif
                 </button>
             @endforeach
         </div>
