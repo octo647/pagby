@@ -18,6 +18,14 @@ class PasswordController extends Controller
         $validated = $request->validateWithBag('updatePassword', [
             'current_password' => ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
+        ], [
+            'current_password.required' => 'Por favor, informe sua senha atual.',
+            'current_password.current_password' => 'A senha atual está incorreta. Verifique e tente novamente.',
+            'password.required' => 'Por favor, informe uma nova senha.',
+            'password.confirmed' => 'A confirmação da senha não confere. Digite novamente.',
+        ], [
+            'current_password' => 'senha atual',
+            'password' => 'nova senha',
         ]);
 
         $request->user()->update([

@@ -10,69 +10,197 @@ class ListContacts extends Component
     public $editedContactIndex = null;
     public $editedContactField = null;
     public $contacts = [];
+    public $showAddForm = false;
+    public $showEditForm = false;
+    public $editingContact = [
+        'id' => null,
+        'owner_name' => '',
+        'email' => '',
+        'phone' => '',
+        'tipo' => '',
+        'salon_name' => '',
+        'address' => '',
+        'neighborhood' => '',
+        'city' => '',
+        'state' => '',
+    ];
+    public $newContact = [
+        'owner_name' => '',
+        'email' => '',
+        'phone' => '',
+        'tipo' => '',
+        'salon_name' => '',
+        'address' => '',
+        'neighborhood' => '',
+        'city' => '',
+        'state' => '',
+    ];
    
 
     protected $rules = [
-        'contacts.*.name' => ['required'],
-        'contacts.*.email' => ['required'],
+        'contacts.*.owner_name' => ['required'],
+        'contacts.*.email' => ['required', 'email'],
+        'newContact.owner_name' => ['required'],
+        'newContact.email' => ['required', 'email'],
+        'editingContact.owner_name' => ['required'],
+        'editingContact.email' => ['required', 'email'],
     ];
 
     protected $validationAttributes = [
-        'contacts.*.name' => 'name',
+        'contacts.*.owner_name' => 'name',
         'contacts.*.email' => 'email',
+        'newContact.owner_name' => 'name',
+        'newContact.email' => 'email',
+        'editingContact.owner_name' => 'name',
+        'editingContact.email' => 'email',
     ];
     
     public function mount()
     {
         $this->contacts = Contact::all()->toArray();
+        
     }
 
 
     public function render()
     {
-        //$this->contacts = Contact::all()->toArray();
+        
         
         return view('livewire.list-contacts', ['contacts'=>$this->contacts]);
     }
     public function editContact($contactIndex)
     {
-        $this->editedContactIndex = $contactIndex;
+        $contact = $this->contacts[$contactIndex];
+        $this->editingContact = [
+            'id' => $contact['id'],
+            'owner_name' => $contact['owner_name'] ?? $contact['name'] ?? '',
+            'email' => $contact['email'],
+            'phone' => $contact['phone'],
+            'tipo' => $contact['tipo'],
+            'salon_name' => $contact['salon_name'],
+            'address' => $contact['address'],
+            'neighborhood' => $contact['neighborhood'],
+            'city' => $contact['city'],
+            'state' => $contact['state'],
+        ];
+        $this->showEditForm = true;
+        $this->showAddForm = false; // Garante que apenas um formulário seja exibido
     }
-    
-    public function editContactField($contactIndex, $fieldName)
-    {
-        $this->editedContactField = $contactIndex.'.'.$fieldName;
-    }
-    public function saveContact($contactIndex)
-    {  
-        $this->validate();
-        $contact = $this->contacts[$contactIndex] ?? null;
 
-        if (!is_null($contact)) {            
-            $contacto = Contact::find($contact['id']);            
-            $contacto->name = $contact['name'];
-            $contacto->email = $contact['email'];
-            $contacto->phone = $contact['phone'];
-            $contacto->status = $contact['status'];
-            $contacto->address = $contact['address'];
-            $contacto->complement = $contact['complement'];
-            $contacto->city = $contact['city'];
-            $contacto->state = $contact['state'];
-            $contacto->cep = $contact['cep'];
-            $contacto->salon = $contact['salon'];
-            $contacto->save();
-        }
-        
-        $this->editedContactIndex = null;
-        $this->editedContactField = null;
-
-    }
     public function deleteContact($contactIndex)
     {
         $contact = $this->contacts[$contactIndex] ?? null;
-        $contacto = Contact::find($contact['id']);
-        $contacto->delete();
+        if ($contact) {
+            Contact::destroy($contact['id']);
+            $this->contacts = Contact::all()->toArray();
+            session()->flash('message', 'Contato excluído com sucesso!');
+        }
+    }
 
+    public function toggleAddForm()
+    {
+        $this->showAddForm = true;
+        $this->showEditForm = false; // Garante que apenas um formulário seja exibido
+        $this->resetNewContact();
+    }
+
+    public function cancelAddForm()
+    {
+        $this->showAddForm = false;
+    }
+
+    public function resetNewContact()
+    {
+        $this->newContact = [
+            'owner_name' => '',
+            'email' => '',
+            'phone' => '',
+            'tipo' => '',
+            'salon_name' => '',
+            'address' => '',
+            'neighborhood' => '',
+            'city' => '',
+            'state' => '',
+        ];
+    }
+
+    public function addContact()
+    {
+        $this->validate([
+            'newContact.owner_name' => 'required|string|max:255',
+            'newContact.email' => 'required|email|max:255',
+            'newContact.phone' => 'required|string|max:20',
+            'newContact.tipo' => 'required|string|max:50',
+            'newContact.salon_name' => 'required|string|max:255',
+            'newContact.address' => 'required|string|max:255',
+            'newContact.neighborhood' => 'required|string|max:255',
+            'newContact.city' => 'required|string|max:255',
+            'newContact.state' => 'required|string|max:255',
+        ]);
+
+        Contact::create($this->newContact);
+        
+        $this->contacts = Contact::all()->toArray();
+        $this->showAddForm = false;
+        $this->resetNewContact();
+        
+        session()->flash('message', 'Contato adicionado com sucesso!');
+    }
+
+    public function updateContact()
+    {
+        $this->validate([
+            'editingContact.owner_name' => 'required|string|max:255',
+            'editingContact.email' => 'required|email|max:255',
+            'editingContact.phone' => 'required|string|max:20',
+            'editingContact.tipo' => 'required|string|max:50',
+            'editingContact.salon_name' => 'required|string|max:255',
+            'editingContact.address' => 'required|string|max:255',
+            'editingContact.neighborhood' => 'required|string|max:255',
+            'editingContact.city' => 'required|string|max:255',
+            'editingContact.state' => 'required|string|max:255',
+        ]);
+
+        $contact = Contact::find($this->editingContact['id']);
+        $contact->update([
+            'owner_name' => $this->editingContact['owner_name'],
+            'email' => $this->editingContact['email'],
+            'phone' => $this->editingContact['phone'],
+            'tipo' => $this->editingContact['tipo'],
+            'salon_name' => $this->editingContact['salon_name'],
+            'address' => $this->editingContact['address'],
+            'neighborhood' => $this->editingContact['neighborhood'],
+            'city' => $this->editingContact['city'],
+            'state' => $this->editingContact['state'],
+        ]);
+        
+        $this->contacts = Contact::all()->toArray();
+        $this->showEditForm = false;
+        $this->resetEditingContact();
+        
+        session()->flash('message', 'Contato atualizado com sucesso!');
+    }
+
+    public function cancelEditForm()
+    {
+        $this->showEditForm = false;
+        $this->resetEditingContact();
+    }
+
+    public function resetEditingContact()
+    {
+        $this->editingContact = [
+            'id' => null,
+            'owner_name' => '',
+            'email' => '',
+            'phone' => '',
+            'tipo' => '',
+            'salon_name' => '',
+            'address' => '',
+            'neighborhood' => '',
+            'city' => '',
+            'state' => '',
+        ];
     }
     
 }

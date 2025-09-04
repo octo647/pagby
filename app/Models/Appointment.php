@@ -31,8 +31,27 @@ class Appointment extends Model
     ];
     protected $casts = [
         'appointment_date' => 'date',
+        'services' => 'string',
         
     ];
+    public function employee()
+    {
+        return $this->belongsTo(User::class, 'employee_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'customer_id');
+    }
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
+    }
+    public function avaliacao()
+    {
+        return $this->hasOne(\App\Models\Avaliacao::class, 'appointment_id');
+    }
+    
     protected $table = 'appointments';
  
     use HasFactory;

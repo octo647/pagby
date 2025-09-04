@@ -9,7 +9,16 @@ class Branch extends Model
 {
     use HasFactory;
     protected $fillable = [
-        // outros campos...
+        'branch_name',
+        'cnpj',
+        'require_advance_payment',
+        'address',
+        'complement',
+        'phone',
+        'whatsapp',
+        'email',
+        'city',
+        'state',
         'logo',
     ];
     public function users():BelongsToMany

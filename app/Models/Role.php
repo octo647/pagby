@@ -7,11 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Role extends Model
 {
+    protected $fillable = ['role'];
 
     public function users():BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }
-
-
 }

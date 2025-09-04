@@ -8,7 +8,6 @@ use Stancl\Tenancy\Database\Models\Tenant;
 return [
     'tenant_model' => \App\Models\Tenant::class,
     'id_generator' => Stancl\Tenancy\UUIDGenerator::class,
-
     'domain_model' => Domain::class,
 
     /**
@@ -19,6 +18,10 @@ return [
     'central_domains' => [
         '127.0.0.1',
         'localhost',
+        '192.168.2.170',
+        'localhost:8000',
+        '127.0.0.1:8000',
+        '192.168.2.170:8000',
     ],
 
     /**

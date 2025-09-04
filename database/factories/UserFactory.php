@@ -25,11 +25,25 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            'phone' => fake()->phoneNumber(),
+            'whatsapp' => fake()->boolean(),
+            'cpf' => $this->faker->unique()->numerify('###########'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
+            'origin' => fake()->randomElement(['Web', 'Instagram', 'Facebook', 'Google', 'Twitter', 'LinkedIn', 'TikTok', 'WhatsApp', 'Telegram','Indicação', 'Indicação de Cliente', 'Indicação de Amigo']),
+            'status' => 'Ativo',
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
         ];
+    }
+    public function configure()
+    {
+        return $this->afterCreating(function (\App\Models\User $user) {
+            $role = \App\Models\Role::where('role', 'Cliente')->first();
+            if ($role) {
+                $user->roles()->attach($role->id);
+            }
+        });
     }
 
     /**

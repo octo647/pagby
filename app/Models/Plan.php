@@ -11,21 +11,43 @@ class Plan extends Model
     protected $fillable = [
         'name',
         'price',
-        'duration', // Duração em dias
+        'allowed_days', // JSON ou texto com os dias permitidos (array/json)
+        'duration_days', // Duração em dias
         'features', // JSON ou texto com as características do plano
+        'created_by', // ID do usuário que criou o plano
     ];
     protected $casts = [
         'features' => 'array', // Converte o campo features para um array
-        'services' => 'array', // Converte o campo services para um array
+        'allowed_days' => 'array', // Converte o campo allowed_days para um array
+        //'services' => 'array', // Converte o campo services para um array
         'additional_services' => 'array', // Converte o campo additional_services para um array
+        
     ];
-    public function salon()
-    {
-        return $this->belongsTo(Branch::class);
-    }
+    
     public function subscriptions()
     {
-        return $this->hasMany(Subscription::class);
+        return $this->hasMany(Subscription::class)
+            ->where('status', 'active'); // Apenas assinaturas ativas
+    }
+    public function services()
+    {
+        return $this->belongsToMany(Service::class, 'plan_service', 'plan_id', 'service_id');
+    }
+
+    public function additionalServices()
+    {
+        return $this->belongsToMany(Service::class, 'plan_additional_services')
+            ->withPivot('discount');  
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
+    public function scopeInactive($query)
+    {
+        return $query->where('status', 'inactive');
     }
     
 }

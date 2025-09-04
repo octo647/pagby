@@ -19,7 +19,7 @@ return new class extends Migration
             ->references('id')
             ->on('users')
             ->cascadeonDelete();
-            $table->unsignedBigInteger('branch_id');
+            $table->unsignedBigInteger('branch_id')->nullable();
             $table->foreign('branch_id')
             ->references('id')
             ->on('branches')

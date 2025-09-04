@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -22,6 +23,9 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'photo',
+        'status',
+       'phone', 'whatsapp', 'birthdate', 'cpf', 'cep', 'street', 'number', 'complement', 'city', 'neighborhood', 'state', 'notifications_enabled'
     ];
 
     /**
@@ -85,6 +89,40 @@ class User extends Authenticatable
     {
         $this->services()->detach(['service_id' => $service_id]);
     }
-
-
+    public function isActive()
+    {
+    return $this->status === 'Ativo';
+    }
+    public function appointments()
+    {
+    return $this->hasMany(\App\Models\Appointment::class, 'employee_id');
+    }
+    
+    public function lastAppointment()
+    {
+        return $this->hasOne(\App\Models\Appointment::class, 'customer_id')->latest('appointment_date');
+    }
+    public function clientAppointments()
+    {
+        return $this->hasMany(\App\Models\Appointment::class, 'customer_id');
+    }
+    public function employeeAppointments()
+    {
+        return $this->hasMany(\App\Models\Appointment::class, 'employee_id')
+            ->with('customer') // Eager load the customer relationship
+            ->with('branch'); // Eager load the branch relationship
+    }
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+    public function currentSubscription()
+    {
+        return $this->subscriptions()
+        ->where('status', 'Ativo')
+        ->where('start_date', '<=', now())
+        ->where('end_date', '>=', now())
+        ->latest()->first();    
+    }
 }
+    

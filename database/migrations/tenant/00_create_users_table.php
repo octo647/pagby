@@ -14,9 +14,24 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('phone')->nullable()->comment('Telefone do usuário');
+            $table->boolean('whatsapp')->default(false);
+            $table->string('cpf')->nullable()->unique()->comment('CPF do usuário');
+            $table->string('cep')->nullable();
+            $table->string('street')->nullable();
+            $table->string('number')->nullable();
+            $table->string('complement')->nullable();
+            $table->string('city')->nullable();
+            $table->string('neighborhood')->nullable();
+            $table->string('state')->nullable();
+            $table->boolean('notifications_enabled')->default(true);
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->string('photo')->nullable()->comment('Foto do usuário');
+            $table->date('birthdate')->nullable()->comment('Data de nascimento do usuário');
+            $table->string('origin')->default('web')->comment('Origem do usuário: web, api, mobile');
+            $table->enum('status', ['Ativo', 'Inativo'])->default('Ativo')->comment('Ativo, Inativo');
             $table->rememberToken();
             $table->timestamps();
         });
@@ -29,6 +44,7 @@ return new class extends Migration
 
         Schema::create('sessions', function (Blueprint $table) {
             $table->string('id')->primary();
+            $table->string('salon_id');
             $table->foreignId('user_id')->nullable()->index();
             $table->string('ip_address', 45)->nullable();
             $table->text('user_agent')->nullable();

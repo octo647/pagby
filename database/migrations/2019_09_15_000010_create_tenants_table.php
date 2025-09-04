@@ -17,11 +17,32 @@ class CreateTenantsTable extends Migration
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->string('id')->primary();
+            $table->enum('type', ['barbearia', 'salao_beleza', 'clinica'])->default('barbearia'); // Assuming 'barbearia' is the default type
+            $table->string('email')->unique()->nullable();
+            $table->string('phone')->nullable();
+            $table->string('whatsapp')->nullable();
+            $table->string('instagram')->nullable();
+            $table->string('facebook')->nullable();
+            $table->string('name')->nullable();
+            $table->string('cnpj')->nullable();
+            $table->string('fantasy_name')->nullable();
+            $table->string('slug')->unique()->nullable();
+            $table->string('address')->nullable();
+            $table->integer('number')->nullable();
+            $table->string('complement')->nullable();
+            $table->string('neighborhood')->nullable();
+            $table->string('cep')->nullable();
+            $table->string('city')->nullable();
+            $table->string('state')->nullable();
+            $table->string('logo')->nullable();
+            $table->string('plan')->nullable(); // Assuming this is a reference to a plan, adjust as necessary
+            $table->string('status')->default('Ativo'); // Example status field, adjust as necessary   
 
             // your custom columns may go here
+            $table->json('data')->nullable(); // Example of a JSON column for additional data
 
             $table->timestamps();
-            $table->json('data')->nullable();
+            
         });
     }
 

@@ -13,6 +13,9 @@ class Subscription extends Model
         'plan_id',
         'start_date',
         'end_date',
+        'branch_id',
+        'created_by',
+        'updated_by',
         'status',
     ];
     protected $casts = [
@@ -29,8 +32,10 @@ class Subscription extends Model
 
     public function plan()
     {
-        return $this->belongsTo(Plan::class);
+        return $this->belongsTo(Plan::class)
+            ->with('additionalServices'); // Inclui os serviços adicionais do plano
     }
+    
     public function isActive()
     {
         $now = now();

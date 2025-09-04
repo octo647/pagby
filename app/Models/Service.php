@@ -7,10 +7,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Service extends Model
 {
-    protected $fillable = ['created_at','updated_at','salon_id', 'service', 'price', 'time'];
-    public function employee(){
+    protected $fillable = ['created_at','updated_at','photo','salon_id', 'service', 'price', 'time'];
+    public function employees(){
         return $this->belongsToMany(User::class, 'service_user', 
-        'user_id', 'service_id');
+        'service_id', 'user_id');
     }
     use HasFactory;
 }

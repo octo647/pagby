@@ -3,104 +3,122 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Livewire\WithPagination;
 use App\Models\User;
 use App\Models\Role;
-use App\Models\RoleUser;
-
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
+
 class SalonUsers extends Component
 {
-        public $editedUserIndex = null;
-        public $editedUserField = null;
-        public $usuarios = [];
-        public function mount(){
+    use WithPagination;
 
-            $salon_users = User::all();
-            $roles = Role::all();
-            $role_users = DB::table("role_user")->get();
+    public $searchTerm = '';
+    public $editingUserId = null;
+    public $editingRole = '';
+    public $editingStatus = '';
+    public $showModal = false;
+    public $selectedUser = null;
+    public $userDetails = [];
 
+    public function showUserDetails($userId)
+    {
+    $user = User::with('roles')->find($userId);
 
-            $i=0;
-            foreach ($salon_users as $salon_user) {
+    // Exemplo de busca dos dados extras:
+    $phone = $user->phone ?? '';
+    $agendamentos = $user->clientAppointments()->count();
+    $ultimoAgendamento = $user->clientAppointments()->latest('appointment_date')->first();
 
-                $role_id = DB::table("role_user")->where('user_id', $salon_user->id)->first()->role_id;
+    $temAgendamento = $user->clientAppointments()->where('appointment_date', '>=', now())->exists();
+    $currentSubscription = $user->currentSubscription();
 
-                $usuarios[$i]["user_id"] = $salon_user->id;
-                $usuarios[$i]["nome"] = $salon_user->name;
-                $usuarios[$i]["email"] = $salon_user->email;
-                $usuarios[$i]["funcao"] = Role::where('id', $role_id)->first()->role;
-                $i++;
+    $this->userDetails = [
+        'nome' => $user->name,
+        'email' => $user->email,
+        'phone' => $phone,
+        'funcao' => $user->roles->first()->role ?? '',
+        'agendamentos' => $agendamentos,
+        'ultimo_agendamento' => $ultimoAgendamento ? $ultimoAgendamento->appointment_date->format('d/m/Y H:i') : 'Nunca',
+        'tem_agendamento' => $temAgendamento ? 'Sim' : 'Não',
+        'plano' => $currentSubscription ? $currentSubscription->plan->name : 'Nenhum plano ativo',
+        'plano_inicio' => $currentSubscription ? $currentSubscription->start_date->format('d/m/Y') : 'N/A',
+        'plano_fim' => $currentSubscription ? $currentSubscription->end_date->format('d/m/Y') : 'N/A',
+      
+    ];
+
+    $this->showModal = true;
+    }
+    public function closeModal()
+    {
+        $this->showModal = false;
+    }
+
+    // Resetar a página ao buscar
+    public function updatingSearchTerm()
+    {
+        $this->resetPage();
+    }
+
+    public function editUser($userId)
+    {
+        $this->editingUserId = $userId;
+        $user = User::with('roles')->find($userId);
+        $this->editingRole = $user->roles->first()->role ?? '';
+        $this->editingStatus = $user->status;
+        
+    }
+
+    public function saveUser()
+    {
+        $user = User::find($this->editingUserId);
+        if ($user) {
+            // Atualiza status
+            $user->status = $this->editingStatus;
+           
+            $user->save();
+
+            // Atualiza função (role)
+            $role = Role::where('role', $this->editingRole)->first();
+            if ($role) {
+                // Remove todas as funções e adiciona a nova
+                $user->roles()->sync([$role->id]);
             }
-            $this->usuarios = $usuarios;
-
-        }
-
-        public function editUser($userIndex){
-            $this->editedUserIndex = $userIndex;
-        }
-        public function editUserField($userIndex, $fieldName)
-        {
-            $this->editedUserField = $userIndex.'.'.$fieldName;
-        }
-        public function updateRole($userIndex)
-        {
-
-            $usuario = $this->usuarios[$userIndex] ?? null;
-
-            if (!is_null($usuario)) {
-
-                $role = DB::table('role_user')->where('user_id','=', $usuario)->get();
-
-
-                $funcao = $usuario['funcao'];
-
-                $id_funcao = Role::where('role', $funcao)->first();
-
-                $id = $id_funcao['id'];
-
-                $role[0]->role_id = $id;
-
-                $role_atualizado = DB::table('role_user')
-                ->where('user_id','=', $usuario['user_id'])
-                ->update(['role_id'=> $id]);
-                if($funcao == 'Funcionário'){
-                    DB::table('office_hours')->insert([
-                        'employee_id'=> $usuario['user_id'],
-                    ]);
-                    DB::table('intervals')->insert([
-                        'employee_id'=> $usuario['user_id'],
-                    ]);
-                }
-                if($funcao != 'Funcionário'){
-                    DB::table('office_hours')->where(
-                        'employee_id', $usuario['user_id'])
-                        ->delete();
-                    DB::table('intervals')->where(
-                        'employee_id', $usuario['user_id'])
-                        ->delete();
-                }
-                redirect('/dashboard');
+            // Se a função for 'Funcionário', adiciona o usuário na tabela branch_users
+            if ($this->editingRole === 'Funcionário') {
+                DB::table('branch_user')->updateOrInsert(
+                    ['user_id' => $user->id],
+                    []                    
+                );
+            } else {
+                // Remove o usuário da tabela branch_users se não for 'Funcionário'
+                DB::table('branch_user')->where('user_id', $user->id)->delete();
             }
         }
-        public function deleteUser($userIndex)
-        {
-            $usuario = $this->usuarios[$userIndex] ?? null;
+        $this->editingUserId = null;
+        session()->flash('message', 'Usuário atualizado com sucesso!');
+    }
 
-            if (!is_null($usuario)) {
-
-            $role = DB::table('role_user')->where('user_id','=', $usuario)->delete();
-            redirect('/dashboard');
-
-            }
-
-        }
-
-
+    public function cancelEdit()
+    {
+        $this->editingUserId = null;
+    }
 
     public function render()
     {
+        $salon_users = User::query()
+            ->when($this->searchTerm, function($query) {
+                $query->where('name', 'like', '%'.$this->searchTerm.'%');
+            })
+            ->orderBy('name', 'asc')
+            ->with('roles')
+            ->paginate(10);
+          
 
-        return view('livewire.salon-users', ['usuarios'=> $this->usuarios]);
+        $roles = Role::pluck('role');
+
+        return view('livewire.salon-users', [
+            'salon_users' => $salon_users,
+            'roles' => $roles,
+        ]);
     }
 }

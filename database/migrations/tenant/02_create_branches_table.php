@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->timestamps();
             $table->string('branch_name');
+            $table->string('cnpj')->nullable();
+            $table->boolean('require_advance_payment')->default(false);
             $table->string('address')->nullable();
             $table->string('complement')->nullable();
             $table->string('phone')->nullable();

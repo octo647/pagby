@@ -43,6 +43,11 @@ return [
             'visibility' => 'public',
             'throw' => false,
         ],
+        
+        'tenant' => [
+        'driver' => 'local',
+        'root' => storage_path('app/tenant'),
+        ],
 
         's3' => [
             'driver' => 's3',

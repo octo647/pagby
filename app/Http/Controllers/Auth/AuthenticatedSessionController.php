@@ -25,10 +25,28 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
+        // Verifica se o usuário está ativo após autenticar
+        if (Auth::user()->status !== 'Ativo') {
+            Auth::logout();
+            return back()->withErrors([
+                'email' => 'Seu usuário está inativo. Fale com o administrador.',
+            ]);
+        }
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $user = Auth::user();
+
+    // Exemplo: ajuste conforme sua lógica de papéis
+    if ($user->hasRole('Funcionário')) {
+        return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'agenda']);
+    } elseif ($user->hasRole('Proprietário')) {
+        return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'usuarios']);
+    } elseif ($user->hasRole('Admin')) {
+        return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'contatos']); // Redireciona para a página index
+    } else {
+        return redirect()->route('tenant.dashboard');
+    }
     }
 
     /**

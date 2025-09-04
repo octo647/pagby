@@ -39,6 +39,7 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'salon_id' => tenancy()->tenant->id,
         ]);
 
         $user->assignRole(3, 0);//atribui a função de cliente ao novo usuário

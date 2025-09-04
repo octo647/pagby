@@ -5,9 +5,8 @@ namespace App\Livewire;
 use Livewire\Component;
 use App\Models\User;
 use App\Models\Role;
-use App\Models\Salon;
-use App\Models\MorningTime;
 use Illuminate\Support\Facades\DB;
+use App\Models\Salon;
 
 
 class RoleUser extends Component
@@ -18,7 +17,7 @@ class RoleUser extends Component
     public function mount(){
         $users = User::all();
         $roles = Role::all();
-        $salons = Salon::all();
+       
         $role_users = DB::table("role_user")->get();
     
         $i=0;

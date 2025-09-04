@@ -12,6 +12,10 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->group('universal', []);
+        $middleware->alias([
+            'checkTenantSubscription' => \App\Http\Middleware\CheckTenantSubscription::class,
+            'scopeSessions' => \Stancl\Tenancy\Middleware\ScopeSessions::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
