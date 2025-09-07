@@ -24,7 +24,9 @@ class DashboardController extends Controller
                 $tabelaAtiva = $request->get('tabelaAtiva', 'usuarios');
             } elseif ($user->hasRole('Cliente')) {
                 $tabelaAtiva = $request->get('tabelaAtiva', 'appointments');
-            }
+            } elseif ($user->hasRole('Admin')) {
+                $tabelaAtiva = $request->get('tabelaAtiva', 'contatos');
+        }
         }
         
         // Buscar funcionários para a view

@@ -2,7 +2,11 @@
     <x-slot name="header">
     
         <h2 class="text-xl font-semibold leading-tight text-center text-gray-800">
-        @if(auth()->user()->hasrole('Proprietário'))
+        @if(auth()->user()->hasrole('Admin'))
+            {{ __($tabelaAtiva === 'contatos' ? 'Contatos' : 
+            ($tabelaAtiva === 'saloes' ? 'Salões' : 
+            ($tabelaAtiva === 'planos' ? 'Planos' : '')))}}
+        @elseif(auth()->user()->hasrole('Proprietário'))
             {{ __($tabelaAtiva === 'usuarios' ? 'Usuários' : 
             ($tabelaAtiva === 'filiais' ? 'Filiais' :
             ($tabelaAtiva === 'funcionarios' ? 'Funcionários por filial' : ($tabelaAtiva === 'horarios' ? 'Horários dos Funcionários' : ($tabelaAtiva === 'servicos' ? 'Serviços oferecidos' : ($tabelaAtiva === 'func_serv' ? 'Funcionários e Serviços' : ($tabelaAtiva === 'servicos-realizados' ? 'Serviços Realizados' :
@@ -44,7 +48,17 @@
                 @if(session('chooseone'))
                 {{session('chooseone')}}
                 @endif
-                
+                @can('Admin')
+    
+                @if($tabelaAtiva === 'contatos')
+                    @livewire('list-contacts') 
+                @elseif($tabelaAtiva === 'saloes')
+                    @livewire('admin.saloes')
+                @elseif($tabelaAtiva === 'planos')
+                    @livewire('admin.planos')
+                @endif
+
+                @endcan
 
                 @can('Proprietário')
                

@@ -69,13 +69,30 @@
             </button>
             
              @php
+                if (!isset($tabelaAtiva)) {
+                    $tabelaAtiva = null;
+                }
                 use App\Models\Plan;
                 $isTenant = !in_array(request()->getHost(), config('tenancy.central_domains'));
                 $temPlanoAtivo = false;
                 if ($isTenant) {
                 $temPlanoAtivo = Plan::where('active', true)->exists();
                 }
-                $menuAdmin = [];
+                $menuAdmin = [
+                    [ 'label' => 'Contatos', 
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
+                    <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
+                    </svg>
+                    ', 'tabelaAtiva' => 'contatos'],
+                    [ 'label' => 'Salões', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
+                    <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
+                    </svg>
+                    ', 'tabelaAtiva' => 'saloes'],
+                    [ 'label' => 'Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
+                    <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
+                    </svg>
+                    ', 'tabelaAtiva' => 'planos'],
+                ];
                 
                 $menuProprietario = [
                     [ 'label' => 'Cadastros', 
@@ -253,6 +270,14 @@
                     }
             @endphp
             @auth
+             @if(auth()->user()->hasRole('Admin') )
+                @foreach($menuAdmin as $item)
+                    <x-responsive-nav-link :href="route('tenant.dashboard', ['tabelaAtiva' => $item['tabelaAtiva']])" :active="$tabelaAtiva === $item['tabelaAtiva']">
+                        {!! $item['icon'] ?? '' !!}
+                        {{ $item['label'] }}
+                    </x-responsive-nav-link>
+                @endforeach
+            @endif
             @if(auth()->user()->hasrole('Proprietário'))
                    @foreach($menuProprietario as $item)
                    @if(isset($item['submenu']))

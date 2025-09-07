@@ -16,9 +16,7 @@ foreach (config('tenancy.central_domains') as $domain) {
 Route::get('/register-tenant', [TenantRegistrationController::class, 'showForm'])->name('register-tenant');
 Route::post('/register-tenant', [TenantRegistrationController::class, 'register']);
 Route::get('/registration-success', [TenantRegistrationController::class, 'registrationSuccess'])->name('registration-success'); 
-Route::get('/dashboard', [DashboardController::class, 'dashboard'])
-            ->middleware(['auth', 'verified'])
-            ->name('dashboard');    
+
 Route::prefix('admin')->middleware(['auth', 'can:Admin'])->group(function () {
     Route::get('/tenants', [TenantAdminController::class, 'index'])->name('admin.tenants');
     Route::get('/tenants/{tenant}', [TenantAdminController::class, 'show'])->name('admin.tenants.show');
@@ -36,6 +34,7 @@ Route::get('/funcionalidades', function () {
             Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
             Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
             Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+            Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
         });
 
         require __DIR__.'/auth.php';
