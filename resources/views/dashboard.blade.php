@@ -126,8 +126,8 @@
                         @livewire('proprietario.relatorio-anual')
                     @elseif($tabelaAtiva === 'planos-de-assinatura')
                         @livewire('planos-de-assinatura')
-                    
-
+                    @elseif($tabelaAtiva === 'meu-pixby')
+                        @livewire('proprietario.meu-pixby')
                     @endif  
             </div>              
                 
