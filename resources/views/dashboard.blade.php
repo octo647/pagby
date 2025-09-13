@@ -7,22 +7,44 @@
             ($tabelaAtiva === 'saloes' ? 'Salões' : 
             ($tabelaAtiva === 'planos' ? 'Planos' : '')))}}
         @elseif(auth()->user()->hasrole('Proprietário'))
-            {{ __($tabelaAtiva === 'usuarios' ? 'Usuários' : 
-            ($tabelaAtiva === 'filiais' ? 'Filiais' :
-            ($tabelaAtiva === 'funcionarios' ? 'Funcionários por filial' : ($tabelaAtiva === 'horarios' ? 'Horários dos Funcionários' : ($tabelaAtiva === 'servicos' ? 'Serviços oferecidos' : ($tabelaAtiva === 'func_serv' ? 'Funcionários e Serviços' : ($tabelaAtiva === 'servicos-realizados' ? 'Serviços Realizados' :
-            ($tabelaAtiva === 'assiduidade' ? 'Assiduidade dos Clientes' : ($tabelaAtiva === 'faturamento-mensal' ? 'Faturamento Mensal' : ($tabelaAtiva === 'origens' ? 'Origens dos Clientes' : ($tabelaAtiva === 'ticket-medio' ? 'Ticket Médio por Cliente' : ($tabelaAtiva === 'horarios-pico' ? 'Horários de Pico' : ($tabelaAtiva === 'dias-pico' ? 'Dias de Pico' : ($tabelaAtiva === 'avaliacoes' ? 'Satisfação dos Clientes' : 
-            ($tabelaAtiva === 'ranking-servicos' ? 'Serviços mais Solicitados' : ($tabelaAtiva === 'clientes-novos-antigos' ? 'Clientes Novos e Antigos':'')))))))))))))))) }}
+            @php
+                $titles = [
+                    'usuarios' => 'Usuários',
+                    'filiais' => 'Filiais',
+                    'funcionarios' => 'Funcionários por filial',
+                    'horarios' => 'Horários dos Funcionários',
+                    'servicos' => 'Serviços oferecidos',
+                    'func_serv' => 'Funcionários e Serviços',
+                    'servicos-realizados' => 'Serviços Realizados',
+                    'assiduidade' => 'Assiduidade dos Clientes',
+                    'faturamento-mensal' => 'Faturamento Mensal',
+                    'origens' => 'Origens dos Clientes',
+                    'ticket-medio' => 'Ticket Médio por Cliente',
+                    'horarios-pico' => 'Horários de Pico',
+                    'dias-pico' => 'Dias de Pico',
+                    'avaliacoes' => 'Satisfação dos Clientes',
+                    'ranking-servicos' => 'Serviços mais Solicitados',
+                    'clientes-novos-antigos' => 'Clientes Novos e Antigos',
+                    'gerenciar-estoque' => 'Controle de Estoque',
+                    'gerenciar-comandas' => 'Controle de Comandas'
+                ];
+            @endphp
+            {{ __($titles[$tabelaAtiva] ?? '') }}
         @elseif(auth()->user()->hasrole('Funcionário'))
-            {{ __($tabelaAtiva === 'agenda' ? 'Minha Agenda' : 
-            ($tabelaAtiva === 'servicos' ? 'Meus Serviços' : 
-            ($tabelaAtiva === 'servicos-realizados' ? 'Serviços Realizados' : 
-            ($tabelaAtiva === 'horarios' ? 'Meus Horários' :
-            ($tabelaAtiva === 'estatisticas' ? 'Estatísticas Pessoais' : 
-            ($tabelaAtiva === 'ranking-servicos' ? 'Ranking de Serviços' : 
-            ($tabelaAtiva === 'avaliacoes-profissional' ? 'Avaliações dos Clientes' : 
-            ($tabelaAtiva === 'dias-pico' ? 'Dias de Pico' : 
-            ($tabelaAtiva === 'horarios-pico' ? 'Horários de Pico' :
-            ''))))))))) }}
+            @php
+                $funcionarioTitles = [
+                    'agenda' => 'Minha Agenda',
+                    'servicos' => 'Meus Serviços',
+                    'servicos-realizados' => 'Serviços Realizados',
+                    'horarios' => 'Meus Horários',
+                    'estatisticas' => 'Estatísticas Pessoais',
+                    'ranking-servicos' => 'Ranking de Serviços',
+                    'avaliacoes-profissional' => 'Avaliações dos Clientes',
+                    'dias-pico' => 'Dias de Pico',
+                    'horarios-pico' => 'Horários de Pico'
+                ];
+            @endphp
+            {{ __($funcionarioTitles[$tabelaAtiva] ?? '') }}
         @elseif(auth()->user()->hasrole('Cliente'))
             {{ __($tabelaAtiva === 'appointments' ? 'Agendamentos' :
             ($tabelaAtiva === 'historico' ? 'Histórico de Serviços':
@@ -118,6 +140,12 @@
                         @livewire('proprietario.clientes-novos-antigos')
                     @elseif($tabelaAtiva === 'balanco-diario')
                         @livewire('proprietario.balanco-diario')
+                    @elseif($tabelaAtiva === 'ajuste-balanco-diario')
+                        @livewire('proprietario.ajuste-balanco-diario')
+                    @elseif($tabelaAtiva === 'gerenciar-estoque')
+                        @livewire('proprietario.gerenciar-estoque')
+                    @elseif($tabelaAtiva === 'gerenciar-comandas')
+                        @livewire('proprietario.gerenciar-comandas')
                     @elseif($tabelaAtiva === 'relatorio-geral')
                         @livewire('proprietario.relatorio-geral')
                     @elseif($tabelaAtiva === 'relatorio-mensal')
@@ -128,6 +156,13 @@
                         @livewire('planos-de-assinatura')
                     @elseif($tabelaAtiva === 'meu-pixby')
                         @livewire('proprietario.meu-pixby')
+                    @elseif($tabelaAtiva === 'gerenciar-comandas')
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <h1 class="text-3xl font-bold text-gray-900">Controle de Comandas</h1>
+                            </div>
+                            @livewire('proprietario.gerenciar-comandas')
+                        </div>
                     @endif  
             </div>              
                 

@@ -19,10 +19,14 @@ class Filiais extends Component
        'city' => '',
        'state' => '',
        'complement' => '',
-       'require_advance_payment' => false
+       'require_advance_payment' => false,
+       'require_comission' => false,
+       'comission' => 0
    ];
+
    public $isEditing = false;
    public $showForm = false;
+
 
    public function mount()
    {
@@ -32,13 +36,20 @@ class Filiais extends Component
    public function loadBranches()
    {
        $this->branches = \App\Models\Branch::all();
+       
+      
    }
 
    public function edit($id)
    {
-       $this->branch = \App\Models\Branch::find($id)->toArray();
-       $this->isEditing = true;
-       $this->showForm = true;
+    $branch = \App\Models\Branch::find($id);
+    $branchArray = $branch->toArray();
+    // Cast boolean fields for Livewire checkboxes
+    $branchArray['require_advance_payment'] = (bool) $branchArray['require_advance_payment'];
+    $branchArray['require_comission'] = (bool) $branchArray['require_comission'];
+    $this->branch = $branchArray;
+    $this->isEditing = true;
+    $this->showForm = true;
    }
 
    public function save()
@@ -89,7 +100,9 @@ class Filiais extends Component
            'city' => '',
            'state' => '',
            'complement' => '',
-           'require_advance_payment' => false
+           'require_advance_payment' => false,
+           'require_comission' => false,
+           'comission' => 0
        ];
        $this->isEditing = false;
    }

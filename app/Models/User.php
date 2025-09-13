@@ -66,7 +66,9 @@ class User extends Authenticatable
     }
     public function services(): BelongsToMany
     {
-        return $this->belongsToMany(Service::class)->withTimestamps();
+        return $this->belongsToMany(Service::class, 'service_user')
+            ->withPivot('custom_duration_minutes', 'is_active', 'notes')
+            ->withTimestamps();
     }
     public function hasRole(string $role): bool
     {
@@ -83,11 +85,11 @@ class User extends Authenticatable
     }
     public function assignService($service_id): void
     {
-        $this->services()->attach(['service_id' => $service_id]);
+        $this->services()->attach($service_id);
     }
     public function resignService($service_id): void
     {
-        $this->services()->detach(['service_id' => $service_id]);
+        $this->services()->detach($service_id);
     }
     public function isActive()
     {

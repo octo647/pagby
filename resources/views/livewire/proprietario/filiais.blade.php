@@ -81,6 +81,15 @@
                     <input type="checkbox" wire:model="branch.require_advance_payment" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <span class="ml-2 text-sm text-gray-700">Requer pagamento antecipado</span>
                 </label>
+                <label class="flex items-center">
+                    <input type="checkbox" wire:model.live="branch.require_comission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <span class="ml-2 text-sm text-gray-700">Definir comissão para funcionários?</span>
+                </label>
+                @if($branch['require_comission'])
+                <label class="flex items-center">                    
+                    <span class="ml-2 text-sm text-gray-700">Valor da comissão: &nbsp;</span> <input type="text" wire:model="branch.comission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" size="2">&nbsp;%
+                </label>
+                @endif
                 @error('branch.require_advance_payment') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
             </div>
         </div>
