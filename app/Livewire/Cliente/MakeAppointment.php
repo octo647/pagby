@@ -108,15 +108,12 @@ class MakeAppointment extends Component
     }
     // Calcula o tempo total dos serviços escolhidos
     $total_service_time = $this->calculateTotalServiceTime($ch_services);
-    //Obtém os próximos 7 dias
-    $all_days = $this->getNextDays(7);
+    //Obtém os próximos 21 dias
+    $all_days = $this->getNextDays(21);
     // Obtém os horários disponíveis do funcionário
     $schedules = Schedule::where('user_id', $ch_professional_id)->get();
-    // Filtra apenas os dias em que o funcionário tem schedule
-    $this->forward_days = array_filter($all_days, function($day) use ($schedules) {
-        $weekday = date('l', strtotime($day));        
-        return $schedules->where('day_of_week', $weekday)->first();
-    });
+    // Mantém todos os 21 dias, mas marca os dias sem agenda como indisponíveis na view
+    $this->forward_days = $all_days;
     // Se não houver dias disponíveis, limpa os horários e retorna
     if (empty($this->forward_days)) {
         $this->available_times = [];
@@ -226,7 +223,7 @@ class MakeAppointment extends Component
         return $total;        
     }
 
-    protected function getNextDays($days = 7)
+    protected function getNextDays($days = 21)
     {
         $forward_days = [];
         for ($j = 0; $j < $days; $j++) {

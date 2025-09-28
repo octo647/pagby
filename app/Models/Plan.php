@@ -36,7 +36,7 @@ class Plan extends Model
 
     public function additionalServices()
     {
-        return $this->belongsToMany(Service::class, 'plan_additional_services')
+        return $this->belongsToMany(Service::class, 'plan_additional_service')
             ->withPivot('discount');  
     }
 

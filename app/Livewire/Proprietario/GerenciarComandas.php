@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Livewire\Proprietario;
 
 use Livewire\Component;
@@ -17,30 +16,69 @@ use Illuminate\Support\Facades\Log;
 
 class GerenciarComandas extends Component
 {
+    public function selecionarFuncionarioServico($id)
+    {
+        $this->funcionario_id = $id;
+        $this->funcionario_servico_id = $id;
+        $this->atualizarServicosFuncionario();
+    }
+    // Atualiza debug do serviço ao selecionar
+    public function atualizarDebugServico()
+    {
+        \Illuminate\Support\Facades\Log::info('atualizarDebugServico chamado', [
+            'service_id' => $this->service_id,
+            'branch_id' => $this->branch_id,
+        ]);
+    }
+    public $client_id = '';
     use WithPagination;
+    public $servicos_funcionario = [];
 
-    // Propriedades para filtros
+    // Atualiza os serviços do funcionário selecionado
+    public function atualizarServicosFuncionario()
+    {
+        \Illuminate\Support\Facades\Log::info('atualizarServicosFuncionario chamado', [
+            'funcionario_id' => $this->funcionario_id,
+            'branch_id' => $this->branch_id
+        ]);
+        if ($this->funcionario_id && $this->branch_id) {
+            $user = User::find($this->funcionario_id);
+            if ($user) {
+                $servicos = $user->services()
+                    ->wherePivot('is_active', true)
+                    ->whereHas('branchServices', function($q) {
+                        $q->where('branch_id', $this->branch_id)->where('is_active', true);
+                    })
+                    ->get();
+                \Illuminate\Support\Facades\Log::info('Serviços do funcionário encontrados', ['servicos' => $servicos->toArray()]);
+                $this->servicos_funcionario = $servicos;
+                $this->servicosDisponiveis = $servicos;
+            } else {
+                \Illuminate\Support\Facades\Log::info('Usuário não encontrado');
+                $this->servicos_funcionario = collect();
+                $this->servicosDisponiveis = collect();
+            }
+        } else {
+            \Illuminate\Support\Facades\Log::info('Funcionário ou filial não selecionados');
+            $this->servicos_funcionario = collect();
+            $this->servicosDisponiveis = collect();
+        }
+    }
+    use WithPagination;
+    public $searchTerm = '';
     public $filtro_branch = '';
     public $filtro_status = '';
     public $filtro_funcionario = '';
     public $search = '';
     public $data_inicio = '';
     public $data_fim = '';
-    
-    // Dados para os seletores
     public $branches;
     public $users;
-
-    // Painel de detalhes
     public $mostrar_painel_detalhes = false;
     public $comanda_detalhes = null;
     public $comanda_painel_id = null; // ID da comanda aberta no painel
-    
-    // Formulários inline no painel
     public $mostrandoFormServico = false;
     public $mostrandoFormProduto = false;
-
-    // Propriedades para modal de comanda
     public $mostrar_modal = false;
     public $editando_id = null;
     public $cliente_nome = '';
@@ -49,8 +87,6 @@ class GerenciarComandas extends Component
     public $branch_id = '';
     public $observacoes = '';
     public $desconto = 0;
-
-    // Propriedades para adicionar serviços
     public $mostrar_modal_servico = false;
     public $service_id = '';
     public $funcionario_servico_id = '';
@@ -60,13 +96,32 @@ class GerenciarComandas extends Component
     public $tempo_servico = '';
     public $servicosDisponiveis;
     public $funcionarios_da_filial;
-
-    // Propriedades para adicionar produtos
     public $mostrar_modal_produto = false;
     public $estoque_id = '';
     public $quantidade_produto = 1;
     public $preco_produto = '';
     public $obs_produto = '';
+
+    // Atualiza a lista de funcionários da filial selecionada
+    public function atualizarFuncionariosFilial()
+    {
+        if ($this->branch_id) {
+            $this->funcionarios_da_filial = User::whereHas('branches', function($q) {
+                $q->where('branch_id', $this->branch_id);
+            })->whereHas('roles', function($query) {
+                $query->whereIn('role', ['Funcionário', 'Proprietário']);
+            })->get();
+        } else {
+            $this->funcionarios_da_filial = collect();
+        }
+    }
+
+    public function escolherCliente($nome, $telefone)
+    {
+        $this->cliente_nome = $nome;
+        $this->cliente_telefone = $telefone;
+        $this->searchTerm = '';
+    }
 
     // ID da comanda sendo editada para adicionar itens
     public $comanda_atual_id = null;
@@ -98,7 +153,8 @@ class GerenciarComandas extends Component
 
     public function render()
     {
-        $query = Comanda::with(['branch', 'funcionario', 'comandaServicos.service', 'comandaServicos.funcionario', 'comandaProdutos.estoque']);
+        $salon_users = [];
+        $query = Comanda::with(['branch', 'funcionario', 'comandaServicos.service', 'comandaServicos.funcionario', 'comandaProdutos.estoque', 'appointment']);
 
         // Aplicar filtros
         if ($this->filtro_branch) {
@@ -113,20 +169,28 @@ class GerenciarComandas extends Component
             $query->where('funcionario_id', $this->filtro_funcionario);
         }
 
-        if ($this->search) {
+        if ($this->data_inicio) {
             $query->where(function($q) {
-                $q->where('numero_comanda', 'like', '%' . $this->search . '%')
-                  ->orWhere('cliente_nome', 'like', '%' . $this->search . '%')
-                  ->orWhere('cliente_telefone', 'like', '%' . $this->search . '%');
+                $q->whereHas('appointment', function($sub) {
+                    $sub->whereDate('appointment_date', '>=', $this->data_inicio);
+                })
+                ->orWhere(function($sub) {
+                    $sub->whereNull('appointment_id')
+                        ->whereDate('data_abertura', '>=', $this->data_inicio);
+                });
             });
         }
 
-        if ($this->data_inicio) {
-            $query->whereDate('data_abertura', '>=', $this->data_inicio);
-        }
-
         if ($this->data_fim) {
-            $query->whereDate('data_abertura', '<=', $this->data_fim);
+            $query->where(function($q) {
+                $q->whereHas('appointment', function($sub) {
+                    $sub->whereDate('appointment_date', '<=', $this->data_fim);
+                })
+                ->orWhere(function($sub) {
+                    $sub->whereNull('appointment_id')
+                        ->whereDate('data_abertura', '<=', $this->data_fim);
+                });
+            });
         }
 
         $comandas = $query->orderBy('data_abertura', 'desc')->paginate(15);
@@ -134,18 +198,15 @@ class GerenciarComandas extends Component
         // Se o painel estiver aberto, filtrar por filial da comanda
         if ($this->mostrar_painel_detalhes && $this->comanda_detalhes) {
             $branchId = $this->comanda_detalhes->branch_id;
-            
             // Buscar apenas serviços disponíveis na filial da comanda
             $branchServices = BranchService::where('branch_id', $branchId)
                 ->where('is_active', true)
                 ->with('service')
                 ->get();
-            
             // Filtrar funcionários apenas da filial da comanda
             $users = User::whereHas('branches', function($q) use ($branchId) {
                 $q->where('branch_id', $branchId);
             })->get();
-            
             // Filtrar produtos apenas da filial da comanda
             $produtos_estoque = Estoque::with('branch')
                 ->where('branch_id', $branchId)
@@ -154,16 +215,42 @@ class GerenciarComandas extends Component
         } else {
             // Caso padrão - todos os registros
             $branchServices = collect(); // Vazio quando não há painel aberto
-            $users = $this->users ?? User::all();
+            if ($this->branch_id) {
+                $users = User::whereHas('branches', function($q) {
+                    $q->where('branch_id', $this->branch_id);
+                })->get();
+            } else {
+                $users = $this->users ?? User::all();
+            }
             $produtos_estoque = Estoque::with('branch')->where('quantidade_atual', '>', 0)->get();
         }
+         if($this->searchTerm!==''){
+        $salon_users = User::query()
+            ->when($this->searchTerm, function($query) {
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%'.$this->searchTerm.'%')
+                      ->orWhere('email', 'like', '%'.$this->searchTerm.'%');
+                });
+            })
+            ->orderBy('name', 'asc')
+            ->with('roles')
+            ->paginate(5);
+    // $this->salon_users = $salon_users; // Removido para evitar erro de propriedade indefinida
+        
+      }
 
+        $clientes = User::whereHas('roles', function($query) {
+            $query->where('role', 'Cliente');
+        })->get();
         return view('livewire.proprietario.gerenciar-comandas', [
             'comandas' => $comandas,
             'branchServices' => $branchServices,
             'users' => $users,
+            'clientes' => $clientes,
             'produtos_estoque' => $produtos_estoque,
-            'funcionarios_da_filial' => $this->funcionarios_da_filial ?? collect()
+            'funcionarios_da_filial' => $this->funcionarios_da_filial ?? collect(),
+            'salon_users' => $salon_users,
+            'servicos_funcionario' => $this->servicos_funcionario ?? [],
         ]);
     }
 
@@ -180,12 +267,15 @@ class GerenciarComandas extends Component
             $this->branch_id = $comanda->branch_id;
             $this->observacoes = $comanda->observacoes;
             $this->desconto = $comanda->desconto;
+
         } else {
             $this->resetForm();
         }
 
         $this->mostrar_modal = true;
     }
+
+
 
     public function fecharModal()
     {
@@ -201,7 +291,8 @@ class GerenciarComandas extends Component
                 'funcionario', 
                 'comandaServicos.service', 
                 'comandaServicos.funcionario',
-                'comandaProdutos.estoque'
+                'comandaProdutos.estoque',
+                'appointment'
             ])->find($comandaId);
             
             if (!$this->comanda_detalhes) {
@@ -264,7 +355,7 @@ class GerenciarComandas extends Component
         $this->funcionario_id = '';
         $this->observacoes = '';
         $this->desconto = 0;
-        
+        // NÃO resetar $service_id aqui para manter o valor selecionado
         $user = Auth::user();
         $isProprietario = $user->roles->contains('name', 'Proprietario');
         if (!$isProprietario) {
@@ -277,6 +368,33 @@ class GerenciarComandas extends Component
         $this->validate();
 
         try {
+            // DEBUG: Mostrar preço do serviço antes de adicionar
+            if ($this->service_id && $this->branch_id && $this->funcionario_servico_id) {
+                $service = \App\Models\Service::find($this->service_id);
+                $user = \App\Models\User::find($this->funcionario_servico_id);
+                $pivot = $user ? $user->services()->where('service_id', $this->service_id)->first() : null;
+                $pivotData = $pivot && $pivot->pivot ? $pivot->pivot->toArray() : [];
+                $precoFuncionario = null;
+                if ($pivot && $pivot->pivot) {
+                    if (isset($pivot->pivot->custom_price) && $pivot->pivot->custom_price > 0) {
+                        $precoFuncionario = $pivot->pivot->custom_price;
+                    } elseif (isset($pivot->pivot->price) && $pivot->pivot->price > 0) {
+                        $precoFuncionario = $pivot->pivot->price;
+                    }
+                }
+                $precoBranch = $service ? $service->getPriceForBranch($this->branch_id) : null;
+                $precoFinal = $precoFuncionario ?? $precoBranch ?? ($service ? $service->price : 0);
+                \Illuminate\Support\Facades\Log::info('DEBUG - Preço do serviço antes de adicionar à comanda', [
+                    'service_id' => $this->service_id,
+                    'branch_id' => $this->branch_id,
+                    'funcionario_id' => $this->funcionario_servico_id,
+                    'pivot' => $pivotData,
+                    'preco_funcionario' => $precoFuncionario,
+                    'preco_branch' => $precoBranch,
+                    'preco_padrao' => $service ? $service->price : 0,
+                    'preco_final' => $precoFinal
+                ]);
+            }
             if ($this->editando_id) {
                 // Editar comanda existente
                 $comanda = Comanda::find($this->editando_id);
@@ -288,15 +406,12 @@ class GerenciarComandas extends Component
                     'observacoes' => $this->observacoes,
                     'desconto' => $this->desconto,
                 ]);
-                
                 $comanda->recalcularTotais();
-                
                 session()->flash('message', 'Comanda atualizada com sucesso!');
             } else {
                 // Criar nova comanda
                 $numeroComanda = Comanda::gerarNumeroComanda($this->branch_id);
-                
-                Comanda::create([
+                $comanda = Comanda::create([
                     'branch_id' => $this->branch_id,
                     'numero_comanda' => $numeroComanda,
                     'cliente_nome' => $this->cliente_nome,
@@ -304,12 +419,58 @@ class GerenciarComandas extends Component
                     'funcionario_id' => $this->funcionario_id,
                     'observacoes' => $this->observacoes,
                     'desconto' => $this->desconto,
+                    'client_id' => $this->client_id,
                 ]);
-                
+                // Se serviço foi selecionado, adiciona à comanda
+                \Illuminate\Support\Facades\Log::info('Dados recebidos ao salvar comanda', [
+                    'service_id' => $this->service_id,
+                    'funcionario_servico_id' => $this->funcionario_servico_id,
+                    'branch_id' => $this->branch_id,
+                    'quantidade_servico' => $this->quantidade_servico,
+                    'obs_servico' => $this->obs_servico
+                ]);
+                    if ($comanda && $this->service_id) {
+                        if (empty($this->funcionario_servico_id)) {
+                            session()->flash('error', 'Selecione o funcionário do serviço para adicionar à comanda.');
+                        } else {
+                    // Buscar preço do serviço considerando a filial
+                    $service = \App\Models\Service::find($this->service_id);
+                    $user = \App\Models\User::find($this->funcionario_servico_id);
+                    $pivot = $user ? $user->services()->where('service_id', $this->service_id)->first() : null;
+                    $pivotData = $pivot && $pivot->pivot ? $pivot->pivot->toArray() : [];
+                    $precoFuncionario = null;
+                    if ($pivot && $pivot->pivot) {
+                        if (isset($pivot->pivot->custom_price) && $pivot->pivot->custom_price > 0) {
+                            $precoFuncionario = $pivot->pivot->custom_price;
+                        } elseif (isset($pivot->pivot->price) && $pivot->pivot->price > 0) {
+                            $precoFuncionario = $pivot->pivot->price;
+                        }
+                    }
+                    $precoBranch = $service ? $service->getPriceForBranch($this->branch_id) : null;
+                    $precoFinal = $precoFuncionario ?? $precoBranch ?? ($service ? $service->price : 0);
+                    \Illuminate\Support\Facades\Log::info('Preço do serviço ao salvar comanda', [
+                        'service_id' => $this->service_id,
+                        'branch_id' => $this->branch_id,
+                        'funcionario_id' => $this->funcionario_servico_id,
+                        'pivot' => $pivotData,
+                        'preco_funcionario' => $precoFuncionario,
+                        'preco_branch' => $precoBranch,
+                        'preco_padrao' => $service ? $service->price : 0,
+                        'preco_final' => $precoFinal
+                    ]);
+                    $comanda->adicionarServico(
+                        $this->service_id,
+                        $this->funcionario_servico_id,
+                        $this->quantidade_servico ?? 1,
+                        $precoFinal,
+                        $this->obs_servico ?? null
+                    );
+                        }
+                }
                 session()->flash('message', 'Comanda criada com sucesso!');
             }
-
             $this->fecharModal();
+            $this->service_id = '';
         } catch (\Exception $e) {
             session()->flash('error', 'Erro ao salvar comanda: ' . $e->getMessage());
         }
@@ -350,6 +511,8 @@ class GerenciarComandas extends Component
         
         // Debug: confirmar que foi definido
         session()->flash('message', 'Modal aberto para comanda ID: ' . $this->comanda_atual_id);
+            // Garante que os serviços do funcionário sejam atualizados ao abrir o modal
+            $this->atualizarServicosFuncionario();
     }
 
     public function fecharModalServico()
@@ -380,14 +543,40 @@ class GerenciarComandas extends Component
     protected function atualizarServicosDisponiveis()
     {
         if ($this->funcionario_servico_id && $this->comanda_detalhes) {
-            // Carregar serviços da filial que este funcionário pode executar
-            $this->servicosDisponiveis = BranchService::where('branch_id', $this->comanda_detalhes->branch_id)
+            // Primeiro, tentar carregar serviços da filial (configuração específica)
+            $branchServices = BranchService::where('branch_id', $this->comanda_detalhes->branch_id)
                 ->where('is_active', true)
                 ->whereHas('service.users', function($query) {
-                    $query->where('user_id', $this->funcionario_servico_id);
+                    $query->where('user_id', $this->funcionario_servico_id)
+                          ->where('is_active', true);
                 })
                 ->with('service')
                 ->get();
+
+            // Se não há configuração específica da filial, usar serviços padrão
+            if ($branchServices->isEmpty()) {
+                // Buscar serviços que o funcionário pode executar (sem filtro de filial)
+                $servicosDoFuncionario = Service::whereHas('users', function($query) {
+                        $query->where('user_id', $this->funcionario_servico_id)
+                              ->where('is_active', true);
+                    })
+                    ->get();
+
+                // Criar objetos simulando BranchService para manter compatibilidade
+                $this->servicosDisponiveis = $servicosDoFuncionario->map(function($service) {
+                    return (object) [
+                        'service_id' => $service->id,
+                        'service' => $service,
+                        'service_name' => $service->service, // Para compatibilidade com view
+                        'price' => $service->price,
+                        'duration_minutes' => $service->time,
+                        'formatted_price' => 'R$ ' . number_format($service->price, 2, ',', '.'),
+                        'formatted_duration' => $service->time . ' min'
+                    ];
+                });
+            } else {
+                $this->servicosDisponiveis = $branchServices;
+            }
         } else {
             $this->servicosDisponiveis = collect();
         }
@@ -396,6 +585,7 @@ class GerenciarComandas extends Component
     public function atualizarPrecoServico()
     {
         if ($this->service_id && $this->funcionario_servico_id && $this->comanda_detalhes) {
+            // Primeiro, tentar buscar configuração específica da filial (BranchService)
             $branchService = BranchService::where('branch_id', $this->comanda_detalhes->branch_id)
                 ->where('service_id', $this->service_id)
                 ->first();
@@ -414,6 +604,25 @@ class GerenciarComandas extends Component
                 } else {
                     $this->tempo_servico = $branchService->duration_minutes;
                 }
+            } else {
+                // Fallback: usar dados padrão do serviço
+                $service = Service::find($this->service_id);
+                
+                if ($service) {
+                    // Verificar se funcionário tem tempo personalizado para este serviço
+                    $funcionario = User::find($this->funcionario_servico_id);
+                    $tempoPersonalizado = $funcionario->services()
+                        ->where('service_id', $this->service_id)
+                        ->first();
+                    
+                    $this->preco_servico = $service->price;
+                    
+                    if ($tempoPersonalizado && $tempoPersonalizado->pivot->custom_duration_minutes) {
+                        $this->tempo_servico = $tempoPersonalizado->pivot->custom_duration_minutes;
+                    } else {
+                        $this->tempo_servico = $service->time;
+                    }
+                }
             }
         }
     }
@@ -426,6 +635,10 @@ class GerenciarComandas extends Component
             'quantidade_servico' => 'required|integer|min:1',
             'preco_servico' => 'required|numeric|min:0',
         ]);
+        //verifica se o serviço está incluído em um plano de assinatura do cliente
+        // inicialmente verifica se o cliente tem um plano de assinatura ativo
+        $cliente = User::find($this->cliente_id);
+        
 
         try {
             // Usar o ID da comanda em ordem de prioridade
@@ -539,54 +752,8 @@ class GerenciarComandas extends Component
 
     public function atualizarPrecoProduto()
     {
-        if ($this->estoque_id) {
-            $estoque = Estoque::find($this->estoque_id);
-            $this->preco_produto = $estoque->preco_unitario;
-        }
-    }
-
-    public function adicionarProduto()
-    {
-        $this->validate([
-            'estoque_id' => 'required|exists:estoque,id',
-            'quantidade_produto' => 'required|integer|min:1',
-            'preco_produto' => 'required|numeric|min:0',
-        ]);
-
-        try {
-            // Usar o ID da comanda em ordem de prioridade  
-            $comandaId = $this->comanda_atual_id ?? $this->comanda_painel_id;
-            
-            // Debug: verificar o ID da comanda
-            if (!$comandaId) {
-                session()->flash('error', 'ID da comanda não definido! Atual: ' . ($this->comanda_atual_id ?? 'null') . ' | Painel: ' . ($this->comanda_painel_id ?? 'null'));
-                return;
-            }
-
-            $comanda = Comanda::find($comandaId);
-            
-            if (!$comanda) {
-                session()->flash('error', 'Comanda não encontrada! ID: ' . $comandaId);
-                return;
-            }
-
-            $comanda->adicionarProduto(
-                $this->estoque_id,
-                $this->quantidade_produto,
-                $this->preco_produto,
-                $this->obs_produto
-            );
-
-            session()->flash('message', 'Produto adicionado com sucesso!');
-            $this->fecharModalProduto();
-            
-            // Recarregar detalhes se o painel estiver aberto
-            if ($this->mostrar_painel_detalhes && $this->comanda_detalhes && $this->comanda_detalhes->id == $comandaId) {
-                $this->abrirPainelDetalhes($comandaId);
-            }
-        } catch (\Exception $e) {
-            session()->flash('error', 'Erro ao adicionar produto: ' . $e->getMessage());
-        }
+        // ...existing code...
+        // Removido bloco catch fora de contexto e corrigido fechamento do método
     }
 
     public function adicionarProdutoPainel()
@@ -708,16 +875,20 @@ class GerenciarComandas extends Component
 
     public function updatedSearch()
     {
+    // Não resetar a página, apenas atualizar os resultados
+    // Se quiser resetar, pode usar $this->gotoPage(1); para garantir que sempre mostra a primeira página
+    $this->gotoPage(1);
+    }
+
+    public function updatedDataInicio($value)
+    {
+        $this->data_inicio = \Carbon\Carbon::parse($value)->format('Y-m-d');
         $this->resetPage();
     }
 
-    public function updatedDataInicio()
+    public function updatedDataFim($value)
     {
-        $this->resetPage();
-    }
-
-    public function updatedDataFim()
-    {
+        $this->data_fim = \Carbon\Carbon::parse($value)->format('Y-m-d');
         $this->resetPage();
     }
 

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class Comanda extends Model
 {
@@ -14,6 +15,7 @@ class Comanda extends Model
 
     protected $fillable = [
         'branch_id',
+        'appointment_id',
         'numero_comanda',
         'cliente_nome',
         'cliente_telefone',
@@ -56,6 +58,11 @@ class Comanda extends Model
     public function comandaProdutos(): HasMany
     {
         return $this->hasMany(ComandaProduto::class);
+    }
+
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class);
     }
 
     // Scopes
@@ -178,6 +185,158 @@ class Comanda extends Model
         }
 
         return "{$branchId}-{$hoje}-{$proximoNumero}";
+    }
+
+    // Criar comanda a partir de agendamento
+    public static function criarDeAgendamento(Appointment $appointment, $observacoes = null): self
+    {
+        // Verificações de segurança
+        if (!$appointment->customer) {
+            throw new \Exception("Agendamento sem cliente definido");
+        }
+
+        if (!$appointment->employee) {
+            throw new \Exception("Agendamento sem funcionário definido");
+        }
+
+        if (!$appointment->branch) {
+            throw new \Exception("Agendamento sem filial definida");
+        }
+
+        $comanda = self::create([
+            'branch_id' => $appointment->branch_id,
+            'appointment_id' => $appointment->id,
+            'numero_comanda' => self::gerarNumeroComanda($appointment->branch_id),
+            'cliente_nome' => $appointment->customer->name,
+            'cliente_telefone' => $appointment->customer->phone ?? $appointment->customer->telefone ?? null,
+            'funcionario_id' => $appointment->employee_id,
+            'status' => 'Aberta',
+            'data_abertura' => now(),
+            'observacoes' => $observacoes
+        ]);
+
+        // Adicionar serviços do agendamento à comanda
+        if ($appointment->services) {
+            $servicosAdicionados = 0;
+            
+            // Tentar primeiro como IDs numéricos separados por vírgula
+            $servicosIds = explode(',', $appointment->services);
+            $todosNumericos = true;
+            
+            foreach ($servicosIds as $serviceId) {
+                $serviceId = trim($serviceId);
+                if (!is_numeric($serviceId)) {
+                    $todosNumericos = false;
+                    break;
+                }
+            }
+            
+            if ($todosNumericos && count($servicosIds) > 0 && trim($servicosIds[0]) !== '') {
+                // Processar como IDs - usar preço proporcional do agendamento
+                $totalServicos = count($servicosIds);
+                $precoMedioUnitario = $totalServicos > 0 ? $appointment->total / $totalServicos : 0;
+                
+                foreach ($servicosIds as $serviceId) {
+                    $serviceId = trim($serviceId);
+                    if ($serviceId && is_numeric($serviceId)) {
+                        try {
+                            $service = Service::find($serviceId);
+                            if ($service) {
+                                // Usar preço do agendamento dividido pelo número de serviços
+                                // para manter consistência com o valor original
+                                $comanda->adicionarServico(
+                                    $serviceId, 
+                                    $appointment->employee_id, 
+                                    1, // quantidade
+                                    $precoMedioUnitario, // usar preço do agendamento
+                                    "Serviço do agendamento #{$appointment->id} - Preço original preservado (ID {$serviceId})"
+                                );
+                                $servicosAdicionados++;
+                                Log::info("Serviço ID {$serviceId} ({$service->service}) adicionado à comanda com preço do agendamento: R$ {$precoMedioUnitario}");
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning("Erro ao adicionar serviço {$serviceId} à comanda do agendamento {$appointment->id}: " . $e->getMessage());
+                        }
+                    }
+                }
+            } else {
+                // Processar como nomes separados por separadores
+                $separadores = ['/', ',', ';'];
+                $servicosNomes = [];
+                
+                foreach ($separadores as $sep) {
+                    if (strpos($appointment->services, $sep) !== false) {
+                        $servicosNomes = explode($sep, $appointment->services);
+                        break;
+                    }
+                }
+                
+                // Se não encontrou separador, trata como um serviço único
+                if (empty($servicosNomes)) {
+                    $servicosNomes = [$appointment->services];
+                }
+                
+                // Calcular preço médio por serviço baseado no total do agendamento
+                $totalServicos = count($servicosNomes);
+                $precoMedioUnitario = $totalServicos > 0 ? $appointment->total / $totalServicos : 0;
+                
+                foreach ($servicosNomes as $servicoNome) {
+                    $servicoNome = trim($servicoNome);
+                    if ($servicoNome) {
+                        try {
+                            // Primeiro, tentar encontrar o serviço pelo nome E preço correspondente
+                            $servicosComNome = Service::where('service', 'like', "%{$servicoNome}%")->get();
+                            
+                            $service = null;
+                            
+                            // Se há múltiplos serviços com o mesmo nome, escolher pelo preço mais próximo
+                            if ($servicosComNome->count() > 1) {
+                                $melhorMatch = null;
+                                $menorDiferenca = PHP_FLOAT_MAX;
+                                
+                                foreach ($servicosComNome as $servicoCandidate) {
+                                    $precoServico = (float) $servicoCandidate->price;
+                                    $diferenca = abs($precoServico - $precoMedioUnitario);
+                                    
+                                    if ($diferenca < $menorDiferenca) {
+                                        $menorDiferenca = $diferenca;
+                                        $melhorMatch = $servicoCandidate;
+                                    }
+                                }
+                                
+                                $service = $melhorMatch;
+                                Log::info("Múltiplos serviços '{$servicoNome}' encontrados. Selecionado ID {$service->id} (R$ {$service->price}) por ter preço mais próximo ao agendamento (R$ {$precoMedioUnitario})");
+                            } else {
+                                // Se há apenas um serviço com esse nome, usar ele
+                                $service = $servicosComNome->first();
+                            }
+                            
+                            if ($service) {
+                                $comanda->adicionarServico(
+                                    $service->id, 
+                                    $appointment->employee_id, 
+                                    1, // quantidade
+                                    $precoMedioUnitario, // usar preço do agendamento
+                                    "Serviço do agendamento #{$appointment->id}: {$servicoNome} - Preço original preservado (ID {$service->id})"
+                                );
+                                $servicosAdicionados++;
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning("Erro ao adicionar serviço '{$servicoNome}' à comanda do agendamento {$appointment->id}: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
+
+            // Se nenhum serviço foi adicionado, adiciona observação
+            if ($servicosAdicionados === 0 && $appointment->services) {
+                $comanda->update([
+                    'observacoes' => ($observacoes ?? '') . "\nNOTA: Serviços do agendamento não puderam ser adicionados automaticamente: {$appointment->services}"
+                ]);
+            }
+        }
+
+        return $comanda;
     }
 
     // Atributos calculados

@@ -1,6 +1,13 @@
 <div>
     <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold">Gerenciar Filiais</h2>
+        <div>
+            <h2 class="text-xl font-semibold">Gerenciar Filiais</h2>
+            @if($showForm)
+                <p class="text-sm text-gray-600 mt-1 md:hidden">
+                    {{ $isEditing ? 'Editando filial' : 'Criando nova filial' }}
+                </p>
+            @endif
+        </div>
         @if(!$showForm)
             <button wire:click="$set('showForm', true)" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
                 Nova Filial
@@ -17,9 +24,17 @@
     <!-- Formulário para criar/editar filial -->
     @if($showForm)
     <div class="bg-gray-50 p-6 rounded-lg mb-6">
-        <h3 class="text-lg font-semibold mb-4">
-            {{ $isEditing ? 'Editar Filial' : 'Nova Filial' }}
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-semibold">
+                {{ $isEditing ? 'Editar Filial' : 'Nova Filial' }}
+            </h3>
+            <!-- Botão voltar apenas em telas pequenas -->
+            <button wire:click="cancelForm" class="md:hidden text-gray-600 hover:text-gray-900">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -87,7 +102,7 @@
                 </label>
                 @if($branch['require_comission'])
                 <label class="flex items-center">                    
-                    <span class="ml-2 text-sm text-gray-700">Valor da comissão: &nbsp;</span> <input type="text" wire:model="branch.comission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" size="2">&nbsp;%
+                    <span class="ml-2 text-sm text-gray-700">Valor da comissão: &nbsp;</span> <input type="text" wire:model="branch.commission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" size="2">&nbsp;%
                 </label>
                 @endif
                 @error('branch.require_advance_payment') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -107,7 +122,9 @@
     @endif
 
     <!-- Lista de filiais -->
-    <div class="overflow-x-auto">
+    
+    <!-- Versão Desktop - Tabela (oculta em telas pequenas) -->
+    <div class="hidden md:block overflow-x-auto">
         <table class="min-w-full bg-white border border-gray-200 rounded-lg shadow">
             <thead class="bg-gray-50">
                 <tr>
@@ -147,5 +164,116 @@
                 @endforelse
             </tbody>
         </table>
+    </div>
+
+    <!-- Versão Mobile - Cards (visível apenas em telas pequenas e quando não estiver editando) -->
+    <div class="md:hidden space-y-4 @if($showForm) hidden @endif">
+        @forelse($branches as $branch)
+            <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+                <!-- Header do Card -->
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center space-x-2">
+                        <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded">
+                            ID: {{ $branch->id }}
+                        </span>
+                        <h3 class="font-semibold text-gray-900">{{ $branch->branch_name }}</h3>
+                    </div>
+                </div>
+                
+                <!-- Informações Principais -->
+                <div class="grid grid-cols-1 gap-2 mb-4">
+                    @if($branch->cnpj)
+                        <div class="flex items-center text-sm">
+                            <span class="text-gray-500 w-16 flex-shrink-0">CNPJ:</span>
+                            <span class="text-gray-900">{{ $branch->cnpj }}</span>
+                        </div>
+                    @endif
+                    
+                    @if($branch->city || $branch->state)
+                        <div class="flex items-center text-sm">
+                            <span class="text-gray-500 w-16 flex-shrink-0">Local:</span>
+                            <span class="text-gray-900">{{ $branch->city }}@if($branch->city && $branch->state), @endif{{ $branch->state }}</span>
+                        </div>
+                    @endif
+                    
+                    @if($branch->address)
+                        <div class="flex items-start text-sm">
+                            <span class="text-gray-500 w-16 flex-shrink-0">Endereço:</span>
+                            <span class="text-gray-900">
+                                {{ $branch->address }}@if($branch->complement), {{ $branch->complement }}@endif
+                            </span>
+                        </div>
+                    @endif
+                </div>
+                
+                <!-- Contatos -->
+                @if($branch->phone || $branch->whatsapp || $branch->email)
+                    <div class="border-t pt-3 mb-4">
+                        <h4 class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2">Contatos</h4>
+                        <div class="space-y-1">
+                            @if($branch->phone)
+                                <div class="flex items-center text-sm">
+                                    <span class="text-gray-500 w-20 flex-shrink-0">📞 Telefone:</span>
+                                    <span class="text-gray-900">{{ $branch->phone }}</span>
+                                </div>
+                            @endif
+                            
+                            @if($branch->whatsapp)
+                                <div class="flex items-center text-sm">
+                                    <span class="text-gray-500 w-20 flex-shrink-0">💬 WhatsApp:</span>
+                                    <span class="text-gray-900">{{ $branch->whatsapp }}</span>
+                                </div>
+                            @endif
+                            
+                            @if($branch->email)
+                                <div class="flex items-center text-sm">
+                                    <span class="text-gray-500 w-20 flex-shrink-0">✉️ Email:</span>
+                                    <span class="text-gray-900">{{ $branch->email }}</span>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+                
+                <!-- Configurações Especiais -->
+                @if($branch->require_advance_payment || $branch->require_comission)
+                    <div class="border-t pt-3 mb-4">
+                        <h4 class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2">Configurações</h4>
+                        <div class="space-y-1">
+                            @if($branch->require_advance_payment)
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    💳 Pagamento Antecipado
+                                </span>
+                            @endif
+                            
+                            @if($branch->require_comission)
+                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    💰 Comissão: {{ $branch->commission }}%
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @endif
+                
+                <!-- Ações -->
+                <div class="flex space-x-2 pt-3 border-t">
+                    <button wire:click="edit({{ $branch->id }})" class="flex-1 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm">
+                        ✏️ Editar
+                    </button>
+                    <button wire:click="delete({{ $branch->id }})" onclick="return confirm('Tem certeza que deseja excluir esta filial?')" class="flex-1 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded text-sm">
+                        🗑️ Excluir
+                    </button>
+                </div>
+            </div>
+        @empty
+            <!-- Empty State para Mobile -->
+            <div class="text-center py-12">
+                <div class="mx-auto h-12 w-12 text-gray-400 mb-4">
+                    🏢
+                </div>
+                <h3 class="text-sm font-medium text-gray-900 mb-1">Nenhuma filial encontrada</h3>
+                <p class="text-sm text-gray-500 mb-4">Crie a primeira filial usando o formulário acima.</p>
+            </div>
+        @endforelse
     </div>
 </div>

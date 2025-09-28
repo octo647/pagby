@@ -1,4 +1,6 @@
-<div >
+<div>
+   
+   
     <!-- Filtros -->
     <div class="bg-white p-6 rounded-lg shadow">
         <h3 class="text-lg font-medium text-gray-900 mb-4">Filtros</h3>
@@ -51,12 +53,18 @@
                 <label for="data_inicio" class="block text-sm font-medium text-gray-700">Data Início</label>
                 <input wire:model.live="data_inicio" type="date" 
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                @if($data_inicio)
+                    <div class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($data_inicio)->format('d-m-Y') }}</div>
+                @endif
             </div>
 
             <div>
                 <label for="data_fim" class="block text-sm font-medium text-gray-700">Data Fim</label>
                 <input wire:model.live="data_fim" type="date" 
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                @if($data_fim)
+                    <div class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($data_fim)->format('d-m-Y') }}</div>
+                @endif
             </div>
         </div>
 
@@ -69,8 +77,18 @@
     </div>
 
     <!-- Cabeçalho com botão de nova comanda -->
-    <div class="flex justify-between items-center">
-        <h2 class="text-2xl font-bold text-gray-900">Controle de Comandas</h2>
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-gray-900">Controle de Comandas</h2>
+            <p class="text-sm text-gray-600 mt-1">
+                <span class="inline-flex items-center">
+                    <svg class="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Comandas são criadas automaticamente quando agendamentos são confirmados
+                </span>
+            </p>
+        </div>
         <button wire:click="abrirModal" 
                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,174 +99,249 @@
     </div>
 
     <!-- Lista de Comandas -->
-    <div class="bg-white rounded-lg shadow overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Número
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Cliente
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Funcionário
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Data/Hora
-                        </th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Ações
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse($comandas as $comanda)
+    @if($comandas->count() > 0)
+        <!-- Layout Mobile: Cards -->
+        <div class="block md:hidden space-y-4">
+            @foreach($comandas as $comanda)
+                <div class="bg-white rounded-lg border border-gray-200 p-4 shadow-sm
+                    @if($comanda->status === 'Aberta') border-l-4 border-l-blue-500 @endif
+                    @if($comanda->status === 'Finalizada') border-l-4 border-l-green-500 @endif
+                    @if($comanda->status === 'Cancelada') border-l-4 border-l-red-500 @endif">
+                    
+                    <!-- Header do Card -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <div class="font-semibold text-gray-900 text-lg">#{{ $comanda->numero_comanda }}</div>
+                            <div class="text-sm text-gray-500">{{ $comanda->branch->name ?? 'N/A' }}</div>
+                        </div>
+                        <div class="flex space-x-2">
+                            @if($comanda->status === 'Aberta')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                    {{ $comanda->status }}
+                                </span>
+                            @elseif($comanda->status === 'Finalizada')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    {{ $comanda->status }}
+                                </span>
+                            @elseif($comanda->status === 'Cancelada')
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    {{ $comanda->status }}
+                                </span>
+                            @else
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                    {{ $comanda->status }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <!-- Informações do Cliente -->
+                    <div class="border-t pt-3 mb-3">
+                        <div class="font-medium text-gray-900">{{ $comanda->cliente_nome }}</div>
+                        @if($comanda->cliente_telefone)
+                            <div class="text-sm text-gray-500">{{ $comanda->cliente_telefone }}</div>
+                        @endif
+                        @if($comanda->funcionario)
+                            <div class="text-sm text-gray-600 mt-1">
+                                <span class="font-medium">Funcionário:</span> {{ $comanda->funcionario->name }}
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Resumo e Total -->
+                    <div class="border-t pt-3 mb-3">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="text-sm text-gray-600">
+                                @if($comanda->comandaServicos->count() > 0)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $comanda->comandaServicos->count() }} serviço(s)
+                                    </span>
+                                @endif
+                                @if($comanda->comandaProdutos->count() > 0)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 ml-1">
+                                        {{ $comanda->comandaProdutos->count() }} produto(s)
+                                    </span>
+                                @endif
+                            </div>
+                            <div class="text-lg font-semibold text-gray-900">
+                                R$ {{ number_format($comanda->total_geral, 2, ',', '.') }}
+                            </div>
+                        </div>
+                        
+                        <!-- Origem e Data -->
+                        <div class="flex justify-between items-center text-xs text-gray-500">
+                            <div>
+                                @if($comanda->appointment_id)
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                        Agendamento
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full bg-gray-100 text-gray-800">
+                                        Manual
+                                    </span>
+                                @endif
+                            </div>
+                            <div>
+                                @if($comanda->appointment_id && $comanda->appointment)
+                                    {{ $comanda->appointment->appointment_date->format('d/m/Y') }} às {{ \Carbon\Carbon::createFromFormat('H:i:s', $comanda->appointment->start_time)->format('H:i') }}
+                                @else
+                                    {{ \Carbon\Carbon::parse($comanda->created_at)->format('d/m/Y H:i') }}
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ações -->
+                    <div class="border-t pt-3 flex space-x-2">
+                        <button wire:click="abrirPainelDetalhes({{ $comanda->id }})" 
+                                class="flex-1 inline-flex items-center justify-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                            </svg>
+                            Ver
+                        </button>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+
+        <!-- Layout Desktop: Tabela Otimizada -->
+        <div class="hidden md:block bg-white rounded-lg shadow overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Comanda
+                            </th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Cliente / Funcionário
+                            </th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Itens
+                            </th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Status / Origem
+                            </th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Total
+                            </th>
+                            <th class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Data/Hora
+                            </th>
+                            <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                                Ações
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                    @foreach($comandas as $comanda)
                         <tr class="hover:bg-gray-50 
                             @if($comanda->status === 'Aberta') bg-blue-50 @endif
                             @if($comanda->status === 'Finalizada') bg-green-50 @endif
                             @if($comanda->status === 'Cancelada') bg-red-50 @endif">
                             
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $comanda->numero_comanda }}</div>
-                                <div class="text-sm text-gray-500">{{ $comanda->branch->name ?? 'N/A' }}</div>
+                            <!-- Comanda -->
+                            <td class="px-3 py-3 whitespace-nowrap">
+                                <div class="text-sm font-semibold text-gray-900">#{{ $comanda->numero_comanda }}</div>
+                                <div class="text-xs text-gray-500">{{ $comanda->branch->name ?? 'N/A' }}</div>
                             </td>
                             
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">{{ $comanda->cliente_nome }}</div>
+                            <!-- Cliente / Funcionário -->
+                            <td class="px-3 py-3">
+                                <div class="text-sm font-medium text-gray-900 truncate max-w-32">{{ $comanda->cliente_nome }}</div>
+                                <div class="text-xs text-gray-500 truncate max-w-32">{{ $comanda->funcionario->name ?? 'N/A' }}</div>
                                 @if($comanda->cliente_telefone)
-                                    <div class="text-sm text-gray-500">{{ $comanda->cliente_telefone }}</div>
-                                @endif
-                                
-                                <!-- Resumo dos itens -->
-                                @if($comanda->comandaServicos->count() > 0 || $comanda->comandaProdutos->count() > 0)
-                                    <div class="mt-2 text-xs text-gray-600">
-                                        @if($comanda->comandaServicos->count() > 0)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                                {{ $comanda->comandaServicos->count() }} serviço(s)
-                                            </span>
-                                        @endif
-                                        @if($comanda->comandaProdutos->count() > 0)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 ml-1">
-                                                {{ $comanda->comandaProdutos->count() }} produto(s)
-                                            </span>
-                                        @endif
-                                    </div>
+                                    <div class="text-xs text-gray-400 truncate max-w-32">{{ $comanda->cliente_telefone }}</div>
                                 @endif
                             </td>
                             
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {{ $comanda->funcionario->name ?? 'N/A' }}
-                            </td>
-                            
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                {!! $comanda->status_badge !!}
-                                @if($comanda->status === 'Aberta')
-                                    <div class="text-xs text-gray-500 mt-1">{{ $comanda->tempo_aberto }}</div>
+                            <!-- Itens -->
+                            <td class="px-3 py-3">
+                                @if($comanda->comandaServicos->count() > 0)
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                                        {{ $comanda->comandaServicos->count() }}S
+                                    </span>
+                                @endif
+                                @if($comanda->comandaProdutos->count() > 0)
+                                    <span class="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800 ml-1">
+                                        {{ $comanda->comandaProdutos->count() }}P
+                                    </span>
                                 @endif
                             </td>
                             
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900">R$ {{ number_format($comanda->total_geral, 2, ',', '.') }}</div>
-                                <div class="text-xs text-gray-500">
-                                    Serv: R$ {{ number_format($comanda->subtotal_servicos, 2, ',', '.') }} | 
-                                    Prod: R$ {{ number_format($comanda->subtotal_produtos, 2, ',', '.') }}
+                            <!-- Status / Origem -->
+                            <td class="px-3 py-3">
+                                <div class="space-y-1">
+                                    @if($comanda->status === 'Aberta')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                            {{ $comanda->status }}
+                                        </span>
+                                    @elseif($comanda->status === 'Finalizada')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                            {{ $comanda->status }}
+                                        </span>
+                                    @elseif($comanda->status === 'Cancelada')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                            {{ $comanda->status }}
+                                        </span>
+                                    @else
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                            {{ $comanda->status }}
+                                        </span>
+                                    @endif
+                                    
+                                    @if($comanda->appointment_id)
+                                        <div class="text-xs text-green-600">Agendamento</div>
+                                    @else
+                                        <div class="text-xs text-gray-500">Manual</div>
+                                    @endif
                                 </div>
-                                @if($comanda->desconto > 0)
-                                    <div class="text-xs text-red-500">Desc: R$ {{ number_format($comanda->desconto, 2, ',', '.') }}</div>
-                                @endif
+                            </td>
+                            
+                            <!-- Total -->
+                            <td class="px-3 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                R$ {{ number_format($comanda->total_geral, 2, ',', '.') }}
                             </td>
                             
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ $comanda->data_abertura->format('d/m/Y') }}</div>
-                                <div class="text-sm text-gray-500">{{ $comanda->data_abertura->format('H:i') }}</div>
+                                @if($comanda->appointment_id && $comanda->appointment)
+                                    {{ $comanda->appointment->appointment_date->format('d/m') }} {{ \Carbon\Carbon::createFromFormat('H:i:s', $comanda->appointment->start_time)->format('H:i') }}
+                                @else
+                                    {{ \Carbon\Carbon::parse($comanda->created_at)->format('d/m H:i') }}
+                                @endif
                             </td>
                             
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
                                 <div class="flex justify-end space-x-1">
-                                    <!-- Ver Detalhes -->
                                     <button wire:click="abrirPainelDetalhes({{ $comanda->id }})" 
-                                            class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md text-xs font-medium text-gray-700 bg-white hover:bg-gray-50" 
-                                            title="Ver Detalhes"
-                                            onclick="console.log('Clicou no botão para comanda {{ $comanda->id }}')">
-                                        👁️ Ver (ID: {{ $comanda->id }})
-                                    </button>
-                                    
-                                    @if($comanda->status === 'Aberta')
-                                        <!-- Adicionar Serviço -->
-                                        <button wire:click="abrirModalServico({{ $comanda->id }})" 
-                                                class="text-green-600 hover:text-green-900 p-1" title="Adicionar Serviço">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                            </svg>
-                                        </button>
-                                        
-                                        <!-- Adicionar Produto -->
-                                        <button wire:click="abrirModalProduto({{ $comanda->id }})" 
-                                                class="text-purple-600 hover:text-purple-900 p-1" title="Adicionar Produto">
-                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                                                <path d="M3.375 3C2.339 3 1.5 3.84 1.5 4.875v.75c0 1.036.84 1.875 1.875 1.875h17.25c1.035 0 1.875-.84 1.875-1.875v-.75C22.5 3.839 21.66 3 20.625 3H3.375Z" />
-                                                <path fill-rule="evenodd" d="m3.087 9 .54 9.176A3 3 0 0 0 6.62 21h10.757a3 3 0 0 0 2.995-2.824L20.913 9H3.087Z" clip-rule="evenodd" />
-                                            </svg>
-                                        </button>
-                                        
-                                        <!-- Editar -->
-                                        <button wire:click="abrirModal({{ $comanda->id }})" 
-                                                class="text-blue-600 hover:text-blue-900 p-1" title="Editar">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                            </svg>
-                                        </button>
-                                        
-                                        <!-- Finalizar -->
-                                        <button wire:click="finalizarComanda({{ $comanda->id }})" 
-                                                onclick="return confirm('Finalizar esta comanda?')"
-                                                class="text-green-600 hover:text-green-900 p-1" title="Finalizar">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </button>
-                                        
-                                        <!-- Cancelar -->
-                                        <button wire:click="cancelarComanda({{ $comanda->id }})" 
-                                                onclick="return confirm('Cancelar esta comanda?')"
-                                                class="text-red-600 hover:text-red-900 p-1" title="Cancelar">
-                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    @endif
-                                </div>
-                            </td>
+                                            class="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-xs leading-4 font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                                        Ver
+                                </button>
                         </tr>
-                        
-
-                    @empty
-                        <tr>
-                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">
-                                <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                                Nenhuma comanda encontrada
-                            </td>
-                        </tr>
-                    @endforelse
+                    @endforeach
                 </tbody>
             </table>
         </div>
+    </div>
+@else
+    <!-- Nenhuma comanda encontrada -->
+    <div class="text-center py-12">
+        <svg class="w-12 h-12 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <p class="text-lg font-medium text-gray-900">Nenhuma comanda encontrada</p>
+        <p class="mt-1 text-gray-500">Crie uma nova comanda ou ajuste os filtros.</p>
+    </div>
+@endif
 
-        <!-- Paginação -->
-        <div class="px-6 py-3 bg-gray-50">
+    <!-- Paginação -->
+    @if($comandas->count() > 0)
+        <div class="mt-6 px-6 py-3 bg-gray-50 rounded-lg">
             {{ $comandas->links() }}
         </div>
-    </div>
+    @endif
 
     <!-- Modal da Comanda -->
     @if($mostrar_modal)
@@ -266,11 +359,70 @@
 
                         <div class="space-y-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Cliente *</label>
+                                <label class="block text-sm font-medium text-gray-700">Procurar Cliente *</label>
+                                
+                                   <input type="text" wire:model.live="searchTerm" 
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500" 
+                           placeholder="Pesquisar por nome ou  email..." /> 
+                               
+                                @error('client_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
+                            {{-- Lista de Usuários - Design Moderno --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            
+            {{-- Cabeçalho da Tabela --}}
+           
+
+           {{-- Lista de Usuários --}}
+            <div class="divide-y divide-gray-200">
+                @forelse($salon_users as $user)
+                    <div class="py-1 px-2 hover:bg-gray-50 transition-colors">
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            {{-- Avatar --}}
+                            <div class="col-span-2 flex items-center justify-center">
+                                <div class="h-5 w-5 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                    <span class="text-[10px] font-medium text-white uppercase">
+                                        {{ substr($user->name, 0, 2) }}
+                                    </span>
+                                </div>
+                            </div>
+                            {{-- Nome e Email --}}
+                            <div class="col-span-8 min-w-0">
+                                <span class="text-xs font-medium text-gray-900 text-left w-full truncate leading-tight">
+                                    {{ $user->name }}
+                                </span>
+                                <p class="text-[10px] text-gray-500 truncate leading-tight">
+                                    {{ $user->email ?? 'Email não informado' }}
+                                </p>
+                            </div>
+                            {{-- Botão Escolher --}}
+                            <div class="col-span-2 flex items-center justify-end">
+                                <button type="button"
+                                        class="px-1 py-0.5 bg-blue-600 text-white rounded-md text-[10px] font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        wire:click="escolherCliente('{{ addslashes($user->name) }}', '{{ addslashes($user->phone ?? '') }}')">
+                                    Escolher
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    @if(!empty($searchTerm))
+                        <div class="p-6 text-gray-500">Nenhum usuário encontrado.</div>
+                    @endif
+                @endforelse
+            
+            
+            </div>
+        </div>
+
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nome do Cliente *</label>
                                 <input wire:model="cliente_nome" type="text" required
                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                 @error('cliente_nome') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
+                            
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Telefone</label>
@@ -281,7 +433,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Filial *</label>
-                                <select wire:model="branch_id" required
+                                <select wire:model="branch_id" wire:change="atualizarFuncionariosFilial" required
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                     <option value="">Selecione...</option>
                                     @if($branches)
@@ -295,16 +447,37 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Funcionário Responsável *</label>
-                                <select wire:model="funcionario_id" required
+                                <select wire:model="funcionario_id" wire:change="selecionarFuncionarioServico($event.target.value)" required
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                     <option value="">Selecione...</option>
-                                    @if($users)
-                                        @foreach($users as $funcionario)
+                                    @if($funcionarios_da_filial && $funcionarios_da_filial->count() > 0)
+                                        @foreach($funcionarios_da_filial as $funcionario)
                                             <option value="{{ $funcionario->id }}">{{ $funcionario->name }}</option>
                                         @endforeach
+                                    @else
+                                        @if($users)
+                                            @foreach($users as $funcionario)
+                                                <option value="{{ $funcionario->id }}">{{ $funcionario->name }}</option>
+                                            @endforeach
+                                        @endif
                                     @endif
                                 </select>
                                 @error('funcionario_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Serviço *</label>
+                                <select wire:model="service_id" required
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    <option value="">Selecione...</option>
+                                    @foreach($servicosDisponiveis as $service)
+                                        <option value="{{ is_array($service) ? $service['id'] : $service->id }}">
+                                            {{ is_array($service) ? $service['service'] : $service->service }}
+                                            @if(isset($service['price']) || isset($service->price)) - R$ {{ number_format(is_array($service) ? $service['price'] : $service->price, 2, ',', '.') }} @endif
+                                            @if(isset($service['time']) || isset($service->time)) - {{ is_array($service) ? $service['time'] : $service->time }} min @endif
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <div>
@@ -353,7 +526,7 @@
                         <div class="space-y-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Funcionário *</label>
-                                <select wire:model.live="funcionario_servico_id" wire:change="atualizarFuncionarioServico" required
+                                <select wire:model="funcionario_id" wire:change="atualizarServicosFuncionario" required
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                     <option value="">Selecione o funcionário da filial...</option>
                                     @php $funcionarios_disponiveis = $funcionarios_da_filial && $funcionarios_da_filial->count() > 0 ? $funcionarios_da_filial : $users; @endphp
@@ -363,34 +536,27 @@
                                         @endforeach
                                     @endif
                                 </select>
-                                @error('funcionario_servico_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                @error('funcionario_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
 
-                            @if($funcionario_servico_id)
+                            @if($funcionario_id)
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Serviço *</label>
-                                <select wire:model.live="service_id" wire:change="atualizarPrecoServico" required
+                                @if(count($servicosDisponiveis) > 0)
+                                <select wire:model="service_id" required
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                                     <option value="">Selecione...</option>
-                                    @foreach($servicosDisponiveis as $branchService)
-                                        <option value="{{ $branchService->service_id }}">
-                                            {{ $branchService->service->service }} - {{ $branchService->formatted_price }}
-                                            @php
-                                                $customDuration = null;
-                                                if($funcionario_id) {
-                                                    $customDuration = \App\Models\User::find($funcionario_id)->customServices()
-                                                        ->where('service_id', $branchService->service_id)
-                                                        ->first()?->pivot?->custom_duration_minutes;
-                                                }
-                                            @endphp
-                                            @if($customDuration)
-                                                - {{ $customDuration }} min (personalizado)
-                                            @else
-                                                - {{ $branchService->formatted_duration }}
-                                            @endif
+                                    @foreach($servicosDisponiveis as $service)
+                                        <option value="{{ is_array($service) ? $service['id'] : $service->id }}">
+                                            {{ is_array($service) ? $service['service'] : $service->service }}
+                                            @if(isset($service['price']) || isset($service->price)) - R$ {{ number_format(is_array($service) ? $service['price'] : $service->price, 2, ',', '.') }} @endif
+                                            @if(isset($service['time']) || isset($service->time)) - {{ is_array($service) ? $service['time'] : $service->time }} min @endif
                                         </option>
                                     @endforeach
                                 </select>
+                                @else
+                                    <div class="text-sm text-gray-500 py-2">Nenhum serviço disponível para este funcionário.</div>
+                                @endif
                                 @error('service_id') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                             </div>
                             @endif
@@ -575,6 +741,25 @@
                                         <div>{{ $comanda_detalhes->funcionario->name ?? 'N/A' }}</div>
                                     </div>
                                     <div>
+                                        <span class="font-medium text-gray-700">Origem:</span>
+                                        <div>
+                                            @if($comanda_detalhes->appointment_id)
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                    📅 Agendamento #{{ $comanda_detalhes->appointment_id }}
+                                                </span>
+                                                @if($comanda_detalhes->appointment)
+                                                    <div class="text-xs text-gray-500 mt-1">
+                                                        {{ $comanda_detalhes->appointment->appointment_date->format('d/m/Y') }} às {{ \Carbon\Carbon::createFromFormat('H:i:s', $comanda_detalhes->appointment->start_time)->format('H:i') }}
+                                                    </div>
+                                                @endif
+                                            @else
+                                                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                    ✋ Comanda Manual
+                                                </span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    <div>
                                         <span class="font-medium text-gray-700">Total:</span>
                                         <div class="text-lg font-semibold text-green-600">
                                             R$ {{ number_format($comanda_detalhes->total_geral, 2, ',', '.') }}
@@ -582,7 +767,13 @@
                                     </div>
                                     <div>
                                         <span class="font-medium text-gray-700">Data:</span>
-                                        <div>{{ $comanda_detalhes->data_abertura->format('d/m/Y H:i') }}</div>
+                                        <div>
+                                            @if($comanda_detalhes->appointment_id && $comanda_detalhes->appointment)
+                                                {{ $comanda_detalhes->appointment->appointment_date->format('d/m/Y') }} às {{ \Carbon\Carbon::createFromFormat('H:i:s', $comanda_detalhes->appointment->start_time)->format('H:i') }}
+                                            @else
+                                                {{ $comanda_detalhes->data_abertura->format('d/m/Y H:i') }}
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -643,7 +834,7 @@
                                                             <option value="{{ $branchService->service_id }}" 
                                                                     data-price="{{ $branchService->price }}"
                                                                     data-duration="{{ $branchService->duration_minutes }}">
-                                                                {{ $branchService->service->service }} 
+                                                                {{ $branchService->service->service ?? $branchService->service_name }} 
                                                                 - {{ $branchService->formatted_price }}
                                                                 @if($tempo_servico)
                                                                     - {{ $tempo_servico }} min (personalizado)

@@ -5,6 +5,8 @@ namespace App\Livewire\Proprietario;
 use Livewire\Component;
 use App\Models\Salon;
 use App\Models\Service;
+use App\Models\Branch;
+use App\Models\BranchService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On; 
@@ -17,6 +19,11 @@ class Services extends Component
     public $index ='0';
     public $salon_serv = [];
     public $arr_salon =[];
+    public $branches = [];
+    public $branchServices = [];
+    public $showBranchPricing = [];
+    public $branchPrices = [];
+    public $branchDurations = [];
     use WithFileUploads;
 
     public $photo;
@@ -27,8 +34,11 @@ class Services extends Component
        $services = Service::all();
        $salon_serv =[];
 
+       // Carregar filiais
+       $this->branches = Branch::all();
        
-        
+       // Carregar configurações de serviços por filial
+       $this->loadBranchServices();
         
         if(isset($services)){
          
@@ -41,6 +51,9 @@ class Services extends Component
                 "time" => $service->time, 
                 'tenant' => Auth::user()->salon_id ?? 'default',     
                 ];
+                
+                // Inicializar mostrar preços por filial como false
+                $this->showBranchPricing[$service->id] = false;
             }
         }
         else{ 
@@ -56,10 +69,6 @@ class Services extends Component
             }
 
         $this->salon_serv = $salon_serv;
-        
-        
-        
-       
     }
     
     public function editService($serviceIndex){
@@ -167,9 +176,163 @@ class Services extends Component
 
     
 
+    /**
+     * Carregar configurações de serviços por filial
+     */
+    public function loadBranchServices()
+    {
+        $branchServices = BranchService::with(['branch', 'service'])->get();
+        
+        $this->branchServices = [];
+        
+        foreach ($branchServices as $bs) {
+            $this->branchServices[$bs->service_id][$bs->branch_id] = [
+                'price' => $bs->price,
+                'duration_minutes' => $bs->duration_minutes,
+                'is_active' => $bs->is_active,
+                'branch_name' => $bs->branch->branch_name,
+                'service_name' => $bs->service->service
+            ];
+        }
+    }
+    
+    /**
+     * Alternar exibição de preços por filial
+     */
+    public function toggleBranchPricing($serviceId)
+    {
+        $this->showBranchPricing[$serviceId] = !($this->showBranchPricing[$serviceId] ?? false);
+        
+        // Se estiver abrindo a seção, inicializar os valores dos campos
+        if ($this->showBranchPricing[$serviceId]) {
+            $this->initializeBranchFields($serviceId);
+        }
+    }
+    
+    /**
+     * Inicializar campos com valores existentes da configuração por filial
+     */
+    private function initializeBranchFields($serviceId)
+    {
+        // Garantir que os arrays existem
+        if (!isset($this->branchPrices[$serviceId])) {
+            $this->branchPrices[$serviceId] = [];
+        }
+        if (!isset($this->branchDurations[$serviceId])) {
+            $this->branchDurations[$serviceId] = [];
+        }
+        
+        foreach ($this->branches as $branch) {
+            $branchId = $branch->id;
+            
+            // Se já existe configuração para esta filial, inicializar com os valores existentes
+            if (isset($this->branchServices[$serviceId][$branchId])) {
+                $this->branchPrices[$serviceId][$branchId]['price'] = $this->branchServices[$serviceId][$branchId]['price'];
+                $this->branchDurations[$serviceId][$branchId]['duration'] = $this->branchServices[$serviceId][$branchId]['duration_minutes'];
+            } else {
+                // Inicializar com valores vazios se não existe configuração
+                if (!isset($this->branchPrices[$serviceId][$branchId])) {
+                    $this->branchPrices[$serviceId][$branchId]['price'] = '';
+                }
+                if (!isset($this->branchDurations[$serviceId][$branchId])) {
+                    $this->branchDurations[$serviceId][$branchId]['duration'] = '';
+                }
+            }
+        }
+    }
+    
+    /**
+     * Obter preço de um serviço para uma filial específica
+     */
+    public function getBranchPrice($serviceId, $branchId)
+    {
+        return $this->branchServices[$serviceId][$branchId]['price'] ?? '';
+    }
+    
+    /**
+     * Obter duração de um serviço para uma filial específica
+     */
+    public function getBranchDuration($serviceId, $branchId)
+    {
+        return $this->branchServices[$serviceId][$branchId]['duration_minutes'] ?? '';
+    }
+    
+    /**
+     * Salvar configuração específica por filial
+     */
+    public function saveBranchConfiguration($serviceId, $branchId)
+    {
+        $price = $this->branchPrices[$serviceId][$branchId]['price'] ?? null;
+        $duration = $this->branchDurations[$serviceId][$branchId]['duration'] ?? null;
+        
+        // Validações básicas
+        if (empty($price) && empty($duration)) {
+            session()->flash('error', 'Preencha pelo menos o preço ou a duração para criar uma configuração específica da filial.');
+            return;
+        }
+        
+        if ($price && $price <= 0) {
+            session()->flash('error', 'O preço deve ser maior que zero.');
+            return;
+        }
+        
+        if ($duration && $duration <= 0) {
+            session()->flash('error', 'A duração deve ser maior que zero.');
+            return;
+        }
+        
+        // Obter o serviço para usar valores padrão se necessário
+        $service = Service::find($serviceId);
+        
+        // Preparar dados para salvar
+        $dataToSave = [
+            'price' => $price ?: $service->price, // Se não informado, usa preço padrão
+            'duration_minutes' => $duration ?: $service->time, // Se não informado, usa tempo padrão
+            'is_active' => true
+        ];
+        
+        $branchService = BranchService::updateOrCreate(
+            [
+                'service_id' => $serviceId,
+                'branch_id' => $branchId
+            ],
+            $dataToSave
+        );
+        
+        // Recarregar dados
+        $this->loadBranchServices();
+        
+        // Limpar campos temporários
+        unset($this->branchPrices[$serviceId][$branchId]);
+        unset($this->branchDurations[$serviceId][$branchId]);
+        
+        session()->flash('message', 'Configuração da filial salva com sucesso!');
+    }
+    
+    /**
+     * Remover configuração específica da filial
+     */
+    public function removeBranchPrice($serviceId, $branchId)
+    {
+        BranchService::where('service_id', $serviceId)
+            ->where('branch_id', $branchId)
+            ->delete();
+            
+        // Recarregar dados
+        $this->loadBranchServices();
+        
+        session()->flash('message', 'Configuração da filial removida com sucesso!');
+    }
+
     public function render()
     {
-        return view('livewire.proprietario.services',['salon_serv'=> $this->salon_serv, 'photo' => $this->photo]);
+        return view('livewire.proprietario.services',[
+            'salon_serv'=> $this->salon_serv, 
+            'photo' => $this->photo,
+            'branches' => $this->branches,
+            'branchServices' => $this->branchServices,
+            'showBranchPricing' => $this->showBranchPricing
+        ]);
 
     }
 }

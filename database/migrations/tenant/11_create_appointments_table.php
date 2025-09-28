@@ -37,7 +37,7 @@ return new class extends Migration
             $table->date('appointment_date');
             $table->time('start_time');
             $table->time('end_time');
-            $table->enum('status', ['Pendente', 'Confirmado', 'Realizado', 'Cancelado'])->default('Pendente');
+            $table->enum('status', ['Pendente', 'Confirmado', 'Realizado', 'Cancelado', 'bloqueio'])->default('Pendente');
             $table->string('notes', 250)->nullable(); 
             $table->unsignedBigInteger('created_by')->nullable();
             $table->foreign('created_by')

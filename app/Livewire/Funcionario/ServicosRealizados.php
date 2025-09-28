@@ -1,5 +1,5 @@
-<?php
 
+<?php
 namespace App\Livewire\Funcionario;
 
 use Livewire\Component;
@@ -9,7 +9,7 @@ use App\Models\Appointment;
 use Livewire\WithPagination;
 
 
-class ServicosRealizados extends Component
+class ServicosFuncionarioRealizados extends Component
 {   
     use WithPagination;
     public $filtroPeriodo = '1D';
@@ -24,7 +24,10 @@ class ServicosRealizados extends Component
     public function getAppointmentsProperty()
 {
     $query = \App\Models\Appointment::with('customer')
-        ->where('employee_id', auth()->id());
+    ->where('employee_id', auth()->id())
+    ->where('services', '!=', 'Bloqueio')
+    ->where('status', '!=', 'bloqueio'); // Excluir agendamentos de bloqueio por services e status
+ 
 
     switch ($this->filtroPeriodo) {
         case '1D':

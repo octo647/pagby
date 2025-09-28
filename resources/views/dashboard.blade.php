@@ -144,6 +144,12 @@
                         @livewire('proprietario.ajuste-balanco-diario')
                     @elseif($tabelaAtiva === 'gerenciar-estoque')
                         @livewire('proprietario.gerenciar-estoque')
+                    @elseif($tabelaAtiva === 'controle-agenda')
+                        @livewire('proprietario.controle-agenda')
+                    @elseif($tabelaAtiva === 'controle-pagamento')
+                        @livewire('proprietario.controle-pagamento')
+                    @elseif($tabelaAtiva === 'controle-pagamento-planos')
+                        @livewire('proprietario.controle-pagamento-planos')
                     @elseif($tabelaAtiva === 'gerenciar-comandas')
                         @livewire('proprietario.gerenciar-comandas')
                     @elseif($tabelaAtiva === 'relatorio-geral')
@@ -171,21 +177,25 @@
 
                 @can('Funcionário')
                 @if($tabelaAtiva === 'agenda')
-                        @livewire('funcionario.agenda')
+                    @livewire('funcionario.agenda')
                 @elseif($tabelaAtiva === 'servicos')
-                        @livewire('funcionario.servicos')
-                @elseif($tabelaAtiva === 'servicos-realizados')
-                        @livewire('funcionario.servicos-realizados')
+                    @livewire('funcionario.servicos')
+                @elseif($tabelaAtiva === 'servicos-planos')
+                    @livewire('funcionario.controle-pagamento-planos')
+                @elseif($tabelaAtiva === 'servicos-funcionario-realizados')
+                    @livewire('funcionario.servicos-funcionario-realizados')
                 @elseif($tabelaAtiva === 'horarios')
-                        @livewire('funcionario.horarios')
+                    @livewire('funcionario.horarios')
                 @elseif($tabelaAtiva === 'estatisticas')
-                        @livewire('funcionario.estatisticas')
+                    @livewire('funcionario.estatisticas')
                 @elseif($tabelaAtiva === 'avaliacoes-profissional')
-                        @livewire('funcionario.avaliacoes-profissional')
+                    @livewire('funcionario.avaliacoes-profissional')
                 @elseif($tabelaAtiva === 'dias-pico')
-                        @livewire('dias-pico')
+                    @livewire('dias-pico')
                 @elseif($tabelaAtiva === 'horarios-pico')
-                        @livewire('horarios-pico')
+                    @livewire('horarios-pico')
+                @elseif($tabelaAtiva === 'servicos-avulsos')
+                    @livewire('funcionario.controle-ganhos-avulsos')
                 @endif
 
                 @endcan
@@ -199,7 +209,7 @@
                     @livewire('cliente.notificacoes')
                 @elseif($tabelaAtiva === 'planos-de-assinatura')
                     @livewire('planos-de-assinatura')
-                    @endif
+                @endif
                 
                 @endcan
                 
@@ -218,6 +228,6 @@
     </div>
 
 
-    
+   
 </x-app-layout>
 

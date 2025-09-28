@@ -1,7 +1,7 @@
 <?php
 namespace App\Livewire\Proprietario;
 
-use App\Models\Appointment;
+use App\Models\Comanda;
 use App\Models\Branch;
 use Livewire\Component;
 use Illuminate\Support\Facades\Auth;
@@ -12,7 +12,7 @@ class BalancoDiario extends Component
     public $entrada = 0;
     public $saida = 0;
     public $saldo_final = 0;
-    public $agendamentosDoDia;
+    public $comandasDoDia;
     public $totalPago = 0;
     public $totalCaixa = 0;
     public $data;
@@ -26,35 +26,35 @@ class BalancoDiario extends Component
         $this->data = now()->format('Y-m-d');
         $this->branches = Branch::all();
         $this->branch_id = $this->branches->first()->id ?? null;
-        $this->agendamentosDoDia = collect();
-        $this->carregarAgendamentos();
+        $this->comandasDoDia = collect();
+        $this->carregarComandas();
         $this->buscarCaixa();
     }
 
     public function updatedData()
     {
-        $this->carregarAgendamentos();
+        $this->carregarComandas();
         $this->buscarCaixa();
     }
 
     public function updatedBranchId()
     {
-        $this->carregarAgendamentos();
+        $this->carregarComandas();
         $this->buscarCaixa();
     }
 
-    public function carregarAgendamentos()
+    public function carregarComandas()
     {
         $dia = $this->data ?? now()->format('Y-m-d');
         $branchId = $this->branch_id;
-        $this->agendamentosDoDia = Appointment::with(['customer', 'branch', 'employee'])
-            ->whereDate('appointment_date', $dia)
+        $this->comandasDoDia = Comanda::with(['branch', 'funcionario', 'comandaServicos', 'comandaProdutos'])
+            ->whereDate('data_abertura', $dia)
             ->where('branch_id', $branchId)
             ->get();
 
-        $this->totalPago = $this->agendamentosDoDia
-            ->whereIn('status', ['Confirmado', 'Realizado'])
-            ->sum('total');
+        $this->totalPago = $this->comandasDoDia
+            ->where('status', 'Finalizada')
+            ->sum('total_geral');
         $this->comission = Branch::where('id', $branchId)
             ->value('comission');
         $this->value_comission = ($this->totalPago * $this->comission) / 100;
@@ -94,30 +94,27 @@ class BalancoDiario extends Component
         session()->flash('message', 'Caixa salvo com sucesso!');
     }
 
-    public function atualizarStatus($agendamentoId, $novoStatus)
+    public function atualizarStatus($comandaId, $novoStatus)
     {
-        $agendamento = Appointment::find($agendamentoId);
-        if ($agendamento) {
-            $agendamento->status = $novoStatus;
-            if ($novoStatus === 'Cancelado') {
-                $agendamento->cancellation_reason = 'Cancelado pelo proprietário';
-                $agendamento->cancellation_time = now();
-                $agendamento->cancellation_by = Auth::id();
-                $agendamento->cancellation_date = now();
+        $comanda = Comanda::find($comandaId);
+        if ($comanda) {
+            if ($novoStatus === 'Finalizada') {
+                $comanda->finalizar();
+            } elseif ($novoStatus === 'Cancelada') {
+                $comanda->cancelar();
             } else {
-                $agendamento->cancellation_reason = null;
+                $comanda->status = $novoStatus;
+                $comanda->save();
             }
-            $agendamento->updated_at = now();
-            $agendamento->updated_by = Auth::id();
-            $agendamento->save();
-            $this->carregarAgendamentos();
+            $this->carregarComandas();
+            session()->flash('message', 'Status da comanda atualizado com sucesso!');
         }
     }
 
     public function render()
     {
         return view('livewire.proprietario.balanco-diario', [
-            'agendamentosDoDia' => $this->agendamentosDoDia,
+            'comandasDoDia' => $this->comandasDoDia,
             'total_pago' => $this->totalPago,
         ]);
     }

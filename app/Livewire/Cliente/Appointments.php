@@ -3,6 +3,7 @@
 namespace App\Livewire\Cliente;
 use App\Models\Appointment;
 use App\Models\Branch;
+use App\Models\Comanda;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 use App\Models\User;
@@ -38,7 +39,8 @@ class Appointments extends Component
             $agendamentos[$i]['services'] = $appointment['services'];
             $agendamentos[$i]['total'] = number_format($appointment['total'], 2, ',', '.');
             $professional = User::where('id', $appointment['employee_id'])->first();            
-            $agendamentos[$i]['professional'] = $professional ? $professional->name : 'N/A';   
+            $agendamentos[$i]['professional'] = $professional ? $professional->name : 'N/A';
+            $agendamentos[$i]['professional_phone'] = $professional ? $professional->phone : 'N/A';
                
             $agendamentos[$i]['status'] = $appointment['status'];
             $agendamentos[$i]['appointment_id'] = $appointment['id'];
@@ -78,13 +80,26 @@ class Appointments extends Component
     }
     public function deleteSchedule($schedule_id):void
     {
-        $schedules = Appointment::where('id', $schedule_id)->delete();
+        $schedule = Appointment::find($schedule_id);
+        if ($schedule) {
+            $schedule->status = 'Cancelado';
+            $schedule->save();
+            \App\Models\Comanda::where('appointment_id', $schedule_id)->delete();
+        }
+        redirect("/dashboard");
          redirect("/dashboard");
     }
     public function newSchedule():void
     {
 
          redirect("/dashboard");
+    }
+
+    public function getComandasParaAgendamento($appointmentId)
+    {
+        return Comanda::where('appointment_id', $appointmentId)
+            ->with(['branch', 'funcionario'])
+            ->get();
     }
     public function render()
     {

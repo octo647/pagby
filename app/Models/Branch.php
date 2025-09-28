@@ -21,7 +21,7 @@ class Branch extends Model
         'state',
         'logo',
         'require_comission',
-        'comission'
+        'commission'
     ];
     public function users():BelongsToMany
     {

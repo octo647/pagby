@@ -18,6 +18,7 @@ class Estoque extends Model
         'quantidade_atual',
         'quantidade_minima',
         'preco_unitario',
+        'percentual_produtos',
         'fornecedor',
         'data_validade',
         'observacoes',

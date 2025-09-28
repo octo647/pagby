@@ -15,7 +15,17 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'checkTenantSubscription' => \App\Http\Middleware\CheckTenantSubscription::class,
             'scopeSessions' => \Stancl\Tenancy\Middleware\ScopeSessions::class,
+            'handleSessionErrors' => \App\Http\Middleware\HandleSessionErrors::class,
         ]);
+        
+        // Adicionar o middleware de tratamento de erros de sessão globalmente
+        $middleware->web([
+            \App\Http\Middleware\HandleSessionErrors::class,
+        ]);
+    })
+    ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
+        // Limpeza automática de sessões expiradas a cada hora
+        $schedule->command('sessions:clean --force')->hourly();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

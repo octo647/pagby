@@ -22,10 +22,10 @@
     <table class="table-auto w-full mt-4">
         <thead>
             <tr class='bg-gray-100 text-left'>
-                <th>Logo</th>
+                <th></th>
                 <th>Nome</th>
                 <th>Plano</th>
-                <th >Cidade</th>
+                <th>Cidade</th>
 
                 <th class="text-center">Ações</th>
             </tr>
@@ -66,15 +66,29 @@
             <h2 class="text-xl font-bold mb-4">Editar Salão</h2>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Logo</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.logo">
+                <input type="file" class="w-full border rounded px-2 py-1" wire:model="logoFile" accept="image/png,image/jpeg,image/jpg">
+                @if($logoFile)
+                    <div class="mt-2">
+                        <img src="{{ $logoFile->temporaryUrl() }}" alt="Prévia da logo" class="h-16 w-auto rounded shadow">
+                    </div>
+                @elseif(!empty($saloes[$editedSalonIndex]['logo']))
+                    <div class="mt-2">
+                        <img src="/{{ $saloes[$editedSalonIndex]['logo'] }}" alt="Logo atual" class="h-16 w-auto rounded shadow">
+                    </div>
+                @endif
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Tipo de Estabelecimento</label>
                 <select class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.type">
                     <option value="">Selecione...</option>
                     <option value="Barbearia">Barbearia</option>
-                    <option value="Salão de Beleza">Salão de Beleza</option>
-                    <option value="Clínica">Clínica</option>
+                    <option value="SalaoBeleza">Salão de Beleza</option>
+                    <option value="Spa">Spa</option>
+                    <option value="Estetica">Clinica Estética</option>
+                    <option value="PetShop">PetShop</option>
+                    <option value="Veterinaria">Clínica Veterinária</option>
+                    
+                
                 </select>
             </div>
             <div class="mb-4">
@@ -138,19 +152,27 @@
             <h2 class="text-xl font-bold mb-4">Criar Novo Salão</h2>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Logo</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.logo">
+                <input type="file" class="w-full border rounded px-2 py-1" wire:model="logoFile" accept="image/png,image/jpeg,image/jpg">
+                @if($logoFile)
+                    <div class="mt-2">
+                        <img src="{{ $logoFile->temporaryUrl() }}" alt="Prévia da logo" class="h-16 w-auto rounded shadow">
+                    </div>
+                @endif
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Tipo de Estabelecimento</label>
                 <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.type">
                     <option value="">Selecione...</option>
                     <option value="Barbearia">Barbearia</option>
-                    <option value="Salão de Beleza">Salão de Beleza</option>
+                    <option value="SalaoBeleza">Salão de Beleza</option>
+                    <option value="Estetica">Clinica Estética</option>
+                    <option value="Veterinaria">Clínica Veterinária</option>    
+                    <option value="Spa">Spa</option>
+                    <option value="PetShop">PetShop</option>               
                 </select>
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">ID</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.id">
+                <!-- Campo ID removido, será preenchido automaticamente com o valor do slug -->
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Email</label>
@@ -173,7 +195,17 @@
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.name">
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">Nome Fantasia</label>
+                <label class="block font-semibold mb-1">Nome Fantasia
+                    <span class="ml-1 relative group">
+                        <svg class="w-4 h-4 text-blue-400 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="white"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" fill="currentColor">?</text>
+                        </svg>
+                        <span class="absolute left-6 top-0 z-10 hidden group-hover:block bg-blue-50 text-blue-900 text-xs rounded shadow-lg px-3 py-2 w-56">
+                            O nome fantasia é o nome comercial pelo qual o salão será conhecido pelos clientes. Pode ser diferente do nome legal.
+                        </span>
+                    </span>
+                </label>
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.fantasy_name">
             </div>
             <div class="mb-4">
@@ -181,7 +213,17 @@
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.cnpj">
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">slug</label>
+                <label class="block font-semibold mb-1">slug
+                    <span class="ml-1 relative group">
+                        <svg class="w-4 h-4 text-blue-400 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="white"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" fill="currentColor">?</text>
+                        </svg>
+                        <span class="absolute left-6 top-0 z-10 hidden group-hover:block bg-blue-50 text-blue-900 text-xs rounded shadow-lg px-3 py-2 w-56">
+                            O slug é uma versão simplificada do nome, sem espaços ou acentos, usada para criar o endereço do salão no sistema (exemplo: "meu-salao").
+                        </span>
+                    </span>
+                </label>
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.slug">
             </div>
             <div class="mb-4">
@@ -210,15 +252,53 @@
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Estado</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.state">
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.state">
+                    <option value="">Selecione...</option>
+                    <option value="AC">AC</option>
+                    <option value="AL">AL</option>
+                    <option value="AP">AP</option>
+                    <option value="AM">AM</option>
+                    <option value="BA">BA</option>
+                    <option value="CE">CE</option>
+                    <option value="DF">DF</option>
+                    <option value="ES">ES</option>
+                    <option value="GO">GO</option>
+                    <option value="MA">MA</option>
+                    <option value="MT">MT</option>
+                    <option value="MS">MS</option>
+                    <option value="MG">MG</option>
+                    <option value="PA">PA</option>
+                    <option value="PB">PB</option>
+                    <option value="PR">PR</option>
+                    <option value="PE">PE</option>
+                    <option value="PI">PI</option>
+                    <option value="RJ">RJ</option>
+                    <option value="RN">RN</option>
+                    <option value="RS">RS</option>
+                    <option value="RO">RO</option>
+                    <option value="RR">RR</option>
+                    <option value="SC">SC</option>
+                    <option value="SP">SP</option>
+                    <option value="SE">SE</option>
+                    <option value="TO">TO</option>
+                </select>
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Plano</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.plan">
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.plan">
+                    <option value="">Selecione...</option>
+                    <option value="Básico">Básico</option>
+                    <option value="Intermediário">Intermediário</option>
+                    <option value="Avançado">Avançado</option>
+                </select>
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Status</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.status">
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.status">
+                    <option value="">Selecione...</option>
+                    <option value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                </select>
             </div>
 
             <div class="flex gap-2">
@@ -229,3 +309,9 @@
     @endif
 
 </div>
+
+<script>
+    document.addEventListener('livewire:salonLogoUpdated', () => {
+        window.location.reload();
+    });
+</script>

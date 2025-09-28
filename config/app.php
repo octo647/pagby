@@ -123,4 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Geração Automática de Comandas
+    |--------------------------------------------------------------------------
+    |
+    | Quando habilitado, uma comanda será criada automaticamente sempre que
+    | um agendamento for confirmado (status = 'Confirmado').
+    |
+    */
+
+    'gerar_comandas_automaticamente' => env('GERAR_COMANDAS_AUTOMATICAMENTE', true),
+
 ];

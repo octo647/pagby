@@ -8,7 +8,8 @@ use App\Models\User;
 use App\Models\BranchUser;
 
 use App\Models\Appointment;
-use Illuminate\Support\Facades\DB;  
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Carbon\Carbon;
@@ -36,12 +37,13 @@ class ServicosRealizados extends Component
     
     public function mount()
     {
-        // Carregar funcionários e filiais
-        $employees_id = BranchUser::pluck('user_id')->toArray();
-        $this->employees = User::whereIn('id', $employees_id)->get();
-        $this->branches = DB::table('branches')->get();
-        $this->selectedMonth = null;
-        $this->selectedYear = null;
+    // Carregar funcionários e filiais
+    Log::info('Mount do componente ServicosRealizados chamado');
+    $employees_id = BranchUser::pluck('user_id')->toArray();
+    $this->employees = User::whereIn('id', $employees_id)->get();
+    $this->branches = DB::table('branches')->get();
+    $this->selectedMonth = null;
+    $this->selectedYear = null;
         
         
         
@@ -114,14 +116,16 @@ class ServicosRealizados extends Component
     public function render()
     {
         // Renderizar a view com os dados necessários
-        
+     
         $agendamentos = Appointment::with(['employee', 'branch', 'customer'])
             ->when($this->selectedEmployee, fn($query) => $query->where('employee_id', $this->selectedEmployee))
             ->when($this->selectedBranch, fn($query) => $query->where('branch_id', $this->selectedBranch))
             ->when($this->selectedMonth, fn($query) => $query->whereMonth('appointment_date', $this->selectedMonth))  
             ->when($this->selectedYear, fn($query) => $query->whereYear('appointment_date', $this->selectedYear))
             ->when($this->selectedDate, fn($query) => $query->whereDate('appointment_date', $this->selectedDate))
+            ->where('status', '!=', 'bloqueio') // Excluir todos agendamentos com status bloqueio
             ->paginate(10);
+    Log::info('Agendamentos retornados:', $agendamentos->items()); // DEBUG: Ver quais agendamentos estão sendo retornados
         if(is_null($agendamentos)) {
             $agendamentos = new LengthAwarePaginator([], 0, 10);
         }

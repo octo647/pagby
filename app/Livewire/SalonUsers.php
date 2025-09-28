@@ -19,6 +19,7 @@ class SalonUsers extends Component
     public $showModal = false;
     public $selectedUser = null;
     public $userDetails = [];
+   
 
     public function showUserDetails($userId)
     {
@@ -107,12 +108,20 @@ class SalonUsers extends Component
     {
         $salon_users = User::query()
             ->when($this->searchTerm, function($query) {
-                $query->where('name', 'like', '%'.$this->searchTerm.'%');
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%'.$this->searchTerm.'%')
+                      ->orWhere('email', 'like', '%'.$this->searchTerm.'%')
+                      ->orWhere('status', 'like', '%'.$this->searchTerm.'%')
+                      ->orWhereHas('roles', function($roleQuery) {
+                          $roleQuery->where('role', 'like', '%'.$this->searchTerm.'%');
+                      });
+                });
             })
             ->orderBy('name', 'asc')
             ->with('roles')
             ->paginate(10);
-          
+
+        
 
         $roles = Role::pluck('role');
 

@@ -1,38 +1,35 @@
 <!-- filepath: resources/views/layouts/navigation.blade.php -->
-<nav x-data="{ open: false }" class="bg-white border-b border-gray-100">
-    <div class="max-w-7xl m px-4 sm:px-6 lg:px-8">
+<nav x-data="{ open: false }" class="bg-gradient-to-r from-blue-100 via-white to-pink-100 border-b border-gray-200 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
             <!-- Hamburger sempre visível -->
-            <button @click="open = ! open" class="mr-4 p-2 rounded bg-gray-200">
+            <button @click="open = ! open" class="mr-4 p-2 rounded bg-gradient-to-r from-blue-200 to-pink-200 shadow hover:scale-105 transition-transform">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M4 6h16M4 12h16M4 18h16"/>
                 </svg>
             </button>
             <!-- Logo -->
-            
-            <a href="{{ route('tenant.dashboard') }}">
-                <x-application-logo class="block h-9 w-auto" />
+            <a href="{{ route('tenant.dashboard') }}" class="flex items-center gap-2">
+                <x-application-logo class="block h-9 w-auto drop-shadow" />
+                
+                
             </a>
             <!-- Settings Dropdown -->
             <div class="flex items-center">
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
-                      
-                        @if(!empty(Auth::user()->photo))
-                            <img src="{{tenant_asset(Auth::user()->photo)}}"  alt="Foto de {{ Auth::user()->name }}" class="h-8 w-8 rounded-full">
-                        @else
-                            <img src="{{ global_asset('images/default-user.png') }}" title="Atualize sua foto de perfil" alt="Atualize a foto" class="h-8 w-8 rounded-full">
-                            <div>{{ Auth::user()->name ?? 'Visitante'}}</div> 
-                        @endif
-
-                            
-                            <div class="ml-1">
+                        <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gradient-to-r from-white to-blue-50 hover:text-pink-600 focus:outline-none transition ease-in-out duration-150 shadow">
+                            @if(!empty(Auth::user()->photo))
+                                <img src="{{tenant_asset(Auth::user()->photo)}}"  alt="Foto de {{ Auth::user()->name }}" class="h-8 w-8 rounded-full border-2 border-blue-300 shadow">
+                            @else
+                                <img src="{{ global_asset('images/default-user.png') }}" title="Atualize sua foto de perfil" alt="Atualize a foto" class="h-8 w-8 rounded-full border-2 border-gray-300">
+                                <div class="ml-2 text-xs text-gray-500">{{ Auth::user()->name ?? 'Visitante'}}</div> 
+                            @endif
+                            <div class="ml-2">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
-                               
                             </div>
                         </button>
                     </x-slot>
@@ -59,14 +56,23 @@
         </div>
     </div>
     <!-- Menu lateral (off-canvas) sempre disponível -->
-    <div x-show="open" @click.self="open = false" class="fixed inset-0 z-50 bg-black bg-opacity-30">
-        <div class="bg-white w-64 h-full shadow-lg p-4">
-            <button @click="open = false" class="mb-4 p-2 rounded bg-gray-200">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div x-show="open" @click.self="open = false" class="fixed top-0 left-0 h-full w-72 z-50 bg-white bg-opacity-20 transition-opacity duration-300">
+        <div class="bg-gradient-to-b from-blue-50 via-white to-pink-50 w-72 h-full shadow-2xl p-6 rounded-r-2xl border-r border-blue-200 animate-slidein">
+            <button @click="open = false" class="mb-6 p-2 rounded-full bg-gradient-to-r from-pink-200 to-blue-200 shadow hover:scale-110 transition-transform">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
+            <div class="mb-8 flex flex-col items-center gap-2">
+                @if(!empty(Auth::user()->photo))
+                    <img src="{{tenant_asset(Auth::user()->photo)}}" alt="Foto de {{ Auth::user()->name }}" class="h-16 w-16 rounded-full border-4 border-blue-200 shadow">
+                @else
+                    <img src="{{ global_asset('images/default-user.png') }}" title="Atualize sua foto de perfil" alt="Atualize a foto" class="h-16 w-16 rounded-full border-4 border-gray-200">
+                @endif
+                <div class="font-semibold text-blue-700 text-lg">{{ Auth::user()->name ?? 'Visitante'}}</div>
+                <div class="text-xs text-gray-400">{{ Auth::user()->email ?? '' }}</div>
+            </div>
             
              @php
                 if (!isset($tabelaAtiva)) {
@@ -80,98 +86,52 @@
                 }
                 $menuAdmin = [
                     [ 'label' => 'Contatos', 
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
-                    </svg>
-                    ', 'tabelaAtiva' => 'contatos'],
-                    [ 'label' => 'Salões', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
-                    </svg>
-                    ', 'tabelaAtiva' => 'saloes'],
-                    [ 'label' => 'Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
-                    </svg>
-                    ', 'tabelaAtiva' => 'planos'],
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle">
+                    <circle cx="12" cy="8" r="4" fill="#60A5FA"/>
+                    <rect x="4" y="16" width="16" height="5" rx="2.5" fill="#F472B6"/>
+                    </svg>', 'tabelaAtiva' => 'contatos'],
+                    [ 'label' => 'Salões', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle">
+                    <rect x="3" y="10" width="18" height="8" rx="2" fill="#FBBF24"/>
+                    <rect x="7" y="6" width="10" height="4" rx="2" fill="#34D399"/>
+                    </svg>', 'tabelaAtiva' => 'saloes'],
+                    [ 'label' => 'Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle">
+                    <polygon points="12,2 22,8 12,14 2,8" fill="#A78BFA"/>
+                    <rect x="6" y="16" width="12" height="4" rx="2" fill="#F472B6"/>
+                    </svg>', 'tabelaAtiva' => 'planos'],
                 ];
                 
                 $menuProprietario = [
-                    [ 'label' => 'Cadastros', 
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M4.5 3.75a3 3 0 0 0-3 3v10.5a3 3 0 0 0 3 3h15a3 3 0 0 0 3-3V6.75a3 3 0 0 0-3-3h-15Zm4.125 3a2.25 2.25 0 1 0 0 4.5 2.25 2.25 0 0 0 0-4.5Zm-3.873 8.703a4.126 4.126 0 0 1 7.746 0 .75.75 0 0 1-.351.92 7.47 7.47 0 0 1-3.522.877 7.47 7.47 0 0 1-3.522-.877.75.75 0 0 1-.351-.92ZM15 8.25a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 0-1.5H15ZM14.25 12a.75.75 0 0 1 .75-.75h3.75a.75.75 0 0 1 0 1.5H15a.75.75 0 0 1-.75-.75Zm.75 2.25a.75.75 0 0 0 0 1.5h3.75a.75.75 0 0 0 0-1.5H15Z" clip-rule="evenodd" />
-                    </svg>
-                    ',
-                    'submenu' => [
-                        ['tabelaAtiva' => 'usuarios', 'label' => 'Usuários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                        <path d="M4.5 6.375a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0ZM14.25 8.625a3.375 3.375 0 1 1 6.75 0 3.375 3.375 0 0 1-6.75 0ZM1.5 19.125a7.125 7.125 0 0 1 14.25 0v.003l-.001.119a.75.75 0 0 1-.363.63 13.067 13.067 0 0 1-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 0 1-.364-.63l-.001-.122ZM17.25 19.128l-.001.144a2.25 2.25 0 0 1-.233.96 10.088 10.088 0 0 0 5.06-1.01.75.75 0 0 0 .42-.643 4.875 4.875 0 0 0-6.957-4.611 8.586 8.586 0 0 1 1.71 5.157v.003Z" />
-                        </svg>' 
-                        ],
-                        ['tabelaAtiva' => 'filiais', 'label' => 'Filiais', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                        <path fill-rule="evenodd" d="M3 4.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 4.5v15a2.25 2.25 0 0 1-2.25 2.25H5.25A2.25 2.25 0 0 1 3 19.5V4.5Zm3-1.5a3.75 3.75 0 0 0-3.75 3.75v15a3.75 3.75 0 0 0 3.75 3.75h13.5a3.75 3.75 0 0 0 3.75-3.75V6a3.75 3.75 0 0 0-3.75-3.75H6Z" clip-rule="evenodd" />
-                        </svg>'
-                        ],
-                        ['tabelaAtiva' => 'funcionarios', 'label' => 'Funcionários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                        <path fill-rule="evenodd" d="M8.128 9.155a3.751 3.751 0 1 1 .713-1.321l1.136.656a.75.75 0 0 1 .222 1.104l-.006.007a.75.75 0 0 1-1.032.157 1.421 1.421 0 0 0-.113-.072l-.92-.531Zm-4.827-3.53a2.25 2.25 0 0 1 3.994 2.063.756.756 0 0 0-.122.23 2.25 2.25 0 0 1-3.872-2.293ZM13.348 8.272a5.073 5.073 0 0 0-3.428 3.57 5.08 5.08 0 0 0-.165 1.202 1.415 1.415 0 0 1-.707 1.201l-.96.554a3.751 3.751 0 1 0 .734 1.309l13.729-7.926a.75.75 0 0 0-.181-1.374l-.803-.215a5.25 5.25 0 0 0-2.894.05l-5.325 1.629Zm-9.223 7.03a2.25 2.25 0 1 0 2.25 3.897 2.25 2.25 0 0 0-2.25-3.897ZM12 12.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
-                        <path d="M16.372 12.615a.75.75 0 0 1 .75 0l5.43 3.135a.75.75 0 0 1-.182 1.374l-.802.215a5.25 5.25 0 0 1-2.894-.051l-5.147-1.574a.75.75 0 0 1-.156-1.367l3-1.732Z" />
-                        </svg>'
-                        ],
-                        ['tabelaAtiva' => 'horarios', 'label' => 'Horários',
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                        <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd" />
-                        </svg>
-                        '],
-                        ['tabelaAtiva' => 'servicos', 'label' => 'Serviços',
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                        <path d="M5.625 3.75a2.625 2.625 0 1 0 0 5.25h12.75a2.625 2.625 0 0 0 0-5.25H5.625ZM3.75 11.25a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5H3.75ZM3 15.75a.75.75 0 0 1 .75-.75h16.5a.75.75 0 0 1 0 1.5H3.75a.75.75 0 0 1-.75-.75ZM3.75 18.75a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5H3.75Z" />
-                        </svg>
+                     ['tabelaAtiva' => 'controle-pagamento', 'label' => 'Pagamentos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#34D399"/><rect x="7" y="10" width="10" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#A78BFA"/></svg>'],
+                    ['tabelaAtiva' => 'controle-pagamento-planos', 'label' => 'Pagamento de Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#A78BFA"/><rect x="7" y="10" width="10" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
+                    ['tabelaAtiva' => 'controle-agenda', 'label' => 'Controle de Agendas', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#34D399"/><rect x="7" y="10" width="10" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#A78BFA"/></svg>'],
+                    
+                    ['tabelaAtiva' => 'gerenciar-comandas', 'label' => 'Controle de Comandas', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="6" width="16" height="12" rx="3" fill="#FBBF24"/><rect x="8" y="10" width="8" height="4" rx="2" fill="#34D399"/><circle cx="12" cy="16" r="2" fill="#F472B6"/></svg>'],
 
-                        '],
-                        [
-                        'tabelaAtiva' => 'func_serv',
-                        'label' => 'Funcionários x Serviços',
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6 inline mr-1 align-middle">
-                        <path fill-rule="evenodd" d="M3.22 3.22a.75.75 0 0 1 1.06 0l3.97 3.97V4.5a.75.75 0 0 1 1.5 0V9a.75.75 0 0 1-.75.75H4.5a.75.75 0 0 1 0-1.5h2.69L3.22 4.28a.75.75 0 0 1 0-1.06Zm17.56 0a.75.75 0 0 1 0 1.06l-3.97 3.97h2.69a.75.75 0 0 1 0 1.5H15a.75.75 0 0 1-.75-.75V4.5a.75.75 0 0 1 1.5 0v2.69l3.97-3.97a.75.75 0 0 1 1.06 0ZM3.75 15a.75.75 0 0 1 .75-.75H9a.75.75 0 0 1 .75.75v4.5a.75.75 0 0 1-1.5 0v-2.69l-3.97 3.97a.75.75 0 0 1-1.06-1.06l3.97-3.97H4.5a.75.75 0 0 1-.75-.75Zm10.5 0a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-2.69l3.97 3.97a.75.75 0 1 1-1.06 1.06l-3.97-3.97v2.69a.75.75 0 0 1-1.5 0V15Z" clip-rule="evenodd" />
-                        </svg>',
-                        'special' => 'func_serv'
+                    [ 'label' => 'Cadastros', 
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#FBBF24"/><circle cx="12" cy="12" r="4" fill="#60A5FA"/><rect x="8" y="18" width="8" height="2" rx="1" fill="#F472B6"/></svg>',
+                    'submenu' => [
+                        ['tabelaAtiva' => 'usuarios', 'label' => 'Usuários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="8" r="4" fill="#60A5FA"/><rect x="4" y="16" width="16" height="5" rx="2.5" fill="#F472B6"/></svg>'
                         ],
-                        ['tabelaAtiva' => 'gerenciar-estoque', 'label' => 'Controle de Estoque',
-                        'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                        <path d="M3.375 3C2.339 3 1.5 3.84 1.5 4.875v.75c0 1.036.84 1.875 1.875 1.875h17.25c1.035 0 1.875-.84 1.875-1.875v-.75C22.5 3.839 21.66 3 20.625 3H3.375Z" />
-                        <path fill-rule="evenodd" d="m3.087 9 .54 9.176A3 3 0 0 0 6.62 21h10.757a3 3 0 0 0 2.995-2.824L20.913 9H3.087Zm6.163 3.75A.75.75 0 0 1 10 12h4a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
-                        </svg>
-                        '],
+                        ['tabelaAtiva' => 'filiais', 'label' => 'Filiais', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="10" width="18" height="8" rx="2" fill="#FBBF24"/><rect x="7" y="6" width="10" height="4" rx="2" fill="#34D399"/></svg>'
+                        ],
+                        ['tabelaAtiva' => 'funcionarios', 'label' => 'Funcionários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="2" y="6" width="20" height="12" rx="3" fill="#A78BFA"/><circle cx="8" cy="12" r="3" fill="#FBBF24"/><circle cx="16" cy="12" r="3" fill="#F472B6"/></svg>'
+                        ],
+                        ['tabelaAtiva' => 'horarios', 'label' => 'Horários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="12" r="10" fill="#A78BFA"/><rect x="11" y="6" width="2" height="7" rx="1" fill="#FBBF24"/><rect x="11" y="14" width="2" height="4" rx="1" fill="#34D399"/></svg>'],
+                        ['tabelaAtiva' => 'servicos', 'label' => 'Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="8" width="18" height="8" rx="4" fill="#34D399"/><path d="M7 12h10" stroke="#FBBF24" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="12" r="3" fill="#F472B6"/></svg>'],
+                        ['tabelaAtiva' => 'func_serv', 'label' => 'Funcionários x Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="2" y="6" width="20" height="12" rx="3" fill="#A78BFA"/><circle cx="8" cy="12" r="3" fill="#FBBF24"/><circle cx="16" cy="12" r="3" fill="#F472B6"/><rect x="10" y="10" width="4" height="4" rx="2" fill="#34D399"/></svg>', 'special' => 'func_serv'],
+                        ['tabelaAtiva' => 'gerenciar-estoque', 'label' => 'Controle de Estoque', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#FBBF24"/><rect x="7" y="10" width="10" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
 
                         
                     ]
                     ],
-                    ['tabelaAtiva' => 'gerenciar-comandas', 'label' => 'Controle de Comandas',
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M5.625 1.5H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375c0-1.036.84-1.875 1.875-1.875Zm5.845 17.03a.75.75 0 0 0 1.06 0l3-3a.75.75 0 1 0-1.06-1.06l-1.72 1.72V12a.75.75 0 0 0-1.5 0v4.19l-1.72-1.72a.75.75 0 0 0-1.06 1.06l3 3Z" clip-rule="evenodd" />
-                    </svg>'],
-                     [
-                'label' => 'Relatórios',
-                'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-7-4a1 1 0 1 1-2 0 1 1 0 0 1 2 0ZM9 9a.75.75 0 0 0 0 1.5h.253a.25.25 0 0 1 .244.304l-.459 2.066A1.75 1.75 0 0 0 10.747 15H11a.75.75 0 0 0 0-1.5h-.253a.25.25 0 0 1-.244-.304l.459-2.066A1.75 1.75 0 0 0 9.253 9H9Z" clip-rule="evenodd" />
-                </svg>
-                ',  
+                   
+                [
+             'label' => 'Relatórios',
+             'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="6" width="16" height="12" rx="3" fill="#A78BFA"/><rect x="8" y="10" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>',
                 'submenu' => [
-                    ['tabelaAtiva' => 'balanco-diario', 'label' => 'Balanço Diário',
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path d="M10.75 10.818v2.614A3.13 3.13 0 0 0 11.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 0 0-1.138-.432ZM8.33 8.62c.053.055.115.11.184.164.208.16.46.284.736.363V6.603a2.45 2.45 0 0 0-.35.13c-.14.065-.27.143-.386.233-.377.292-.514.627-.514.909 0 .184.058.39.202.592.037.051.08.102.128.152Z" />
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-6a.75.75 0 0 1 .75.75v.316a3.78 3.78 0 0 1 1.653.713c.426.33.744.74.925 1.2a.75.75 0 0 1-1.395.55 1.35 1.35 0 0 0-.447-.563 2.187 2.187 0 0 0-.736-.363V9.3c.698.093 1.383.32 1.959.696.787.514 1.29 1.27 1.29 2.13 0 .86-.504 1.616-1.29 2.13-.576.377-1.261.603-1.96.696v.299a.75.75 0 1 1-1.5 0v-.3c-.697-.092-1.382-.318-1.958-.695-.482-.315-.857-.717-1.078-1.188a.75.75 0 1 1 1.359-.636c.08.173.245.376.54.569.313.205.706.353 1.138.432v-2.748a3.782 3.782 0 0 1-1.653-.713C6.9 9.433 6.5 8.681 6.5 7.875c0-.805.4-1.558 1.097-2.096a3.78 3.78 0 0 1 1.653-.713V4.75A.75.75 0 0 1 10 4Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'ajuste-balanco-diario', 'label' => 'Ajuste Balanço Diário',
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path d="M10.75 10.818v2.614A3.13 3.13 0 0 0 11.888 13c.482-.315.612-.648.612-.875 0-.227-.13-.56-.612-.875a3.13 3.13 0 0 0-1.138-.432ZM8.33 8.62c.053.055.115.11.184.164.208.16.46.284.736.363V6.603a2.45 2.45 0 0 0-.35.13c-.14.065-.27.143-.386.233-.377.292-.514.627-.514.909 0 .184.058.39.202.592.037.051.08.102.128.152Z" />
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-8-6a.75.75 0 0 1 .75.75v.316a3.78 3.78 0 0 1 1.653.713c.426.33.744.74.925 1.2a.75.75 0 0 1-1.395.55 1.35 1.35 0 0 0-.447-.563 2.187 2.187 0 0 0-.736-.363V9.3c.698.093 1.383.32 1.959.696.787.514 1.29 1.27 1.29 2.13 0 .86-.504 1.616-1.29 2.13-.576.377-1.261.603-1.96.696v.299a.75.75 0 1 1-1.5 0v-.3c-.697-.092-1.382-.318-1.958-.695-.482-.315-.857-.717-1.078-1.188a.75.75 0 1 1 1.359-.636c.08.173.245.376.54.569.313.205.706.353 1.138.432v-2.748a3.782 3.782 0 0 1-1.653-.713C6.9 9.433 6.5 8.681 6.5 7.875c0-.805.4-1.558 1.097-2.096a3.78 3.78 0 0 1 1.653-.713V4.75A.75.75 0 0 1 10 4Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'gerenciar-estoque', 'label' => 'Controle de Estoque',
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path d="M3.375 3C2.339 3 1.5 3.84 1.5 4.875v.75c0 1.036.84 1.875 1.875 1.875h17.25c1.035 0 1.875-.84 1.875-1.875v-.75C22.5 3.839 21.66 3 20.625 3H3.375Z" />
-                    <path fill-rule="evenodd" d="m3.087 9 .54 9.176A3 3 0 0 0 6.62 21h10.757a3 3 0 0 0 2.995-2.824L20.913 9H3.087Zm6.163 3.75A.75.75 0 0 1 10 12h4a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
+                    ['tabelaAtiva' => 'balanco-diario', 'label' => 'Balanço Diário', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#A78BFA"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
+                    ['tabelaAtiva' => 'ajuste-balanco-diario', 'label' => 'Ajuste Balanço Diário', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#F472B6"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#FBBF24"/></svg>'],
+                    ['tabelaAtiva' => 'gerenciar-estoque', 'label' => 'Controle de Estoque', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#34D399"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#A78BFA"/></svg>'],
                     
                     
                     ['tabelaAtiva' => 'faturamento-mensal', 'label' => 'Faturamento Mensal',        
@@ -185,108 +145,56 @@
             ],
             [
                 'label' => 'Estatísticas',
-                'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                <path fill-rule="evenodd" d="M2.25 2.25a.75.75 0 0 0 0 1.5H3v10.5a3 3 0 0 0 3 3h1.21l-1.172 3.513a.75.75 0 0 0 1.424.474l.329-.987h8.418l.33.987a.75.75 0 0 0 1.422-.474l-1.17-3.513H18a3 3 0 0 0 3-3V3.75h.75a.75.75 0 0 0 0-1.5H2.25Zm6.04 16.5.5-1.5h6.42l.5 1.5H8.29Zm7.46-12a.75.75 0 0 0-1.5 0v6a.75.75 0 0 0 1.5 0v-6Zm-3 2.25a.75.75 0 0 0-1.5 0v3.75a.75.75 0 0 0 1.5 0V9Zm-3 2.25a.75.75 0 0 0-1.5 0v1.5a.75.75 0 0 0 1.5 0v-1.5Z" clip-rule="evenodd" />
-                </svg>
-                ',
+                'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="6" width="16" height="12" rx="3" fill="#60A5FA"/><rect x="8" y="10" width="8" height="4" rx="2" fill="#F472B6"/><circle cx="12" cy="16" r="2" fill="#A78BFA"/></svg>',
                 'submenu' => [
                     ['tabelaAtiva' => 'dias-pico', 'label' => 'Dias de Pico',
-                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M10 2a8 8 0 1 0 8 8A8 8 0 0 0 10 2Zm0 1.5a6.5 6.5 0 1 1 0 6.5 6.5A6.5 6.5 0 0 1 10 3.5Zm-1.25 1.25a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z" clip-rule="evenodd" />
-                    </svg>',
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="3" width="18" height="18" rx="4" fill="#FBBF24"/><circle cx="12" cy="12" r="6" fill="#60A5FA"/><rect x="8" y="18" width="8" height="2" rx="1" fill="#34D399"/></svg>',
                     ],
-                    ['tabelaAtiva' => 'horarios-pico', 'label' => 'Horários de Pico', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'avaliacoes', 'label' => 'Avaliações', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M10.868 2.884c-.321-.772-1.415-.772-1.736 0l-1.83 4.401-4.753.381c-.833.067-1.171 1.107-.536 1.651l3.62 3.102-1.106 4.637c-.194.813.691 1.456 1.405 1.02L10 15.591l4.069 2.485c.713.436 1.598-.207 1.404-1.02l-1.106-4.637 3.62-3.102c.635-.544.297-1.584-.536-1.65l-4.752-.382-1.831-4.401Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'ranking-servicos', 'label' => 'Ranking de Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M15.22 6.268a.75.75 0 0 1 .968-.431l5.942 2.28a.75.75 0 0 1 .431.97l-2.28 5.94a.75.75 0 1 1-1.4-.537l1.63-4.251-1.086.484a11.2 11.2 0 0 0-5.45 5.173.75.75 0 0 1-1.199.19L9 12.312l-6.22 6.22a.75.75 0 0 1-1.06-1.061l6.75-6.75a.75.75 0 0 1 1.06 0l3.606 3.606a12.695 12.695 0 0 1 5.68-4.974l1.086-.483-4.251-1.632a.75.75 0 0 1-.432-.97Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'ticket-medio', 'label' => 'Ticket Médio', 'icon' =>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path d="M18.375 2.25c-1.035 0-1.875.84-1.875 1.875v15.75c0 1.035.84 1.875 1.875 1.875h.75c1.035 0 1.875-.84 1.875-1.875V4.125c0-1.036-.84-1.875-1.875-1.875h-.75ZM9.75 8.625c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-.75a1.875 1.875 0 0 1-1.875-1.875V8.625ZM3 13.125c0-1.036.84-1.875 1.875-1.875h.75c1.036 0 1.875.84 1.875 1.875v6.75c0 1.035-.84 1.875-1.875 1.875h-.75A1.875 1.875 0 0 1 3 19.875v-6.75Z" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'clientes-novos-antigos', 'label' => 'Clientes Novos e Antigos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M8.25 6.75a3.75 3.75 0 1 1 7.5 0 3.75 3.75 0 0 1-7.5 0ZM15.75 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM2.25 9.75a3 3 0 1 1 6 0 3 3 0 0 1-6 0ZM6.31 15.117A6.745 6.745 0 0 1 12 12a6.745 6.745 0 0 1 6.709 7.498.75.75 0 0 1-.372.568A12.696 12.696 0 0 1 12 21.75c-2.305 0-4.47-.612-6.337-1.684a.75.75 0 0 1-.372-.568 6.787 6.787 0 0 1 1.019-4.38Z" clip-rule="evenodd" />
-                    <path d="M5.082 14.254a8.287 8.287 0 0 0-1.308 5.135 9.687 9.687 0 0 1-1.764-.44l-.115-.04a.563.563 0 0 1-.373-.487l-.01-.121a3.75 3.75 0 0 1 3.57-4.047ZM20.226 19.389a8.287 8.287 0 0 0-1.308-5.135 3.75 3.75 0 0 1 3.57 4.047l-.01.121a.563.563 0 0 1-.373.486l-.115.04c-.567.2-1.156.349-1.764.441Z" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'assiduidade', 'label' => 'Assiduidade', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path d="m11.645 20.91-.007-.003-.022-.012a15.247 15.247 0 0 1-.383-.218 25.18 25.18 0 0 1-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0 1 12 5.052 5.5 5.5 0 0 1 16.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 0 1-4.244 3.17 15.247 15.247 0 0 1-.383.219l-.022.012-.007.004-.003.001a.752.752 0 0 1-.704 0l-.003-.001Z" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'origens', 'label' => 'Origens', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M2.25 13.5a8.25 8.25 0 0 1 8.25-8.25.75.75 0 0 1 .75.75v6.75H18a.75.75 0 0 1 .75.75 8.25 8.25 0 0 1-16.5 0Z" clip-rule="evenodd" />
-                    <path fill-rule="evenodd" d="M12.75 3a.75.75 0 0 1 .75-.75 8.25 8.25 0 0 1 8.25 8.25.75.75 0 0 1-.75.75h-7.5a.75.75 0 0 1-.75-.75V3Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'servicos-realizados', 'label' => 'Serviços Realizados', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Zm0-3.75h7.5a.375.375 0 0 0 .375-.375v-1.5A.375.375 0 0 0 10.875 9h-7.5A.375.375 0 0 0 3 9.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                ]
+                    ['tabelaAtiva' => 'horarios-pico', 'label' => 'Horários de Pico', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="3" width="18" height="18" rx="4" fill="#60A5FA"/><path d="M7 17l5-5 5 5" stroke="#FBBF24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="9" r="2" fill="#F472B6"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'avaliacoes', 'label' => 'Avaliações', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="4" width="16" height="16" rx="4" fill="#F472B6"/><path d="M12 8l2.5 5H9.5L12 8z" fill="#FBBF24"/><circle cx="12" cy="15" r="2" fill="#60A5FA"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'ranking-servicos', 'label' => 'Ranking de Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="3" width="18" height="18" rx="4" fill="#34D399"/><path d="M12 7l3 7H9l3-7z" fill="#FBBF24"/><circle cx="12" cy="17" r="2" fill="#60A5FA"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'ticket-medio', 'label' => 'Ticket Médio', 'icon' =>'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="2" y="6" width="20" height="12" rx="3" fill="#F472B6"/><path d="M7 12h10M12 9v6" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2" fill="#FBBF24"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'clientes-novos-antigos', 'label' => 'Clientes Novos e Antigos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="4" width="16" height="16" rx="4" fill="#60A5FA"/><circle cx="8" cy="12" r="3" fill="#FBBF24"/><circle cx="16" cy="12" r="3" fill="#F472B6"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'assiduidade', 'label' => 'Assiduidade', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="4" width="16" height="16" rx="4" fill="#FBBF24"/><circle cx="12" cy="12" r="6" fill="#34D399"/><rect x="8" y="18" width="8" height="2" rx="1" fill="#F472B6"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'origens', 'label' => 'Origens', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="4" width="16" height="16" rx="4" fill="#60A5FA"/><circle cx="12" cy="12" r="6" fill="#FBBF24"/><rect x="8" y="18" width="8" height="2" rx="1" fill="#34D399"/></svg>',
+                    ],
+                    ['tabelaAtiva' => 'servicos-realizados', 'label' => 'Serviços Realizados', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="4" width="16" height="16" rx="4" fill="#F472B6"/><path d="M8 16h8M12 8v8" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2" fill="#FBBF24"/></svg>',
+                    ],
             ],              
             
-            ['tabelaAtiva' => 'planos-de-assinatura', 'label' => 'Planos de Assinatura', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-            <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
-            </svg>'
             ],
-            ['tabelaAtiva' => 'meu-pixby', 'label' => 'Meu Pixby', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-            <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
-            </svg>'
-            ],
-            ];
+            ['tabelaAtiva' => 'planos-de-assinatura', 'label' => 'Planos de Assinatura', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#A78BFA"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
+            ['tabelaAtiva' => 'meu-pixby', 'label' => 'Meu Pixby', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#F472B6"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#FBBF24"/></svg>'],
+    ];
 
                 $menuFuncionario = [
-                    ['tabelaAtiva' => 'agenda', 'label' => 'Agenda', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path d="M12 11.993a.75.75 0 0 0-.75.75v.006c0 .414.336.75.75.75h.006a.75.75 0 0 0 .75-.75v-.006a.75.75 0 0 0-.75-.75H12ZM12 16.494a.75.75 0 0 0-.75.75v.005c0 .414.335.75.75.75h.005a.75.75 0 0 0 .75-.75v-.005a.75.75 0 0 0-.75-.75H12ZM8.999 17.244a.75.75 0 0 1 .75-.75h.006a.75.75 0 0 1 .75.75v.006a.75.75 0 0 1-.75.75h-.006a.75.75 0 0 1-.75-.75v-.006ZM7.499 16.494a.75.75 0 0 0-.75.75v.005c0 .414.336.75.75.75h.005a.75.75 0 0 0 .75-.75v-.005a.75.75 0 0 0-.75-.75H7.5ZM13.499 14.997a.75.75 0 0 1 .75-.75h.006a.75.75 0 0 1 .75.75v.005a.75.75 0 0 1-.75.75h-.006a.75.75 0 0 1-.75-.75v-.005ZM14.25 16.494a.75.75 0 0 0-.75.75v.006c0 .414.335.75.75.75h.005a.75.75 0 0 0 .75-.75v-.006a.75.75 0 0 0-.75-.75h-.005ZM15.75 14.995a.75.75 0 0 1 .75-.75h.005a.75.75 0 0 1 .75.75v.006a.75.75 0 0 1-.75.75H16.5a.75.75 0 0 1-.75-.75v-.006ZM13.498 12.743a.75.75 0 0 1 .75-.75h2.25a.75.75 0 1 1 0 1.5h-2.25a.75.75 0 0 1-.75-.75ZM6.748 14.993a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 0 1.5h-4.5a.75.75 0 0 1-.75-.75Z" />
-                    <path fill-rule="evenodd" d="M18 2.993a.75.75 0 0 0-1.5 0v1.5h-9V2.994a.75.75 0 1 0-1.5 0v1.497h-.752a3 3 0 0 0-3 3v11.252a3 3 0 0 0 3 3h13.5a3 3 0 0 0 3-3V7.492a3 3 0 0 0-3-3H18V2.993ZM3.748 18.743v-7.5a1.5 1.5 0 0 1 1.5-1.5h13.5a1.5 1.5 0 0 1 1.5 1.5v7.5a1.5 1.5 0 0 1-1.5 1.5h-13.5a1.5 1.5 0 0 1-1.5-1.5Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'servicos', 'label' => 'Meus Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M8.128 9.155a3.751 3.751 0 1 1 .713-1.321l1.136.656a.75.75 0 0 1 .222 1.104l-.006.007a.75.75 0 0 1-1.032.157 1.421 1.421 0 0 0-.113-.072l-.92-.531Zm-4.827-3.53a2.25 2.25 0 0 1 3.994 2.063.756.756 0 0 0-.122.23 2.25 2.25 0 0 1-3.872-2.293ZM13.348 8.272a5.073 5.073 0 0 0-3.428 3.57 5.08 5.08 0 0 0-.165 1.202 1.415 1.415 0 0 1-.707 1.201l-.96.554a3.751 3.751 0 1 0 .734 1.309l13.729-7.926a.75.75 0 0 0-.181-1.374l-.803-.215a5.25 5.25 0 0 0-2.894.05l-5.325 1.629Zm-9.223 7.03a2.25 2.25 0 1 0 2.25 3.897 2.25 2.25 0 0 0-2.25-3.897ZM12 12.75a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
-                    <path d="M16.372 12.615a.75.75 0 0 1 .75 0l5.43 3.135a.75.75 0 0 1-.182 1.374l-.802.215a5.25 5.25 0 0 1-2.894-.051l-5.147-1.574a.75.75 0 0 1-.156-1.367l3-1.732Z" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'servicos-realizados', 'label' => 'Serviços Realizados', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Zm0-3.75h7.5a.375.375 0 0 0 .375-.375v-1.5A.375.375 0 0 0 10.875 9h-7.5A.375.375 0 0 0 3 9.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'horarios', 'label' => 'Meus Horários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25ZM12.75 6a.75.75 0 0 0-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 0 0 0-1.5h-3.75V6Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'estatisticas', 'label' => 'Estatísticas Pessoais', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M2.25 2.25a.75.75 0 0 0 0 1.5H3v10.5a3 3 0 0 0 3 3h1.21l-1.172 3.513a.75.75 0 0 0 1.424.474l.329-.987h8.418l.33.987a.75.75 0 0 0 1.422-.474l-1.17-3.513H18a3 3 0 0 0 3-3V3.75h.75a.75.75 0 0 0 0-1.5H2.25Zm6.54 15h6.42l.5 1.5H8.29l.5-1.5Zm8.085-8.995a.75.75 0 1 0-.75-1.299 12.81 12.81 0 0 0-3.558 3.05L11.03 8.47a.75.75 0 0 0-1.06 0l-3 3a.75.75 0 1 0 1.06 1.06l2.47-2.47 1.617 1.618a.75.75 0 0 0 1.146-.102 11.312 11.312 0 0 1 3.612-3.321Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
-                    ['tabelaAtiva' => 'avaliacoes-profissional', 'label' => 'Avaliações', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.006 5.404.434c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.434 2.082-5.005Z" clip-rule="evenodd" />
-                    </svg>                    
-                    '],                    
-                    ['tabelaAtiva' => 'dias-pico', 'label' => 'Dias de Pico','icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M10 2a8 8 0 1 0 8 8A8 8 0 0 0 10 2Zm0 1.5a6.5 6.5 0 1 1 0 6.5 6.5A6.5 6.5 0 0 1 10 3.5Zm-1.25 1.25a5 5 0 1 0 0 10 5 5 0 0 0 0-10Z" clip-rule="evenodd" />
-                    </svg>'],
-                    ['tabelaAtiva' => 'horarios-pico', 'label' => 'Horários de Pico', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M8.603 3.799A4.49 4.49 0 0 1 12 2.25c1.357 0 2.573.6 3.397 1.549a4.49 4.49 0 0 1 3.498 1.307 4.491 4.491 0 0 1 1.307 3.497A4.49 4.49 0 0 1 21.75 12a4.49 4.49 0 0 1-1.549 3.397 4.491 4.491 0 0 1-1.307 3.497 4.491 4.491 0 0 1-3.497 1.307A4.49 4.49 0 0 1 12 21.75a4.49 4.49 0 0 1-3.397-1.549 4.49 4.49 0 0 1-3.498-1.306 4.491 4.491 0 0 1-1.307-3.498A4.49 4.49 0 0 1 2.25 12c0-1.357.6-2.573 1.549-3.397a4.49 4.49 0 0 1 1.307-3.497 4.49 4.49 0 0 1 3.497-1.307Zm7.007 6.387a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25Z" clip-rule="evenodd" />
-                    </svg>
-                    '],
+                    ['tabelaAtiva' => 'agenda', 'label' => 'Agenda', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="5" width="18" height="16" rx="3" fill="#FBBF24"/><rect x="7" y="2" width="10" height="4" rx="2" fill="#60A5FA"/><circle cx="12" cy="13" r="3" fill="#F472B6"/></svg>'],
+                    [ 'label' => 'Honorários', 
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#34D399"/><circle cx="12" cy="12" r="3" fill="#FBBF24"/><rect x="10" y="16" width="4" height="2" rx="1" fill="#A78BFA"/></svg>',
+                    'submenu'=>[
+                        ['tabelaAtiva' => 'servicos-avulsos', 'label' => 'Serviços Avulsos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#A78BFA"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
+                        ['tabelaAtiva' => 'servicos-planos', 'label' => 'Serviços de Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#34D399"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#A78BFA"/></svg>']
+                    ]
+                    ],
+                    ['tabelaAtiva' => 'servicos', 'label' => 'Meus Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#34D399"/><circle cx="12" cy="12" r="3" fill="#FBBF24"/><rect x="10" y="16" width="4" height="2" rx="1" fill="#A78BFA"/></svg>'],
+                    ['tabelaAtiva' => 'servicos-funcionario-realizados', 'label' => 'Histórico de Serviços', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#F472B6"/><circle cx="12" cy="12" r="4" fill="#60A5FA"/><rect x="8" y="18" width="8" height="2" rx="1" fill="#FBBF24"/></svg>'],
+                    ['tabelaAtiva' => 'horarios', 'label' => 'Meus Horários', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="12" r="10" fill="#A78BFA"/><rect x="11" y="6" width="2" height="7" rx="1" fill="#FBBF24"/><rect x="11" y="14" width="2" height="4" rx="1" fill="#34D399"/></svg>'],
+                    ['tabelaAtiva' => 'estatisticas', 'label' => 'Estatísticas Pessoais', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="14" width="3" height="6" rx="1.5" fill="#FBBF24"/><rect x="10" y="10" width="3" height="10" rx="1.5" fill="#F472B6"/><rect x="16" y="6" width="3" height="14" rx="1.5" fill="#60A5FA"/></svg>'],
+                    ['tabelaAtiva' => 'avaliacoes-profissional', 'label' => 'Avaliações', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><polygon points="12,2 15,9 22,9 17,14 19,21 12,17 5,21 7,14 2,9 9,9" fill="#FBBF24"/></svg>'],
+                    ['tabelaAtiva' => 'dias-pico', 'label' => 'Dias de Pico','icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="12" r="10" fill="#34D399"/><rect x="8" y="8" width="8" height="8" rx="4" fill="#F472B6"/></svg>'],
+                    ['tabelaAtiva' => 'horarios-pico', 'label' => 'Horários de Pico', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="12" r="10" fill="#60A5FA"/><rect x="11" y="7" width="2" height="10" rx="1" fill="#FBBF24"/></svg>'],
                     
                 ];
                 $funcionarioAtivo = request()->input('funcionario_id');
                 $menuCliente = [
-                    ['tabelaAtiva' => 'appointments', 'label' =>  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M7.502 6h7.128A3.375 3.375 0 0 1 18 9.375v9.375a3 3 0 0 0 3-3V6.108c0-1.505-1.125-2.811-2.664-2.94a48.972 48.972 0 0 0-.673-.05A3 3 0 0 0 15 1.5h-1.5a3 3 0 0 0-2.663 1.618c-.225.015-.45.032-.673.05C8.662 3.295 7.554 4.542 7.502 6ZM13.5 3A1.5 1.5 0 0 0 12 4.5h4.5A1.5 1.5 0 0 0 15 3h-1.5Z" clip-rule="evenodd" />
-                    <path fill-rule="evenodd" d="M3 9.375C3 8.339 3.84 7.5 4.875 7.5h9.75c1.036 0 1.875.84 1.875 1.875v11.25c0 1.035-.84 1.875-1.875 1.875h-9.75A1.875 1.875 0 0 1 3 20.625V9.375Zm9.586 4.594a.75.75 0 0 0-1.172-.938l-2.476 3.096-.908-.907a.75.75 0 0 0-1.06 1.06l1.5 1.5a.75.75 0 0 0 1.116-.062l3-3.75Z" clip-rule="evenodd" />
-                    </svg> Agendamentos'],
-                    ['tabelaAtiva' => 'historico', 'label' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
-                    <path fill-rule="evenodd" d="M1.5 5.625c0-1.036.84-1.875 1.875-1.875h17.25c1.035 0 1.875.84 1.875 1.875v12.75c0 1.035-.84 1.875-1.875 1.875H3.375A1.875 1.875 0 0 1 1.5 18.375V5.625ZM21 9.375A.375.375 0 0 0 20.625 9h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5Zm0 3.75a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5a.375.375 0 0 0 .375-.375v-1.5ZM10.875 18.75a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375h7.5ZM3.375 15h7.5a.375.375 0 0 0 .375-.375v-1.5a.375.375 0 0 0-.375-.375h-7.5a.375.375 0 0 0-.375.375v1.5c0 .207.168.375.375.375Zm0-3.75h7.5a.375.375 0 0 0 .375-.375v-1.5A.375.375 0 0 0 10.875 9h-7.5A.375.375 0 0 0 3 9.375v1.5c0 .207.168.375.375.375Z" clip-rule="evenodd" />
-                    </svg> Histórico de Serviços'],
+                    ['tabelaAtiva' => 'appointments', 'label' =>  '<span class="inline-flex items-center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="5" width="18" height="16" rx="3" fill="#FBBF24"/><rect x="7" y="2" width="10" height="4" rx="2" fill="#60A5FA"/><circle cx="12" cy="13" r="3" fill="#F472B6"/></svg> Agendamentos</span>'],
+                    ['tabelaAtiva' => 'historico', 'label' => '<span class="inline-flex items-center"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#34D399"/><circle cx="12" cy="12" r="3" fill="#FBBF24"/><rect x="10" y="16" width="4" height="2" rx="1" fill="#A78BFA"/></svg> Histórico de Serviços</span>'],
 
                     
                     ]; 
@@ -361,10 +269,30 @@
                 @endforeach
                 @elseif(auth()->user()->hasrole('Funcionário'))
                     @foreach($menuFuncionario as $item)
-                        <x-responsive-nav-link :href="route('tenant.dashboard', ['tabelaAtiva' => $item['tabelaAtiva']])" :active="request()->input('tabelaAtiva') === $item['tabelaAtiva']">
-                            {!! $item['icon'] ?? '' !!}
-                            {{ $item['label'] }}
-                        </x-responsive-nav-link>
+                        @if(isset($item['submenu']))
+                            <div x-data="{ openSub: false }" class="mb-2">
+                                <button @click="openSub = !openSub" class="flex items-center w-full px-4 py-2 text-left hover:bg-gray-100 rounded">
+                                    {!! $item['icon'] ?? '' !!}
+                                    <span>{{ $item['label'] }}</span>
+                                    <svg :class="{'rotate-90': openSub}" class="ml-auto h-4 w-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                                <div x-show="openSub" class="pl-6 mt-1 space-y-1">
+                                    @foreach($item['submenu'] as $subitem)
+                                        <x-responsive-nav-link :href="route('tenant.dashboard', ['tabelaAtiva' => $subitem['tabelaAtiva'], 'funcionario_id' => $funcionarioAtivo])" :active="request()->input('tabelaAtiva') === $subitem['tabelaAtiva'] && request()->input('funcionario_id') == $funcionarioAtivo">
+                                            {!! $subitem['icon'] ?? '' !!}
+                                            {{ $subitem['label'] }}
+                                        </x-responsive-nav-link>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @else
+                            <x-responsive-nav-link :href="route('tenant.dashboard', ['tabelaAtiva' => $item['tabelaAtiva']])" :active="request()->input('tabelaAtiva') === $item['tabelaAtiva']">
+                                {!! $item['icon'] ?? '' !!}
+                                {{ $item['label'] }}
+                            </x-responsive-nav-link>
+                        @endif
                     @endforeach
 
                 @elseif(auth()->user()->hasrole('Cliente'))

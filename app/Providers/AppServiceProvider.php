@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Models\Appointment;
+use App\Observers\AppointmentObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
@@ -23,6 +25,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Registrar Observer para Appointments
+        Appointment::observe(AppointmentObserver::class);
+        
         // Configuração de regras de senha mais amigáveis
         Password::defaults(function () {
             return Password::min(8)

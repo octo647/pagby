@@ -50,6 +50,12 @@ public function atualizaDiasPico()
     });
     $this->diasLabels = $dias->pluck('dia_semana')->map(fn($d) => $nomesDias[$d])->toArray();
     $this->diasValores = $dias->pluck('total')->toArray();
+
+    // Dispatchar evento para atualizar o gráfico
+    $this->dispatch('atualizar-grafico-dias-pico', 
+        labels: $this->diasLabels,
+        valores: $this->diasValores
+    );
 }
     public function render()
     {

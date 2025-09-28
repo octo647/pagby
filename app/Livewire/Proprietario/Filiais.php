@@ -21,7 +21,7 @@ class Filiais extends Component
        'complement' => '',
        'require_advance_payment' => false,
        'require_comission' => false,
-       'comission' => 0
+       'commission' => 0
    ];
 
    public $isEditing = false;
@@ -102,7 +102,7 @@ class Filiais extends Component
            'complement' => '',
            'require_advance_payment' => false,
            'require_comission' => false,
-           'comission' => 0
+           'commission' => 0
        ];
        $this->isEditing = false;
    }

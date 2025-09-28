@@ -1,136 +1,267 @@
 <div>
+    {{-- Gestão de Horários - Interface Moderna --}}
+
+<div x-data="{ showEditPanel: @entangle('showEditPanel') }" class="min-h-screen bg-gray-50">
     
-    <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-        <table class="tabela-escura ">
-        
-            <thead class="">
-            <tr>
-            <th scope="col" class="px-6 py-3">
-            Nome
-            </th>
-            <th scope="col" class="px-6 py-3">
-            seg
-            </th>
-            <th scope="col" class="px-6 py-3">
-            ter
-            </th>
-            <th scope="col" class="px-6 py-3">
-            qua
-            </th>
-            <th scope="col" class="px-6 py-3">
-            qui
-            </th>
-            <th scope="col" class="px-6 py-3">
-            sex
-            </th>
-            <th scope="col" class="px-6 py-3">
-            sab
-            </th>
-            <th  scope="col" class="px-6 py-3">
-            dom
-            </th>
-            <th></th>
-            </tr>
-            </thead>
-            <tbody>
-
-                @foreach($officehours as $index => $officehour)
-            <tr class="">
-                <th scope="row" class="">{{ $officehour['funcionario'] }}</th>
-                @foreach(['seg','ter','qua','qui','sex','sab','dom'] as $dia)
-                    @php
-                        $ini = $officehour[$dia.'_ini'] ?? '';
-                        $fim = $officehour[$dia.'_fim'] ?? '';
-                        $lunch_ini = $officehour[$dia.'_lunch_ini'] ?? '';
-                        $lunch_fim = $officehour[$dia.'_lunch_fim'] ?? '';
-                    @endphp
-                    <td class="{{ !($ini && $fim) ? 'bg-gray-300 italic text-gray-500' : '' }}">
-                   
-                        {{-- Exibe os horários formatados --}}
-                   
-                       
-                        {{ ($ini && $fim) ? "$ini-$fim" : 'Não programado' }}
-                        <br>
-                        <small>                            
-                            {{ ($lunch_ini && $lunch_fim) ? "Almoço: $lunch_ini-$lunch_fim" : '' }}
-                        </small>
-                    </td>
-                @endforeach
-                    <td>
-                        <button wire:click="abrirPainelEdicao({{ $index }})" title="Editar horários" class="p-1 rounded hover:bg-blue-200">
-    <svg class="w-6 h-6 text-blue-800" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-        <path fill-rule="evenodd" d="M14 4.182A4.136 4.136 0 0 1 16.9 3c1.087 0 2.13.425 2.899 1.182A4.01 4.01 0 0 1 21 7.037c0 1.068-.43 2.092-1.194 2.849L18.5 11.214l-5.8-5.71 1.287-1.31.012-.012Zm-2.717 2.763L6.186 12.13l2.175 2.141 5.063-5.218-2.141-2.108Zm-6.25 6.886-1.98 5.849a.992.992 0 0 0 .245 1.026 1.03 1.03 0 0 0 1.043.242L10.282 19l-5.25-5.168Zm6.954 4.01 5.096-5.186-2.218-2.183-5.063 5.218 2.185 2.15Z" clip-rule="evenodd"/>
-    </svg>
-</button>
-                    </td>
-            </tr>
-                @endforeach
-            </tbody>
-        </table>
-        </div>
-
-        {{-- Botão para abrir o painel de edição --}}
-
-        {{-- Painel lateral de edição --}}
-        @if($showEditPanel)
-        <div 
-            class="fixed inset-0 bg-black bg-opacity-30 z-40 flex justify-end transition-all"
-        
-        >
-            <div  class="bg-white w-full max-w-md h-full shadow-lg p-6 overflow-y-auto">
-                <h2 class="text-lg font-bold mb-4">
-                    Editar horários de {{ $editOfficehour['funcionario'] ?? '' }}
-                </h2>
-                <table class="table-auto">
-                    <thead class="text-xs text-white text-center uppercase bg-gray-400">
-                        <tr>
-                            <th class="border border-gray-300" >Dia</th>
-                            <th class="border border-gray-300">Início</th>
-                            <th class="border border-gray-300">Final</th>
-                            <th class="border border-gray-300">Intervalo</th>
-                        </tr>
-                    </thead>
-
-
-                @foreach(['seg','ter','qua','qui','sex','sab','dom'] as $dia)
-                
-                <tr>
-                    <td class="border border-gray-300 font-semibold capitalize">{{ $dia }}</td>
-                    <td class="border border-gray-300">
-                        <input type="time" wire:model="editOfficehour.{{$dia}}_ini" class="border rounded p-1" >
-                    </td>
-                    <td class="border border-gray-300">
-                        <input type="time" wire:model="editOfficehour.{{ $dia }}_fim" class="border rounded p-1">
-                    </td>
-                    <td class="border border-gray-300">
-                        <div class="flex items-center gap-2">
-                            <input type="time" wire:model="editOfficehour.{{ $dia }}_lunch_ini" class="border rounded p-1">
-                            <span>até</span>
-                            <input type="time" wire:model="editOfficehour.{{ $dia }}_lunch_fim" class="border rounded p-1">
-                        </div>
-                    </td>
-                </tr>
-                @endforeach
-                </table>
-                <div class="mt-4">
-                    <button
-                        class="bg-green-600 text-white px-3 py-1 rounded"
-                        wire:click="repetirSegunda"
-                        type="button"
-                    >
-                        Repetir horários de segunda-feira para todos os dias
-                    </button>
-                </div>
-            
-                <div class="mt-6 flex gap-2">
-                    <button class="bg-blue-600 text-white px-4 py-2 rounded" wire:click="salvarPainelEdicao">Salvar</button>
-                    <button class="bg-gray-300 px-4 py-2 rounded" wire:click="$set('showEditPanel', false)">Cancelar</button>
+    {{-- Cabeçalho da Página --}}
+    <div class="bg-white border-b border-gray-200 mb-8">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-900">Gestão de Horários</h1>
+                    <p class="text-gray-600 mt-1">Configure os horários de trabalho dos funcionários</p>
                 </div>
             </div>
         </div>
-        @endif
+    </div>
 
+    {{-- Container Principal --}}
+    <div class="container mx-auto px-4 pb-8">
+        
+        {{-- Lista de Horários - Design Moderno --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            
+            {{-- Cabeçalho da Lista --}}
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h2 class="text-lg font-medium text-gray-900 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Horários dos Funcionários
+                    </h2>
+                    <span class="text-sm text-gray-500">{{ count($officehours) }} funcionários</span>
+                </div>
+            </div>
+
+            {{-- Lista de Horários --}}
+            <div class="divide-y divide-gray-200">
+                @forelse($officehours as $index => $officehour)
+                    <div wire:key="schedule-{{$index}}" class="p-6 hover:bg-gray-50 transition-colors">
+                        <div class="flex flex-col lg:flex-row lg:items-center justify-between">
+                            
+                            {{-- Informações do Funcionário --}}
+                            <div class="flex items-center space-x-4 mb-4 lg:mb-0">
+                                <div class="flex-shrink-0">
+                                    <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                        <span class="text-lg font-medium text-white uppercase">
+                                            {{ substr($officehour['funcionario'], 0, 2) }}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-medium text-gray-900">{{ $officehour['funcionario'] }}</h3>
+                                    <p class="text-sm text-gray-500">Funcionário</p>
+                                </div>
+                            </div>
+
+                            {{-- Grid de Horários da Semana --}}
+                            <div class="flex-1 lg:mx-6">
+                                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                                    @foreach(['seg' => 'Seg', 'ter' => 'Ter', 'qua' => 'Qua', 'qui' => 'Qui', 'sex' => 'Sex', 'sab' => 'Sáb', 'dom' => 'Dom'] as $dia => $diaAbrev)
+                                        @php
+                                            $ini = $officehour[$dia.'_ini'] ?? '';
+                                            $fim = $officehour[$dia.'_fim'] ?? '';
+                                            $lunch_ini = $officehour[$dia.'_lunch_ini'] ?? '';
+                                            $lunch_fim = $officehour[$dia.'_lunch_fim'] ?? '';
+                                            $isWorking = $ini && $fim;
+                                        @endphp
+                                        <div class="text-center">
+                                            <div class="text-xs font-medium text-gray-600 mb-1">{{ $diaAbrev }}</div>
+                                            @if($isWorking)
+                                                <div class="bg-green-100 border border-green-200 rounded-lg p-2">
+                                                    <div class="text-xs font-medium text-green-800">
+                                                        {{ $ini }}-{{ $fim }}
+                                                    </div>
+                                                    @if($lunch_ini && $lunch_fim)
+                                                        <div class="text-xs text-green-600 mt-1">
+                                                            Almoço: {{ $lunch_ini }}-{{ $lunch_fim }}
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @else
+                                                <div class="bg-gray-100 border border-gray-200 rounded-lg p-2">
+                                                    <div class="text-xs text-gray-500">Folga</div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
+                            {{-- Botão de Editar --}}
+                            <div class="mt-4 lg:mt-0">
+                                <button wire:click="abrirPainelEdicao({{ $index }})" 
+                                        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                    </svg>
+                                    Editar Horários
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="px-6 py-12 text-center">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900">Nenhum horário configurado</h3>
+                        <p class="mt-1 text-sm text-gray-500">Não há horários definidos para funcionários.</p>
+                    </div>
+                @endforelse
+            </div>
+        </div>
+
+
+        {{-- Painel Lateral de Edição Moderno --}}
+        <div x-show="showEditPanel" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 z-50 overflow-y-auto" 
+             style="display: none;">
+            
+            {{-- Backdrop --}}
+            <div class="flex items-center justify-end min-h-screen">
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+                     @click="showEditPanel = false"></div>
+                
+                {{-- Painel Lateral --}}
+                <div x-show="showEditPanel"
+                     x-transition:enter="ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-x-full"
+                     x-transition:enter-end="opacity-100 translate-x-0"
+                     x-transition:leave="ease-in duration-200"
+                     x-transition:leave-start="opacity-100 translate-x-0"
+                     x-transition:leave-end="opacity-0 translate-x-full"
+                     class="bg-white w-full max-w-2xl h-full shadow-xl flex flex-col relative z-10">
+                    
+                    {{-- Cabeçalho do Painel --}}
+                    <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 text-white">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-xl font-semibold">Editar Horários</h2>
+                                <p class="text-blue-100 text-sm mt-1">{{ $editOfficehour['funcionario'] ?? '' }}</p>
+                            </div>
+                            <button wire:click="$set('showEditPanel', false)" 
+                                    class="rounded-md text-blue-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    {{-- Conteúdo do Painel --}}
+                    <div class="flex-1 overflow-y-auto p-6">
+                        
+                        {{-- Botão de Ação Rápida --}}
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-sm font-medium text-yellow-800">Ação Rápida</h3>
+                                    <p class="text-sm text-yellow-600 mt-1">Aplicar horários de segunda-feira para toda a semana</p>
+                                </div>
+                                <button wire:click="repetirSegunda"
+                                        class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-yellow-700 bg-yellow-100 hover:bg-yellow-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-colors">
+                                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2v0a2 2 0 01-2-2v-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2"></path>
+                                    </svg>
+                                    Aplicar
+                                </button>
+                            </div>
+                        </div>
+
+                        {{-- Formulário de Horários --}}
+                        <div class="space-y-6">
+                            @foreach([
+                                'seg' => ['nome' => 'Segunda-feira', 'cor' => 'blue'],
+                                'ter' => ['nome' => 'Terça-feira', 'cor' => 'indigo'],
+                                'qua' => ['nome' => 'Quarta-feira', 'cor' => 'purple'],
+                                'qui' => ['nome' => 'Quinta-feira', 'cor' => 'pink'],
+                                'sex' => ['nome' => 'Sexta-feira', 'cor' => 'red'],
+                                'sab' => ['nome' => 'Sábado', 'cor' => 'orange'],
+                                'dom' => ['nome' => 'Domingo', 'cor' => 'yellow']
+                            ] as $dia => $config)
+                                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                    <h3 class="text-sm font-medium text-gray-900 mb-4 flex items-center">
+                                        <div class="w-3 h-3 rounded-full bg-{{ $config['cor'] }}-500 mr-2"></div>
+                                        {{ $config['nome'] }}
+                                    </h3>
+                                    
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {{-- Horário de Trabalho --}}
+                                        <div class="space-y-3">
+                                            <label class="block text-sm font-medium text-gray-700">Horário de Trabalho</label>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">Início</label>
+                                                    <input type="time" 
+                                                           wire:model="editOfficehour.{{$dia}}_ini" 
+                                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">Fim</label>
+                                                    <input type="time" 
+                                                           wire:model="editOfficehour.{{ $dia }}_fim" 
+                                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        {{-- Intervalo de Almoço --}}
+                                        <div class="space-y-3">
+                                            <label class="block text-sm font-medium text-gray-700">Intervalo de Almoço</label>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">Início</label>
+                                                    <input type="time" 
+                                                           wire:model="editOfficehour.{{ $dia }}_lunch_ini" 
+                                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">Fim</label>
+                                                    <input type="time" 
+                                                           wire:model="editOfficehour.{{ $dia }}_lunch_fim" 
+                                                           class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+
+                    {{-- Rodapé com Botões --}}
+                    <div class="bg-gray-50 px-6 py-4 border-t border-gray-200">
+                        <div class="flex justify-end space-x-3">
+                            <button wire:click="$set('showEditPanel', false)" 
+                                    class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                                Cancelar
+                            </button>
+                            <button wire:click="salvarPainelEdicao" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                Salvar Horários
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
                                                                     
     </div>
+
+</div>
 </div>
 

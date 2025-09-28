@@ -149,6 +149,11 @@ class BranchUsers extends Component
     $this->editedUserIndex = $index;
 }
 
+    public function cancelEdit()
+    {
+        $this->editedUserIndex = null;
+    }
+
     public function render()
     {
         return view('livewire.proprietario.branch-users', [

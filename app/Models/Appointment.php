@@ -51,6 +51,11 @@ class Appointment extends Model
     {
         return $this->hasOne(\App\Models\Avaliacao::class, 'appointment_id');
     }
+
+    public function comandas()
+    {
+        return $this->hasMany(Comanda::class);
+    }
     
     protected $table = 'appointments';
  
