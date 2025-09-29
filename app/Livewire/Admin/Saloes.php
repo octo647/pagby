@@ -290,12 +290,8 @@ class Saloes extends Component
      */
     private function copyImages($tenantId, $tenantType)
     {
-        if($tenantType == 'Salão de Beleza'){
-        $source = public_path("images/Salao_beleza");
-      } else {
-          $source = public_path("images/Barbearia");
-      }
-
+        
+        $source = public_path("images/$tenantType");
         $destination = public_path("images/$tenantId");
 
         // Copiar todos os arquivos de imagem do diretório padrão para o diretório do tenant
@@ -426,7 +422,9 @@ private function createTenantStorageLink($tenantId)
                     storage_path("$slug/app/public/services"),
                     storage_path("$slug/app/public/gallery"),
                     storage_path("$slug/framework/cache"),
+                    storage_path("$slug"),
                 ];
+        
                 foreach ($dirs as $dir) {
                     if (is_dir($dir)) {
                         File::deleteDirectory($dir);

@@ -492,6 +492,8 @@
                     <li><a href="#about">Sobre</a></li>
                     <li><a href="#testimonials">Depoimentos</a></li>
                     <li><a href="#contact">Contato</a></li>
+                    <li><a href="login" ">Agendar Horário</a></li>
+                    <li><a href="register" >Registrar</a></li>
                 </ul>
                 <div class="menu-toggle">☰</div>
             </nav>
@@ -504,7 +506,7 @@
             <div class="hero-content">
                 <h1>Realce sua beleza natural</h1>
                 <p>No Belle Éclat, oferecemos tratamentos exclusivos para realçar sua beleza única com técnicas modernas e produtos de alta qualidade.</p>
-                <a href="#contact" class="btn">Agende seu horário</a>
+                <a href="login" class="btn">Agende seu horário</a>
             </div>
         </div>
     </section>
@@ -524,7 +526,7 @@
                     <div class="service-info">
                         <h3>Cortes e Penteados</h3>
                         <p>Cortes modernos e penteados exclusivos para todas as ocasiões, realizados por nossos especialistas.</p>
-                        <a href="#" class="btn">Saiba mais</a>
+                       
                     </div>
                 </div>
                 <div class="service-card">
@@ -534,7 +536,7 @@
                     <div class="service-info">
                         <h3>Coloração</h3>
                         <p>Desde mechas sutis a transformações completas, trabalhamos com as melhores marcas do mercado.</p>
-                        <a href="#" class="btn">Saiba mais</a>
+                       
                     </div>
                 </div>
                 <div class="service-card">
@@ -544,7 +546,7 @@
                     <div class="service-info">
                         <h3>Manicure e Pedicure</h3>
                         <p>Cuidados completos para suas mãos e pés, com técnicas de spa e os melhores esmaltes.</p>
-                        <a href="#" class="btn">Saiba mais</a>
+                        
                     </div>
                 </div>
                 <div class="service-card">
@@ -554,17 +556,19 @@
                     <div class="service-info">
                         <h3>Tratamentos Faciais</h3>
                         <p>Limpeza de pele, hidratação e tratamentos antienvelhecimento para uma pele radiante.</p>
-                        <a href="#" class="btn">Saiba mais</a>
+                        
                     </div>
                 </div>
                 <div class="service-card">
                     <div class="service-img">
-                        <img src="https://images.unsplash.com/photo-1596704014070-e8e62949a5a3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" alt="Maquiagem">
+                        <img src="/images/{{tenant()->id}}/maquiagem.jpeg" 
+                        alt="Maquiagem">
+                        
                     </div>
                     <div class="service-info">
                         <h3>Maquiagem</h3>
                         <p>Maquiagem profissional para eventos especiais ou para o dia a dia, realçando sua beleza natural.</p>
-                        <a href="#" class="btn">Saiba mais</a>
+                        
                     </div>
                 </div>
                 <div class="service-card">
@@ -574,7 +578,7 @@
                     <div class="service-info">
                         <h3>Depilação</h3>
                         <p>Técnicas modernas de depilação para resultados duradouros e confortáveis.</p>
-                        <a href="#" class="btn">Saiba mais</a>
+                       
                     </div>
                 </div>
             </div>
@@ -667,39 +671,7 @@
                         <p>Domingo: Fechado</p>
                     </div>
                 </div>
-                <div class="contact-form">
-                    <form>
-                        <div class="form-group">
-                            <label for="name">Nome</label>
-                            <input type="text" id="name" name="name" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="email">E-mail</label>
-                            <input type="email" id="email" name="email" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">Telefone</label>
-                            <input type="tel" id="phone" name="phone">
-                        </div>
-                        <div class="form-group">
-                            <label for="service">Serviço de Interesse</label>
-                            <select id="service" name="service" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px;">
-                                <option value="">Selecione um serviço</option>
-                                <option value="corte">Corte de Cabelo</option>
-                                <option value="coloracao">Coloração</option>
-                                <option value="manicure">Manicure/Pedicure</option>
-                                <option value="facial">Tratamento Facial</option>
-                                <option value="maquiagem">Maquiagem</option>
-                                <option value="depilacao">Depilação</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="message">Mensagem</label>
-                            <textarea id="message" name="message" required></textarea>
-                        </div>
-                        <button type="submit" class="btn">Enviar Mensagem</button>
-                    </form>
-                </div>
+                
             </div>
         </div>
     </section>
