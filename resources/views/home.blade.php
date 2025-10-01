@@ -1,5 +1,5 @@
 <!-- filepath: resources/views/home.blade.php -->
-<x-Pagby-layout>
+<x-pagby-layout>
     <main class="flex-1 flex flex-col items-center justify-center text-center bg-gray-900 px-4 py-10">
         <h1 class="text-4xl font-extrabold mb-4 text-pink-600 drop-shadow">Bem-vindo ao Pagby!</h1>
         <p class="mb-6 text-lg text-white/90 max-w-2xl">
@@ -34,4 +34,4 @@
         </div>
     </main>
 
-</x-Pagby-layout>
+</x-pagby-layout>
