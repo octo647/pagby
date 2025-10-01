@@ -1,4 +1,4 @@
-<x-pixby-layout>
+<x-pagby-layout>
 <!-- resources/views/register-tenant.blade.php -->
 <!-- Faz o registro de um novo salão -->
 
@@ -134,4 +134,4 @@
 </div>
  
 
-</x-pixby-layout>
+</x-pagby-layout>

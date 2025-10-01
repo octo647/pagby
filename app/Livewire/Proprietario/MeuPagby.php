@@ -9,7 +9,7 @@ use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 
 
-class MeuPixby extends Component {
+class MeuPagby extends Component {
     public $planoAtual;
     public $statusPagamento;
     public $proximoVencimento;
@@ -71,7 +71,7 @@ class MeuPixby extends Component {
 
     public function render()
     {
-        return view('livewire.proprietario.meu-pixby', [
+        return view('livewire.proprietario.meu-pagby', [
             'planoAtual' => $this->planoAtual,
             'statusPagamento' => $this->statusPagamento,
             'proximoVencimento' => $this->proximoVencimento,

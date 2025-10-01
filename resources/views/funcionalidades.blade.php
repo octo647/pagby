@@ -1,4 +1,4 @@
-<x-pixby-layout>
+<x-pagby-layout>
     
     <main class="flex-1 flex flex-col items-center justify-center text-center bg-gray-900 px-4 py-10">
         <h1 class="text-4xl font-extrabold mb-4 text-pink-600 drop-shadow">Funcionalidades do Pixby</h1>
@@ -47,4 +47,4 @@
         
     </main>
 
-</x-pixby-layout>
+</x-pagby-layout>

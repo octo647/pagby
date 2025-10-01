@@ -1,4 +1,4 @@
-<x-pixby-layout>
+<x-pagby-layout>
 <!-- resources/views/registration-success.blade.php -->
 <!-- Página de sucesso após registro de salão -->
 <div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -47,11 +47,11 @@
             <div class="mt-8 pt-6 border-t border-gray-200">
                 <p class="text-sm text-gray-500 mb-2">Precisa de ajuda?</p>
                 <div class="text-sm text-gray-600">
-                    <p>Email: contato@pixby.com.br</p>
+                    <p>Email: contato@pagby.com.br</p>
                     <p>Telefone: (11) 99999-9999</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
-</x-pixby-layout>
+</x-pagby-layout>

@@ -160,8 +160,8 @@
                         @livewire('proprietario.relatorio-anual')
                     @elseif($tabelaAtiva === 'planos-de-assinatura')
                         @livewire('planos-de-assinatura')
-                    @elseif($tabelaAtiva === 'meu-pixby')
-                        @livewire('proprietario.meu-pixby')
+                    @elseif($tabelaAtiva === 'meu-pagby')
+                        @livewire('proprietario.meu-pagby')
                     @elseif($tabelaAtiva === 'gerenciar-comandas')
                         <div class="space-y-6">
                             <div class="flex items-center justify-between">
