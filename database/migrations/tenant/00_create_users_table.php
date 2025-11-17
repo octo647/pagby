@@ -27,6 +27,8 @@ return new class extends Migration
             $table->boolean('notifications_enabled')->default(true);
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->string('google_id')->nullable()->unique()->comment('ID do Google');
+            $table->string('facebook_id')->nullable()->unique()->comment('ID do Facebook');
             $table->string('password');
             $table->string('photo')->nullable()->comment('Foto do usuário');
             $table->date('birthdate')->nullable()->comment('Data de nascimento do usuário');

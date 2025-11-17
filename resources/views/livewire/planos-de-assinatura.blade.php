@@ -1,7 +1,6 @@
 
 <div>
-    {{-- Planos de Assinatura - Interface Moderna --}}
-    
+       
     {{-- Notificações de Sucesso/Aviso --}}
     @if (session()->has('message') || session()->has('warning'))
         <div class="mb-6">
@@ -61,6 +60,18 @@
 
     {{-- Grid de Planos --}}
     <div class="container mx-auto px-4 pb-8">
+
+        @if(request('cancel') && request('message'))
+
+        <div class="alerta-sucesso flex items-center mb-6">
+        <svg class="w-5 h-5 mr-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+            {{ request('message') }}
+        </div>
+        @endif
+
+
         @if(count($planos) > 0)
             <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
                 @foreach($planos as $plano)
@@ -159,22 +170,30 @@
                         </div>
 
                         {{-- Footer com Ações --}}
+                        @php
+                            $centralDomain = config('tenancy.central_domains')[0] ?? 'www.seudominio.com.br';
+                        @endphp
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
                             @if(auth()->user()->hasRole('Cliente'))
                                 @if(auth()->user()->currentSubscription() && auth()->user()->currentSubscription()->plan_id == $plano['id'])
                                     <div class="space-y-3">
                                         <p class="text-sm text-blue-600 font-medium text-center">✓ Você está assinando este plano</p>
-                                        <button wire:click="cancelarAssinatura" 
-                                                class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium">
-                                            Cancelar Assinatura
+                                        @if($assinaturaAtiva)
+                                        <form method="POST" action="https://{{ $centralDomain }}/tenant-assinatura/cancelar" onsubmit="return confirm('Tem certeza que deseja cancelar a assinatura?');">
+                                        @csrf
+                                        <input type="hidden" name="payment_id" value="{{ is_array($assinaturaAtiva) ? $assinaturaAtiva['id'] : $assinaturaAtiva->id }}">
+                                        <button type="submit" class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium">
+                                            Cancelar Assinatura 
                                         </button>
+                                    </form>
+                                        @endif
                                     </div>
                                 @elseif(!auth()->user()->currentSubscription())
                                     <div class="space-y-3">
                                         <p class="text-xs text-gray-500 text-center">Você não possui um plano ativo</p>
                                         <button wire:click="assinarPlano('{{ $plano['id'] }}')" 
                                                 class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors font-medium">
-                                            Assinar Plano
+                                            Assinar Plano 
                                         </button>
                                     </div>
                                 @else

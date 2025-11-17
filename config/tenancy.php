@@ -15,15 +15,8 @@ return [
      *
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
-    'central_domains' => [
-        '127.0.0.1',
-        'localhost',
-        '192.168.2.170',
-        'localhost:8000',
-        '127.0.0.1:8000',
-        '192.168.2.170:8000',
-    ],
-
+    
+    'central_domains' => explode(',', env('CENTRAL_DOMAINS', 'localhost,127.0.0.1')),
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
      * Their responsibility is making Laravel features tenant-aware.
@@ -54,7 +47,7 @@ return [
          * Tenant database names are created like this:
          * prefix + tenant_id + suffix.
          */
-        'prefix' => 'tenant',
+        'prefix' => env('TENANT_DB_PREFIX', 'tenant'),
         'suffix' => '',
 
         /**

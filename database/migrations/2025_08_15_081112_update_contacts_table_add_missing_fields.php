@@ -19,16 +19,22 @@ return new class extends Migration
             if (!Schema::hasColumn('contacts', 'tipo')) {
                 $table->string('tipo')->nullable();
             }
-            if (!Schema::hasColumn('contacts', 'salon_name')) {
-                $table->string('salon_name')->nullable();
+            if (!Schema::hasColumn('contacts', 'tenant_name')) {
+                $table->string('tenant_name')->nullable();
             }
             if (!Schema::hasColumn('contacts', 'neighborhood')) {
                 $table->string('neighborhood')->nullable();
             }
+            if (!Schema::hasColumn('contacts', 'cpf')) {
+                $table->string('cpf')->nullable();
+            }
+            if (!Schema::hasColumn('contacts', 'employee_count')) {
+                $table->integer('employee_count')->nullable();
+            }
             
-            // Renomear o campo 'salon' para 'salon_name' se existir
-            if (Schema::hasColumn('contacts', 'salon') && !Schema::hasColumn('contacts', 'salon_name')) {
-                $table->renameColumn('salon', 'salon_name');
+            // Renomear o campo 'salon' para 'tenant_name' se existir
+            if (Schema::hasColumn('contacts', 'salon') && !Schema::hasColumn('contacts', 'tenant_name')) {
+                $table->renameColumn('salon', 'tenant_name');
             }
         });
     }

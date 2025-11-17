@@ -3,54 +3,100 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Contact; // Certifique-se de que o modelo Contact está importado
+use App\Models\Contact;
+use Illuminate\Support\Facades\Log;
 
 class TenantRegistrationController extends Controller
 {
-    public function showForm()
+    public function showForm(Request $request)
     {
-        return view('register-tenant');
+        $selectedPlan = $request->get('plan'); // Receber o plano selecionado
+        
+        // Se veio de um plano específico, armazenar na sessão
+        if ($selectedPlan) {
+            session(['selected_plan' => $selectedPlan]);
+        }
+        
+        return view('register-tenant', [
+            'selectedPlan' => $selectedPlan ?? session('selected_plan')
+        ]);
     }
 
     public function register(Request $request)
     {
         // Lógica para registrar um novo contato com validação de email único
-        $validatedData = $request->validate([
-            'owner_name' => 'required|string|max:255',
+        $validatedData = $request->validate([ 
+            'owner_name' => 'required|string|max:255|min:3',
+            'cpf' => 'nullable|string|max:14',
             'email' => 'required|email|max:255|unique:contacts,email',
-            'phone' => 'required|string|max:20',
-            'tipo' => 'required|string|max:50',
-            'salon_name' => 'required|string|max:255',
+            'phone' => 'required|string|min:10|max:15',
+            'tipo' => 'required|in:Barbearia,Salão de Beleza,Outro',
+            'tenant_name' => 'required|string|max:255|min:2',
+            'employee_count' => 'nullable|integer|min:1',
+            'cep' => 'required|string|size:9', // 00000-000
             'address' => 'required|string|max:255',
             'neighborhood' => 'required|string|max:255',
             'city' => 'required|string|max:255',
-            'state' => 'required|string|max:255',
+            'state' => 'required|string|size:2',
+            'selected_plan' => 'nullable|string|in:basico,premium'
         ], [
             // Mensagens personalizadas para validação
-            'email.unique' => 'Este email já está registrado em nosso sistema. Por favor, use um email diferente ou entre em contato conosco.',
+            'email.unique' => 'Este email já está registrado em nosso sistema. Por favor, use um email diferente ou entre em contato conosco pelo e-mail <a href="mailto:suporte@pagby.com.br" class="text-blue-500">suporte@pagby.com.br</a> ou pelo WhatsApp: <a href="https://wa.me/5532987007302" class="text-blue-500">(32) 98700-7302</a>.',
+            'cpf.required' => 'O CPF é obrigatório.',
             'email.required' => 'O campo email é obrigatório.',
             'email.email' => 'Por favor, insira um email válido.',
             'owner_name.required' => 'O nome do proprietário é obrigatório.',
-            'salon_name.required' => 'O nome do salão é obrigatório.',
+            'tenant_name.required' => 'O nome do estabelecimento é obrigatório.',
+            'employee_count.integer' => 'O número de funcionários deve ser um valor numérico.',
+            'employee_count.min' => 'O número de funcionários deve ser pelo menos 1.',
             'phone.required' => 'O telefone é obrigatório.',
             'tipo.required' => 'Por favor, selecione o tipo de estabelecimento.',
             'address.required' => 'O endereço é obrigatório.',
             'neighborhood.required' => 'O bairro é obrigatório.',
             'city.required' => 'A cidade é obrigatória.',
             'state.required' => 'O estado é obrigatório.',
+            'owner_name.min' => 'O nome deve ter pelo menos 3 caracteres.',
+            'phone.min' => 'O telefone deve ter pelo menos 10 dígitos.',
+            'cep.size' => 'O CEP deve ter 9 caracteres (00000-000).',
+            'state.size' => 'Selecione um estado válido.'
         ]);
 
         try {
-            // Aqui você pode adicionar a lógica para salvar os dados no banco de dados
-            Contact::create($validatedData);
+            // Limpar telefone e CEP e CPF para armazenar apenas números
+            $validatedData['phone'] = preg_replace('/\D/', '', $validatedData['phone']);
+            $validatedData['cep'] = preg_replace('/\D/', '', $validatedData['cep']);
+            $validatedData['cpf'] = preg_replace('/\D/', '', $validatedData['cpf']);
+            
+            // Criar o contato no banco de dados - CORRIGIDO: atribuir à variável
+            $contact = Contact::create($validatedData);
+
+            // Pegar o plano da sessão se existir
+            $selectedPlan = $validatedData['selected_plan'] ?? session('selected_plan');
 
             // Adiciona um token temporário para proteger a página de sucesso
-            session(['registration_completed' => true, 'registration_time' => now()]);
+            session([
+                'registration_completed' => true, 
+                'registration_time' => now(),  
+                'contact_id' => $contact->id,
+                'selected_plan' => $selectedPlan
+            ]);
+
+            Log::info('Registro de contato realizado com sucesso', [
+                'contact_id' => $contact->id,
+                'email' => $contact->email,
+                'selected_plan' => $selectedPlan
+            ]);
 
             return redirect()->route('registration-success')
                 ->with('success', 'Registro realizado com sucesso!');
                 
         } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('Erro de banco de dados no registro', [
+                'error' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'data' => $request->except(['_token'])
+            ]);
+            
             // Captura erros de banco de dados como segunda linha de defesa
             if ($e->getCode() == 23000) { // Código para constraint violation
                 return redirect()->back()
@@ -64,10 +110,16 @@ class TenantRegistrationController extends Controller
                 ->withErrors(['general' => 'Ocorreu um erro interno. Por favor, tente novamente mais tarde.']);
                 
         } catch (\Exception $e) {
+            Log::error('Erro geral no registro', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'data' => $request->except(['_token'])
+            ]);
+            
             // Captura qualquer outro erro
             return redirect()->back()
                 ->withInput()
-                ->withErrors(['general' => 'Ocorreu um erro inesperado. Por favor, tente novamente.']);
+                ->withErrors(['general' => 'Ocorreu um erro inesperado: ' . $e->getMessage()]);
         }
     }
 
@@ -83,10 +135,15 @@ class TenantRegistrationController extends Controller
                 ->with('error', 'Acesso negado. Por favor, registre um salão primeiro.');
         }
 
+        $contactId = session('contact_id');
+        $selectedPlan = session('selected_plan');
+
         // Remove as variáveis de sessão após exibir a página
         session()->forget(['registration_completed', 'registration_time']);
 
-        return view('registration-success');
+        return view('registration-success', [
+            'contact_id' => $contactId,
+            'selected_plan' => $selectedPlan
+        ]);
     }
-
 }

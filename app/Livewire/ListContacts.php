@@ -18,22 +18,24 @@ class ListContacts extends Component
         'email' => '',
         'phone' => '',
         'tipo' => '',
-        'salon_name' => '',
+        'tenant_name' => '',
         'address' => '',
         'neighborhood' => '',
         'city' => '',
         'state' => '',
+        'notas' => '',
     ];
     public $newContact = [
         'owner_name' => '',
         'email' => '',
         'phone' => '',
         'tipo' => '',
-        'salon_name' => '',
+        'tenant_name' => '',
         'address' => '',
         'neighborhood' => '',
         'city' => '',
         'state' => '',
+        'notas' => '',
     ];
    
 
@@ -77,11 +79,12 @@ class ListContacts extends Component
             'email' => $contact['email'],
             'phone' => $contact['phone'],
             'tipo' => $contact['tipo'],
-            'salon_name' => $contact['salon_name'],
+            'tenant_name' => $contact['tenant_name'],
             'address' => $contact['address'],
             'neighborhood' => $contact['neighborhood'],
             'city' => $contact['city'],
             'state' => $contact['state'],
+            'notas' => $contact['notas'] ?? '',
         ];
         $this->showEditForm = true;
         $this->showAddForm = false; // Garante que apenas um formulário seja exibido
@@ -116,7 +119,7 @@ class ListContacts extends Component
             'email' => '',
             'phone' => '',
             'tipo' => '',
-            'salon_name' => '',
+            'tenant_name' => '',
             'address' => '',
             'neighborhood' => '',
             'city' => '',
@@ -131,11 +134,12 @@ class ListContacts extends Component
             'newContact.email' => 'required|email|max:255',
             'newContact.phone' => 'required|string|max:20',
             'newContact.tipo' => 'required|string|max:50',
-            'newContact.salon_name' => 'required|string|max:255',
+            'newContact.tenant_name' => 'required|string|max:255',
             'newContact.address' => 'required|string|max:255',
             'newContact.neighborhood' => 'required|string|max:255',
             'newContact.city' => 'required|string|max:255',
             'newContact.state' => 'required|string|max:255',
+            'newContact.notas' => 'nullable|string|max:1000',
         ]);
 
         Contact::create($this->newContact);
@@ -154,11 +158,12 @@ class ListContacts extends Component
             'editingContact.email' => 'required|email|max:255',
             'editingContact.phone' => 'required|string|max:20',
             'editingContact.tipo' => 'required|string|max:50',
-            'editingContact.salon_name' => 'required|string|max:255',
+            'editingContact.tenant_name' => 'required|string|max:255',
             'editingContact.address' => 'required|string|max:255',
             'editingContact.neighborhood' => 'required|string|max:255',
             'editingContact.city' => 'required|string|max:255',
             'editingContact.state' => 'required|string|max:255',
+            'editingContact.notas' => 'nullable|string|max:1000',
         ]);
 
         $contact = Contact::find($this->editingContact['id']);
@@ -167,11 +172,12 @@ class ListContacts extends Component
             'email' => $this->editingContact['email'],
             'phone' => $this->editingContact['phone'],
             'tipo' => $this->editingContact['tipo'],
-            'salon_name' => $this->editingContact['salon_name'],
+            'tenant_name' => $this->editingContact['tenant_name'],
             'address' => $this->editingContact['address'],
             'neighborhood' => $this->editingContact['neighborhood'],
             'city' => $this->editingContact['city'],
             'state' => $this->editingContact['state'],
+            'notas' => $this->editingContact['notas'],
         ]);
         
         $this->contacts = Contact::all()->toArray();
@@ -195,11 +201,12 @@ class ListContacts extends Component
             'email' => '',
             'phone' => '',
             'tipo' => '',
-            'salon_name' => '',
+            'tenant_name' => '',
             'address' => '',
             'neighborhood' => '',
             'city' => '',
             'state' => '',
+            'notas' => '',
         ];
     }
     

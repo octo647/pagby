@@ -191,11 +191,14 @@ class Saloes extends Component
             'newSalon.slug' => 'required',
             'logoFile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-
+        // Domínio baseado no ambiente
+        $domainSuffix = env('TENANT_DOMAIN_SUFFIX', '.localhost');
+    
         $tenant = Tenant::create($this->newSalon);
 
         // Cria o domínio para o salão
-        $tenant->createDomain(['domain' => $this->newSalon['id'] . '.localhost']);
+        
+        $tenant->createDomain(['domain' => $this->newSalon['id'] . $domainSuffix]);
 
         // Inicia automaticamente o período de teste de 30 dias
         $tenant->startTrial();
@@ -252,8 +255,8 @@ class Saloes extends Component
      */
     private function createTenantDirectoryStructure($tenantId, $tenantType)
     {
-        $basePath = public_path();
-        $storagePath = storage_path();
+        $basePath = env('HOSTGATOR_PUBLIC_PATH', public_path());
+        $storagePath = env('HOSTGATOR_STORAGE_PATH', storage_path());
         
         // Diretórios a serem criados
         $directories = [

@@ -56,7 +56,20 @@ class Appointment extends Model
     {
         return $this->hasMany(Comanda::class);
     }
-    
+    public function payments()
+    {
+        return $this->hasMany(Payment::class);
+    }
+
+    public function latestPayment()
+    {
+        return $this->hasOne(Payment::class)->latest();
+    }
+
+    public function hasApprovedPayment(): bool
+    {
+        return $this->payments()->where('status', 'approved')->exists();
+    }
     protected $table = 'appointments';
  
     use HasFactory;

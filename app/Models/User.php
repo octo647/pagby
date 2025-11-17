@@ -24,6 +24,8 @@ class User extends Authenticatable
         'email',
         'password',
         'photo',
+        'google_id',
+        'facebook_id',
         'status',
        'phone', 'whatsapp', 'birthdate', 'cpf', 'cep', 'street', 'number', 'complement', 'city', 'neighborhood', 'state', 'notifications_enabled'
     ];

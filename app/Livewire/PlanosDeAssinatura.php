@@ -12,6 +12,7 @@ use App\Models\Branch; // Certifique-se de que o modelo Branch está importado
 use App\Models\Subscription; // Certifique-se de que o modelo Subscription está importado
 use App\Models\User; // Certifique-se de que o modelo User está importado
 
+
 class PlanosDeAssinatura extends Component
 {
     public $planos = [];
@@ -30,6 +31,7 @@ class PlanosDeAssinatura extends Component
     public $features_values = [];
     public $modalNovoPlano = false;
     public $allowedDays = []; // Array para armazenar os dias permitidos
+    public $assinaturaAtiva = null; // Assinatura ativa do usuário
     
     // Listener para atualizar descontos quando serviços adicionais mudarem
     public function updatedServicosAdicionais()
@@ -56,21 +58,31 @@ class PlanosDeAssinatura extends Component
     
     public function mount()
     {
-        $planos = Plan::with('services', 'additionalServices')->get();
-        
-        
-       
-    
+        $planos = Plan::with('services', 'additionalServices')->get();    
         $this->todosServicos = \App\Models\Service::all();
+
+        // Defina a assinatura ativa do usuário autenticado (FORA do map)
+        $user = Auth::user();
+        $tenantId = tenant() ? tenant()->id : null;
+        $this->assinaturaAtiva = null;
+        if ($user && $tenantId) {
+            $this->assinaturaAtiva = \App\Models\TenantsPlansPayment::on('mysql')
+                ->where('tenant_id', $tenantId)
+                ->where('payer_data', 'like', '%'.$user->email.'%')
+                ->whereIn('status', ['authorized', 'active', 'approved'])
+                ->latest()
+                ->first();
+        }
+    
+
         $this->planos = $planos->map(function ($plano) {
-            // Mapear serviços adicionais com seus descontos
             $additionalServicesWithDiscounts = $plano->additionalServices->map(function ($service) {
                 return [
                     'name' => $service->service,
                     'discount' => $service->pivot->discount ?? 0
                 ];
             })->toArray();
-            
+
             return [
                 'id' => $plano->id,
                 'name' => $plano->name,
@@ -82,9 +94,7 @@ class PlanosDeAssinatura extends Component
                 'features' => $plano->features,
             ];
         })->toArray();
-       
-      
-    }
+}
     public function allowedDays()
     {
         // Retorna os dias permitidos para o agendamento
@@ -95,48 +105,28 @@ class PlanosDeAssinatura extends Component
     {
         // Auth::setUser(Auth::user()->fresh()); // <-- Removido pois pode causar erro se não for um modelo Eloquent
         $plano = Plan::find($planoId);
+        $user = Auth::user();
         if ($plano) {
             // Verifica se o usuário já tem um plano ativo
-            if (Auth::user()->hasRole('Cliente') && Auth::user()->plano_atual) {
+            if ($user->hasRole('Cliente') && $user->plano_atual) {
                 session()->flash('message', 'Você já possui um plano ativo.');
                 return;
             }
+            // Dados para assinatura MercadoPago
+            //verifica o domínio central
+            $centralDomain = config('tenancy.central_domains')[0];
+            $tenant_id = tenant()->id;
+            $urlCentral = "https://{$centralDomain}/tenant-assinatura/store?tenant_id={$tenant_id}&plan_id={$planoId}&user_email={$user->email}";
+           
+            return redirect()->away($urlCentral); 
+        }
+    }
+           
 
-            // Cria a assinatura
-            Auth::user()->subscriptions()->updateOrCreate(
-                ['user_id' => Auth::id(), 'plan_id' => $plano->id],
-                ['start_date' => now(),
-                'end_date' => now()->addDays($plano->duration_days),
-                'status' => 'Ativo',
-                'created_by' => Auth::id(),
-                'updated_by' => Auth::id()]
-            );
-            // Recarrega o usuário autenticado para atualizar os relacionamentos
-            // Auth::setUser(Auth::user()->fresh());
+
+
+     
     
-            $this->mount();
-            // Dispara um evento para recarregar a página
-            $this->dispatch('reloadPage');
-
-            session()->flash('message', 'Assinatura realizada com sucesso!');
-        }
-    }
-    public function cancelarAssinatura()
-    {
-        // Auth::setUser(Auth::user()->fresh()); // <-- Removido pois pode causar erro se não for um modelo Eloquent
-        $subscription = Auth::user()->subscriptions()->where('status', 'Ativo')->first();
-        if ($subscription) {
-            $subscription->status = 'Cancelado';
-            $subscription->save();
-            session()->flash('message', 'Assinatura cancelada com sucesso!');
-        } else {
-            session()->flash('message', 'Nenhuma assinatura ativa encontrada.');
-        }
-        // Auth::setUser(Auth::user()->fresh());
-        $this->mount();
-        $this->dispatch('reloadPage');
-  
-    }
     public function abrirModalNovoPlano()
     {
         $this->reset(['nomePlano', 'preco', 'duracaoDias', 'servicosIncluidos', 'servicosAdicionais', 'servicosAdicionaisDescontos', 'features_keys', 'features_values', 'allowedDays']);
@@ -321,6 +311,10 @@ class PlanosDeAssinatura extends Component
     
     public function render()
     {
-        return view('livewire.planos-de-assinatura');
+        return view('livewire.planos-de-assinatura', [
+            'planos' => $this->planos,
+            'assinaturaAtiva' => $this->assinaturaAtiva,
+            
+        ]);
     }
 }

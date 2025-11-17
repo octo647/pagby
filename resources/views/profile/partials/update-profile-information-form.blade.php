@@ -1,4 +1,5 @@
 <section>
+@php use Illuminate\Support\Str; @endphp
     <header>
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
@@ -7,15 +8,18 @@
     @csrf
     @method('PATCH')
     <div class="mt-4 flex flex-col items-center">
-    
+    @php
+        $isExternalPhoto = $user->photo && (Str::startsWith($user->photo, 'http://') || Str::startsWith($user->photo, 'https://'));
+    @endphp
 
     <img
         id="photo-preview"
-        src="{{ $user->photo ? tenant_asset($user->photo) : '' }}"
+        src="{{ $isExternalPhoto ? $user->photo : ($user->photo ? tenant_asset($user->photo) : '') }}"
         class="w-24 h-24 rounded-full object-cover mb-2 object-center"
         alt="Preview da foto"
         @if(!$user->photo) style="display:none;" @endif
     >
+    
    
     @error('photo')
         <span class="text-red-500 text-xs">{{ $message }}</span>

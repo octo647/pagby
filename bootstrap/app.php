@@ -17,7 +17,19 @@ return Application::configure(basePath: dirname(__DIR__))
             'scopeSessions' => \Stancl\Tenancy\Middleware\ScopeSessions::class,
             'handleSessionErrors' => \App\Http\Middleware\HandleSessionErrors::class,
         ]);
-        
+        $middleware->validateCsrfTokens(except: [
+            'stripe/*',
+            'http://www.pagby.com.br/pagby-subscription/*',
+            'tenant-assinatura/*',
+            'tenant-assinatura/webhook',
+            'pagby-subscription/*',
+            'pagby-subscription/webhook',
+            'http://www.pagby.com.br/tenant-assinatura/webhook',
+            'http://www.pagby.com.br/pagby-subscription/webhook',
+            'subscription/select',
+            
+        ]);
+
         // Adicionar o middleware de tratamento de erros de sessão globalmente
         $middleware->web([
             \App\Http\Middleware\HandleSessionErrors::class,

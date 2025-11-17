@@ -28,7 +28,7 @@ class CheckTenantSubscription
             'tenant.subscription.select',
             'tenant.subscription.payment',
             'tenant.subscription.success',
-            'tenant.blocked',
+            'tenant.subscription.blocked',
             'logout',
         ];
 
@@ -53,7 +53,7 @@ class CheckTenantSubscription
             }
 
             // Redireciona para página de planos ou bloqueio
-            return redirect()->route('tenant.blocked');
+            return redirect()->route('tenant.subscription.blocked');
         }
 
         return $next($request);

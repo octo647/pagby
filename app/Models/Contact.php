@@ -9,11 +9,15 @@ class Contact extends Model
 {
     protected $fillable = [
         'owner_name',
-        'email',
+        'cpf',
+        'email',        
         'phone',
+        'notas',
         'tipo',
-        'salon_name',
+        'tenant_name',
+        'employee_count',
         'address',
+        'cep',
         'neighborhood',
         'city',
         'state',

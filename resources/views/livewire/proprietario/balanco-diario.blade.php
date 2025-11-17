@@ -442,8 +442,8 @@
                 <div class="bg-gradient-to-r from-orange-50 to-orange-100 rounded-lg p-6 border border-orange-200">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-sm font-medium text-orange-700">Comissão ({{ $comission }}%)</p>
-                            <p class="text-2xl font-bold text-orange-800">R$ {{ number_format($value_comission ?: 0, 2, ',', '.') }}</p>
+                            <p class="text-sm font-medium text-orange-700">Comissão ({{ $commission }}%)</p>
+                            <p class="text-2xl font-bold text-orange-800">R$ {{ number_format($value_commission ?: 0, 2, ',', '.') }}</p>
                         </div>
                         <div class="bg-orange-200 bg-opacity-50 rounded-full p-3">
                             <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

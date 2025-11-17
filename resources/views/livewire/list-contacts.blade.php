@@ -45,8 +45,8 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Nome do Salão</label>
-                        <input type="text" wire:model="newContact.salon_name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('newContact.salon_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <input type="text" wire:model="newContact.tenant_name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('newContact.tenant_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Endereço</label>
@@ -68,6 +68,14 @@
                         <input type="text" wire:model="newContact.state" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                         @error('newContact.state') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Notas</label>
+                        <textarea wire:model="newContact.notas" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                        @error('newContact.notas') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+
+
                 </div>
                 <div class="mt-4 flex space-x-2">
                     <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
@@ -113,8 +121,8 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Nome do Salão</label>
-                        <input type="text" wire:model="editingContact.salon_name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
-                        @error('editingContact.salon_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                        <input type="text" wire:model="editingContact.tenant_name" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('editingContact.tenant_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Endereço</label>
@@ -136,6 +144,13 @@
                         <input type="text" wire:model="editingContact.state" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                         @error('editingContact.state') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
+                   <div>
+                        <label class="block text-sm font-medium text-gray-700">Notas</label>
+                        <textarea wire:model="editingContact.notas" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                        @error('editingContact.notas') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+
+
                 </div>
                 <div class="mt-4 flex space-x-2">
                     <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
@@ -170,7 +185,7 @@
             <td class="py-3 px-4">{{$contact['email']}}</td>
             <td class="py-3 px-4">{{$contact['phone']}}</td>
             <td class="py-3 px-4">{{$contact['tipo']}}</td>
-            <td class="py-3 px-4">{{$contact['salon_name']}}</td>
+            <td class="py-3 px-4">{{$contact['tenant_name']}}</td>
             <td class="py-3 px-4">{{$contact['city']."/".$contact['state']}}</td>
             <td class="py-3 px-4">
                 <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mr-2" wire:click="editContact({{$index}})">

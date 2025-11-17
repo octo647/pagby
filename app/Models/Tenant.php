@@ -151,6 +151,59 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         }
         $this->save();
     }
+    public function pagByPayments()
+    {
+        return $this->hasMany(PagByPayment::class, 'tenant_id', 'id');
+    }
+
+    public function latestPagByPayment()
+    {
+        return $this->hasOne(PagByPayment::class, 'tenant_id', 'id')->latest();
+    }
+
+    public function hasApprovedPagByPayments(): bool
+    {
+        return $this->pagByPayments()->where('status', 'approved')->exists();
+    }
+    /**
+     * Retorna o nome legível do plano atual
+     */
+    public function getPlanDisplayName(): string
+    {
+        return match($this->current_plan) {
+            'basico' => 'Básico',
+            'premium' => 'Premium',
+            default => 'Trial'
+        };
+    }
+
+    /**
+     * Retorna o status legível da assinatura
+     */
+    public function getSubscriptionStatusDisplay(): string
+    {
+        if ($this->isInTrial()) {
+            return 'Trial ativo até ' . $this->trial_ends_at->format('d/m/Y');
+        }
+        
+        if ($this->hasActiveSubscription()) {
+            return 'Assinatura ativa até ' . $this->subscription_ends_at->format('d/m/Y');
+        }
+        
+        if ($this->shouldBeBlocked()) {
+            return 'Bloqueado';
+        }
+        
+        return 'Sem assinatura';
+    }
+
+    /**
+     * Verifica se pode fazer upgrade/downgrade
+     */
+    public function canChangePlan(): bool
+    {
+        return $this->hasActiveSubscription() && !$this->shouldBeBlocked();
+    }
 
 
 }

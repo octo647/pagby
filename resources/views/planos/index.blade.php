@@ -1,9 +1,9 @@
-<x-pixby-layout>
+<x-pagby-layout>
     <header class="w-full py-6 bg-gradient-to-r from-indigo-900 via-purple-900 to-pink-700 shadow">
         <div class="container mx-auto flex items-center justify-between px-4">
             <div class="flex items-center gap-3">     
-                <img src="{{ asset('images/logo.png') }}" alt="Logo Pixby" class="w-12 h-12 rounded-full object-cover border-2 border-pink-400 shadow">          
-                <span class="text-3xl font-extrabold text-white tracking-wide">Pixby</span>
+                <img src="{{ asset('images/logo.png') }}" alt="Logo PagBy" class="w-12 h-12 rounded-full object-cover border-2 border-pink-400 shadow">          
+                <span class="text-3xl font-extrabold text-white tracking-wide">PagBy</span>
             </div>
             <div class="flex items-center gap-4">
                 <a href="{{ route('login') }}" class="bg-white text-pink-700 px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-pink-100 transition">Entrar</a>
@@ -27,4 +27,4 @@
                 </div>
             @endforeach
         </div>
-</x-pixby-layout>
+</x-pagby-layout>

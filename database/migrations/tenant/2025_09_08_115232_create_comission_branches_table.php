@@ -28,7 +28,7 @@ return new class extends Migration
     {
         Schema::table('branches', function (Blueprint $table) {
             $table->dropColumn('require_commission');
-            $table->dropColumn('comission');
+            $table->dropColumn('commission');
         });
     }
 };

@@ -136,12 +136,12 @@ class MakeAppointment extends Component
     $subscription = Subscription::where('user_id', Auth::id())        
         ->where('start_date', '<=', now())
         ->where('end_date', '>=', now())
-        ->where('status', 'Ativo')
+       // ->where('status', 'Ativo') //ignora o status da assinatura e verifica apenas a data
         ->with('plan.additionalServices') // Inclui os serviços adicionais do plano
         ->first();
         if(!$subscription) {
             $this->addError('subscription', 'Você não possui uma assinatura ativa. Você gostaria de conhecer nossos planos?
-            <a href="'.route('dashboard', ['tabelaAtiva' => 'planos-de-assinatura']).'" class="underline text-blue-600 hover:text-blue-900">Clique aqui</a> para ver nossos planos.');
+            <a href="'.route('tenant.dashboard', ['tabelaAtiva' => 'planos-de-assinatura']).'" class="underline text-blue-600 hover:text-blue-900">Clique aqui</a> para ver nossos planos.');
             return;
         }
     }

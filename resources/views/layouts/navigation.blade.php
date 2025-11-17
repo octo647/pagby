@@ -21,7 +21,12 @@
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-700 bg-gradient-to-r from-white to-blue-50 hover:text-pink-600 focus:outline-none transition ease-in-out duration-150 shadow">
                             @if(!empty(Auth::user()->photo))
-                                <img src="{{tenant_asset(Auth::user()->photo)}}"  alt="Foto de {{ Auth::user()->name }}" class="h-8 w-8 rounded-full border-2 border-blue-300 shadow">
+                            @php
+                            $user = Auth::user();
+                                $isExternalPhoto = $user->photo && (Str::startsWith($user->photo, 'http://') || Str::startsWith($user->photo, 'https://'));
+                            @endphp
+                                <img src="{{$isExternalPhoto ? $user ->photo : ($user->photo ? tenant_asset(Auth::user()->photo) : '')}}"  alt="Foto de {{ Auth::user()->name }}" class="h-8 w-8 rounded-full border-2 border-blue-300 shadow"
+                                @if(!$user->photo) style="display:none;" @endif>
                             @else
                                 <img src="{{ global_asset('images/default-user.png') }}" title="Atualize sua foto de perfil" alt="Atualize a foto" class="h-8 w-8 rounded-full border-2 border-gray-300">
                                 <div class="ml-2 text-xs text-gray-500">{{ Auth::user()->name ?? 'Visitante'}}</div> 
@@ -170,7 +175,7 @@
             
             ],
             ['tabelaAtiva' => 'planos-de-assinatura', 'label' => 'Planos de Assinatura', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#A78BFA"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
-            ['tabelaAtiva' => 'meu-pixby', 'label' => 'Meu Pixby', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#F472B6"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#FBBF24"/></svg>'],
+            ['tabelaAtiva' => 'meu-pagby', 'label' => 'Meu Pagby', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#F472B6"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#FBBF24"/></svg>'],
     ];
 
                 $menuFuncionario = [

@@ -21,8 +21,12 @@ class CreateTenantsTable extends Migration
             $table->string('email')->unique()->nullable();
             $table->string('phone')->nullable();
             $table->string('whatsapp')->nullable();
-            $table->string('instagram')->nullable();
-            $table->string('facebook')->nullable();
+            $table->string('instagram')->nullable();            
+            $table->string('google_client_id')->nullable();
+            $table->string('google_client_secret')->nullable();
+            $table->string('facebook_client_id')->nullable();
+            $table->string('facebook_client_secret')->nullable();
+            $table->boolean('social_login_enabled')->default(false);
             $table->string('name')->nullable();
             $table->string('cnpj')->nullable();
             $table->string('fantasy_name')->nullable();

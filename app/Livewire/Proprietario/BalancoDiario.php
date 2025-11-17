@@ -16,8 +16,8 @@ class BalancoDiario extends Component
     public $totalPago = 0;
     public $totalCaixa = 0;
     public $data;
-    public $comission = 0;
-    public $value_comission = 0;
+    public $commission = 0;
+    public $value_commission = 0;
     public $branches = [];
     public $branch_id = null;
 
@@ -55,9 +55,9 @@ class BalancoDiario extends Component
         $this->totalPago = $this->comandasDoDia
             ->where('status', 'Finalizada')
             ->sum('total_geral');
-        $this->comission = Branch::where('id', $branchId)
-            ->value('comission');
-        $this->value_comission = ($this->totalPago * $this->comission) / 100;
+        $this->commission = Branch::where('id', $branchId)
+            ->value('commission');
+        $this->value_commission = ($this->totalPago * $this->commission) / 100;
     }
 
     public function buscarCaixa()
