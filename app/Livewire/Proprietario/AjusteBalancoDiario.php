@@ -112,7 +112,7 @@ class AjusteBalancoDiario extends Component
 
                 $entradaEsperada = \App\Models\Appointment::where('branch_id', $filial->id)
                     ->whereDate('appointment_date', $dataFormatada)
-                    ->whereIn('status', ['Confirmado', 'Realizado'])
+                    ->where('status', 'Realizado')
                     ->sum('total');
 
                 // Adiciona ao arranjo mesmo se não houver serviços pagos, para debug

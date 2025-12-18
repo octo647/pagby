@@ -8,7 +8,7 @@ use Livewire\Component;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use App\Models\PagByPayment;
-
+use Illuminate\Support\Facades\Log;
 
 class MeuPagby extends Component {
     public $planoAtual;
@@ -19,6 +19,7 @@ class MeuPagby extends Component {
 
     public function mount()
     {
+      
         // Buscar tenant pelo domínio atual usando a tabela domains
         $host = request()->getHost();
         $domain = DB::connection('mysql')->table('domains')->where('domain', $host)->first();
@@ -46,28 +47,81 @@ class MeuPagby extends Component {
     }
     public function cancelarAssinatura()
     {
-        // Lógica para cancelar a assinatura
+        // Lógica para cancelar a assinatura no MercadoPago e localmente
+   
         $host = request()->getHost();
+      
         $domain = DB::connection('mysql')->table('domains')->where('domain', $host)->first();
         $tenant = null;
         if ($domain && $domain->tenant_id) {
             $tenant = Tenant::find($domain->tenant_id);
         }
+     
 
         if ($tenant) {
-            // Atualiza os campos relacionados à assinatura
-            $tenant->subscription_status = 'suspended';
-            $tenant->current_plan = null;
-            $tenant->subscription_started_at = null;
-            $tenant->subscription_ends_at = null;
-            $tenant->is_blocked = true; // Bloqueia o tenant após o cancelamento
-            $tenant->save();
+            // Buscar pagamento ativo do tenant
+            $pagamento = PagByPayment::on('mysql')
+                ->where('tenant_id', $tenant->id)
+                ->whereIn('status', ['authorized', 'approved', 'pending'])
+                ->orderByDesc('id')
+                ->first();
+               
 
-            // Atualiza as propriedades do componente
-            $this->planoAtual = $tenant->current_plan;
-            $this->statusPagamento = $tenant->subscription_status;
-            $this->proximoVencimento = $tenant->subscription_ends_at;
-            $this->isBlocked = $tenant->is_blocked;
+            if ($pagamento && $pagamento->external_id) {
+                // Cancelar assinatura no MercadoPago
+                $accessToken = config('services.pagby.access_token');
+                $preapprovalId = $pagamento->external_id;
+                $url = 'https://api.mercadopago.com/preapproval/' . $preapprovalId;
+                $data = [
+                    'status' => 'cancelled'
+                ];
+                $ch = curl_init();
+                curl_setopt($ch, CURLOPT_URL, $url);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+                curl_setopt($ch, CURLOPT_HTTPHEADER, [
+                    'Authorization: Bearer ' . $accessToken,
+                    'Content-Type: application/json'
+                ]);
+                $response = curl_exec($ch);
+                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                $curlError = curl_error($ch);
+                curl_close($ch);
+
+                if ($httpCode === 200) {
+                    // Atualiza status do pagamento local
+                    $pagamento->status = 'cancelled';
+                    $pagamento->save();
+
+                    // Atualiza os campos relacionados à assinatura
+                    $tenant->subscription_status = 'suspended';
+                    $tenant->current_plan = null;
+                    $tenant->subscription_started_at = null;
+                    $tenant->subscription_ends_at = null;
+                    $tenant->is_blocked = true; // Bloqueia o tenant após o cancelamento
+                    $tenant->save();
+
+                    // Atualiza as propriedades do componente
+                    $this->planoAtual = $tenant->current_plan;
+                    $this->statusPagamento = $tenant->subscription_status;
+                    $this->proximoVencimento = $tenant->subscription_ends_at;
+                    $this->isBlocked = $tenant->is_blocked;
+                    Log::info('Assinatura cancelada com sucesso no MercadoPago e localmente para o tenant ID: ' . $tenant->id);
+                } else {
+                    // Falha ao cancelar no MercadoPago
+                    // Opcional: logar erro ou exibir mensagem
+                    Log::error('Erro ao cancelar assinatura no MercadoPago', [
+                        'http_code' => $httpCode,
+                        'response' => $response,
+                        'curl_error' => $curlError,
+                    ]);
+                    // $curlError, $response
+                }
+            } else {
+                // Não encontrou pagamento ativo ou preapproval_id
+                // Opcional: logar erro ou exibir mensagem
+            }
         } else {
             $this->planoAtual = null;
             $this->statusPagamento = null;

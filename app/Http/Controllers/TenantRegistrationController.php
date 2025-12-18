@@ -11,12 +11,10 @@ class TenantRegistrationController extends Controller
     public function showForm(Request $request)
     {
         $selectedPlan = $request->get('plan'); // Receber o plano selecionado
-        
-        // Se veio de um plano específico, armazenar na sessão
+        // Aceitar trial como plano válido
         if ($selectedPlan) {
             session(['selected_plan' => $selectedPlan]);
         }
-        
         return view('register-tenant', [
             'selectedPlan' => $selectedPlan ?? session('selected_plan')
         ]);
@@ -38,7 +36,7 @@ class TenantRegistrationController extends Controller
             'neighborhood' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'state' => 'required|string|size:2',
-            'selected_plan' => 'nullable|string|in:basico,premium'
+            'selected_plan' => 'nullable|string|in:basico,premium,trial'
         ], [
             // Mensagens personalizadas para validação
             'email.unique' => 'Este email já está registrado em nosso sistema. Por favor, use um email diferente ou entre em contato conosco pelo e-mail <a href="mailto:suporte@pagby.com.br" class="text-blue-500">suporte@pagby.com.br</a> ou pelo WhatsApp: <a href="https://wa.me/5532987007302" class="text-blue-500">(32) 98700-7302</a>.',

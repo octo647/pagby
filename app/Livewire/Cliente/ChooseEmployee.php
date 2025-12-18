@@ -13,17 +13,29 @@ use Livewire\Attributes\On;
 class ChooseEmployee extends Component
 {
     public $funcionarios = []; //array de funcionários
-    
     public $chosen_services = [];
     public $ch_branch_name = null; //chosen branch name
     public $ch_branch_id = null; //chosen branch id
     public $choosedEmployee = null;
 
+    public function mount()
+    {
+        $branches = Branch::all();
+        if ($branches->count() === 1) {
+            $branch = $branches->first();
+            $this->chosenBranch($branch->branch_name);
+        }
+    }
+
     #[On('chosen_branch')] 
     public function chosenBranch(string $chosen_branch): void
         {
-           // $employees = [];
-            $ch_branch_id = Branch::where('branch_name', $chosen_branch)->first()->id;
+            $branch = Branch::where('branch_name', $chosen_branch)->first();
+            if (!$branch) {
+                $this->funcionarios = [];
+                return;
+            }
+            $ch_branch_id = $branch->id;
             // Identifica os funcionários associados ao branch escolhido e os serviços que eles oferecem
             $funcionarios = User::whereHas('branches', function($q) use ($ch_branch_id) {
                 $q->where('branch_id', $ch_branch_id);

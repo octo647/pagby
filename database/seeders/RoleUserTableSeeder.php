@@ -19,8 +19,16 @@ class RoleUserTableSeeder extends Seeder
        // Pegue o role_id de Cliente e Funcionário
         $clienteRoleId = Role::where('role', 'Cliente')->first()->id;      
         $funcionarioRoleId = Role::where('role', 'Funcionário')->first()->id;
-
-        // Para cada filial
+       //Designa um usuário com o papel de proprietário
+       $proprietarioRoleId = Role::where('role', 'Proprietário')->first()->id;
+       $usuarioProprietario = User::find(1);
+       if ($usuarioProprietario) {
+           // Remove todos os papéis e atribui apenas o de proprietário
+           $usuarioProprietario->roles()->sync([$proprietarioRoleId]);
+       }
+       
+       
+       // Para cada filial
         foreach (Branch::all() as $branch) {
             // Pegue 3 usuários aleatórios que são clientes e ainda não são funcionários
             $clientes = User::whereHas('roles', function($q) use ($clienteRoleId) {
@@ -32,6 +40,7 @@ class RoleUserTableSeeder extends Seeder
                 ->inRandomOrder()
                 ->limit(3)
                 ->get();
+                
                 
                 
 

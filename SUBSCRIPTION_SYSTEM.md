@@ -18,28 +18,21 @@ Sistema implementado para controlar assinaturas de barbearias e salões de belez
 ### 2. Planos Disponíveis
 
 #### Plano Básico - R$ 29,90/mês
-- Até 1 profissional
+- Preço por profissional
 - Agendamento online
 - Controle financeiro básico
 - Relatórios simples
 - Suporte via email
+- Suporte para assinaturas
 
-#### Plano Intermediário - R$ 59,90/mês
-- Até 3 profissionais
-- Agendamento online
+#### Plano Premium - R$ 59,90/mês
+- Preço por profissional
+- Tudo do plano Básico
 - Controle financeiro avançado
 - Relatórios detalhados
-- Gestão de estoque básica
-- Suporte via chat
-
-#### Plano Avançado - R$ 99,90/mês
-- Profissionais ilimitados
-- Agendamento online
-- Controle financeiro completo
-- Relatórios avançados
 - Gestão de estoque completa
-- Sistema de fidelidade
 - Múltiplas filiais
+- Sistema de fidelidade
 - Suporte prioritário
 
 ### 3. Fluxo de Funcionamento
@@ -187,5 +180,5 @@ $tenant->activateSubscription('Básico', 30);
 
 ---
 
-**Última atualização:** 24 de agosto de 2025
+**Última atualização:** 7 de dezembro de 2025
 **Versão:** 1.0.0

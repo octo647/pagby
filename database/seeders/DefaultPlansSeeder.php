@@ -2,8 +2,12 @@
 
 namespace Database\Seeders;
 
+use App\Livewire\RoleUser;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use App\Models\Tenant;
+use App\Models\Plan;
+use App\Models\User;
 
 class DefaultPlansSeeder extends Seeder
 {
@@ -12,63 +16,58 @@ class DefaultPlansSeeder extends Seeder
      */
     public function run(): void
     {
-        $plans = [
-            [
-                'name' => 'Básico',
-                'price' => 29.90,
-                'duration_days' => 30,
-                'features' => [
-                    'Até 1 profissional',
-                    'Agendamento online',
-                    'Controle financeiro básico',
-                    'Relatórios simples',
-                    'Suporte via email'
-                ],
-                'allowed_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
-                'active' => true,
-                'created_by' => 1
-            ],
-            [
-                'name' => 'Intermediário',
-                'price' => 59.90,
-                'duration_days' => 30,
-                'features' => [
-                    'Até 3 profissionais',
-                    'Agendamento online',
-                    'Controle financeiro avançado',
-                    'Relatórios detalhados',
-                    'Gestão de estoque básica',
-                    'Suporte via chat'
-                ],
-                'allowed_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'],
-                'active' => true,
-                'created_by' => 1
-            ],
-            [
-                'name' => 'Avançado',
-                'price' => 99.90,
-                'duration_days' => 30,
-                'features' => [
-                    'Profissionais ilimitados',
-                    'Agendamento online',
-                    'Controle financeiro completo',
-                    'Relatórios avançados',
-                    'Gestão de estoque completa',
-                    'Sistema de fidelidade',
-                    'Múltiplas filiais',
-                    'Suporte prioritário'
-                ],
-                'allowed_days' => ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-                'active' => true,
-                'created_by' => 1
-            ]
-        ];
+        $tenants = \App\Models\Tenant::all();
 
-        foreach ($plans as $planData) {
-            \App\Models\Plan::updateOrCreate(
-                ['name' => $planData['name']],
-                $planData
-            );
+        foreach ($tenants as $tenant) {
+            switch ($tenant->type) {
+                case 'Barbearia':
+                    $plans = [
+                        ['name' => 'Corte', 'price' => 30, 'duration_days' => 30, 'allowed_days'=>['segunda','terça','quarta','quinta','sexta']],
+                        ['name' => 'Barba', 'price' => 20, 'duration_days' => 30, 'allowed_days'=>['segunda','terça','quarta','quinta','sexta']],
+                        ['name' => 'Corte e Barba', 'price' => 45, 'duration_days' => 30, 'allowed_days'=>['segunda','terça','quarta','quinta','sexta']],
+                    ];
+                    break;
+                case 'Salão de Beleza':
+                    $plans = [
+                        ['name' => 'Tingimento', 'price' => 80, 'duration_days' => 30,'allowed_days'=>[1,2,3,4,5]],
+                        ['name' => 'Unhas', 'price' => 40, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                        ['name' => 'Depilação', 'price' => 60, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                        ['name' => 'Alisamento', 'price' => 120, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                        ['name' => 'Corte', 'price' => 35, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                    ];
+                    break;
+                case 'Petshop':
+                    $plans = [
+                        ['name' => 'Banho', 'price' => 50, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                        ['name' => 'Tosa', 'price' => 60, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                        ['name' => 'Banho e Tosa', 'price' => 100, 'duration_days' => 30, 'allowed_days'=>[1,2,3,4,5]],
+                    ];
+                    break;
+                default:
+                    $plans = [];
+            }
+
+            foreach ($plans as $plan) {
+                \App\Models\Plan::updateOrCreate(
+                    [
+                        'name' => $plan['name'],
+                    ],
+                    [
+                        'price' => $plan['price'],
+                        'duration_days' => $plan['duration_days'],
+                        'allowed_days' => $plan['allowed_days'],
+                        'active' => true,
+                        'features' => [
+                            'Serviços ilimitados dentro do plano',
+                            'Desconto de 10% em serviços adicionais'
+                        ],
+                        'created_by' => User::whereHas('roles', function($q) {
+                            $q->where('role', 'Proprietário');
+                        })->first()?->id,
+                        // Adicione outros campos necessários aqui
+                    ]
+                );
+            }
         }
     }
 }

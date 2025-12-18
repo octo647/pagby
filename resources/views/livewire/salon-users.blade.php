@@ -53,7 +53,7 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             
             {{-- Cabeçalho da Tabela --}}
-            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200">
+            <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200 hidden md:block">
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</div>
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Função</div>

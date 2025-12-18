@@ -26,8 +26,8 @@
             <div wire:key="{{$service['id']}}" class="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
                 <!-- Cabeçalho do Card -->
                 <div class="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 w-full">
                             <!-- Foto do Serviço -->
                             <div class="flex-shrink-0">
                                 @if(isset($service['photo']) && $service['photo'] instanceof \Livewire\Features\SupportFileUploads\TemporaryUploadedFile)
@@ -42,7 +42,7 @@
                             </div>
                             
                             <!-- Nome do Serviço -->
-                            <div>
+                            <div class="flex-1 min-w-0">
                                 @if($editedServiceIndex !== $index)
                                     <h3 class="text-lg font-semibold text-gray-900">{{$service['service']}}</h3>
                                     <div class="flex space-x-4 mt-1">
@@ -50,13 +50,13 @@
                                         <span class="text-sm text-gray-600">⏰ {{$service['time']}} min</span>
                                     </div>
                                 @else
-                                    <input class="text-lg font-semibold bg-white border border-gray-300 rounded px-3 py-1 w-full max-w-md" type='text'  wire:model.defer='salon_serv.{{$index}}.service' placeholder="Nome do serviço">
+                                    <input class="text-lg font-semibold bg-white border border-gray-300 rounded px-3 py-1 w-full max-w-md" type='text'  wire:model.defer='salon_serv.{{$index}}.service' placeholder="Nome do serviço" required>
                                 @endif
                             </div>
                         </div>
                         
                         <!-- Botões de Ação -->
-                        <div class="flex space-x-2">
+                        <div class="flex flex-row sm:flex-col-reverse gap-2 mt-2 sm:mt-0 sm:ml-4">
                             @if($editedServiceIndex !== $index)
                                 <button wire:click.prevent="editService({{$index}})" class="inline-flex items-center px-3 py-1 border border-blue-300 text-sm font-medium rounded text-blue-700 bg-blue-50 hover:bg-blue-100">
                                     ✏️ Editar
@@ -65,14 +65,28 @@
                                     🗑️ Apagar
                                 </button>
                             @else
-                                <button wire:click.prevent="updateService({{$index}})" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded text-white bg-green-600 hover:bg-green-700">
-                                    💾 Salvar
-                                </button>
-                                <button wire:click.prevent="$set('editedServiceIndex', null)" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
-                                    ❌ Cancelar
-                                </button>
+                                <!-- Botões só em telas médias+ -->
+                                <div class="hidden sm:flex flex-row gap-2">
+                                    <button wire:click.prevent="updateService({{$index}})" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded text-white bg-green-600 hover:bg-green-700">
+                                        💾 Salvar
+                                    </button>
+                                    <button wire:click.prevent="$set('editedServiceIndex', null)" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50">
+                                        ❌ Cancelar
+                                    </button>
+                                </div>
                             @endif
                         </div>
+                                    <!-- Botões Salvar/Cancelar no rodapé do card em telas pequenas -->
+                                    @if($editedServiceIndex === $index)
+                                        <div class="block sm:hidden mt-4 flex flex-row gap-2 justify-end">
+                                            <button wire:click.prevent="updateService({{$index}})" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded text-white bg-green-600 hover:bg-green-700 w-1/2">
+                                                💾 Salvar
+                                            </button>
+                                            <button wire:click.prevent="$set('editedServiceIndex', null)" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 w-1/2">
+                                                ❌ Cancelar
+                                            </button>
+                                        </div>
+                                    @endif
                     </div>
                 </div>
                 
@@ -82,12 +96,35 @@
                         <!-- Formulário de Edição -->
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Preço Padrão (R$)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" type='text'  wire:model.defer='salon_serv.{{$index}}.price' placeholder="0,00">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Preço Padrão (R$) <span class="text-red-500">*</span></label>
+                                <input 
+                                    inputmode="decimal" 
+                                    pattern="^\d{1,6}([\.,]\d{1,2})?$" 
+                                    step="0.01" 
+                                    min="0.01"
+                                    required
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    type='number'  
+                                    wire:model.defer='salon_serv.{{$index}}.price' 
+                                    placeholder="0,00">
+                                @error('salon_serv.'.$index.'.price')
+                                    <span class="text-xs text-red-600">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-1">Tempo (minutos)</label>
-                                <input class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" type='text'  wire:model.defer='salon_serv.{{$index}}.time' placeholder="60">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Tempo (minutos) <span class="text-red-500">*</span></label>
+                                <input 
+                                    required 
+                                    inputmode="numeric" 
+                                    type="number" 
+                                    min="1" 
+                                    step="1"
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                    wire:model.defer='salon_serv.{{$index}}.time' 
+                                    placeholder="60">
+                                @error('salon_serv.'.$index.'.time')
+                                    <span class="text-xs text-red-600">{{ $message }}</span>
+                                @enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-1">Nova Foto</label>
@@ -143,6 +180,8 @@
                                                         <input 
                                                             type="number" 
                                                             step="0.01" 
+                                                            min="0.01"
+                                                            required
                                                             class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                                             wire:model.defer="branchPrices.{{ $service['id'] }}.{{ $branch->id }}.price"
                                                             placeholder="@if($branchPrice){{ $branchPrice }}@else{{ $service['price'] }} (padrão)@endif"
@@ -156,6 +195,9 @@
                                                         <label class="block text-xs text-gray-600 mb-1">Duração (min)</label>
                                                         <input 
                                                             type="number" 
+                                                            min="1"
+                                                            step="1"
+                                                            required
                                                             class="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                                                             wire:model.defer="branchDurations.{{ $service['id'] }}.{{ $branch->id }}.duration"
                                                             placeholder="@if($branchDuration){{ $branchDuration }}@else{{ $service['time'] }} (padrão)@endif"

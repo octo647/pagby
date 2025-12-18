@@ -61,7 +61,7 @@
                 </path>
             </svg>
 
-        <a href="{{ route('login.google', ['tenant' => tenant()->id])}}" >    Registrar com Google
+        <a href="{{ config('app.env') === 'production' ? 'https://' . tenant()->id . '.pagby.com.br/auth/google' : route('login.google') }}">Registrar com Google
         </a>
         </button>
     <div class="my-2"></div>

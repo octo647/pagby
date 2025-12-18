@@ -23,13 +23,13 @@ class TestarComandaAutomatica extends Command
 
         $this->info('Testando criação automática de comanda...');
 
-        // Buscar um agendamento não confirmado
-        $appointment = Appointment::where('status', '!=', 'Confirmado')
+        // Buscar um agendamento não realizado
+        $appointment = Appointment::where('status', '!=', 'Realizado')
                                 ->whereNotNull('services')
                                 ->first();
 
         if (!$appointment) {
-            $this->error('Nenhum agendamento não confirmado encontrado para testar');
+            $this->error('Nenhum agendamento não realizado encontrado para testar');
             return Command::FAILURE;
         }
 
@@ -48,7 +48,7 @@ class TestarComandaAutomatica extends Command
 
         // Confirmar agendamento (deve disparar o observer)
         $this->info('Confirmando agendamento...');
-        $appointment->status = 'Confirmado';
+        $appointment->status = 'Realizado';
         $appointment->save();
 
         // Verificar se comanda foi criada

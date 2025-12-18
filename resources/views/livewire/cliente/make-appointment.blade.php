@@ -154,23 +154,26 @@
                                 
                             @endphp
                             
+                            @php $sem_horario = empty($available_times[$day] ?? []); @endphp
                             <button 
-                                wire:click="$set('selected_day', '{{ $day }}')" 
-                                class="w-20 h-20 sm:w-24 sm:h-24 flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 transform hover:scale-105
-                                    {{ $has_appointment ? 'border-red-300 bg-red-50 text-red-700 cursor-not-allowed' : 
-                                       ((isset($selected_day) && $selected_day === $day) ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg scale-105' : 
-                                       ($show_as_allowed ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 bg-white shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-400 line-through')) }}"
-                                @if($has_appointment)
+                                @if($sem_horario)
                                     disabled
-                                    title="Você já possui um agendamento nesta data"
-                                @elseif(!$show_as_allowed)
-                                    title="Seu plano não cobre este dia. O serviço será cobrado normalmente."
+                                    title="Sem horários disponíveis"
+                                @else
+                                    wire:click="$set('selected_day', '{{ $day }}')"
                                 @endif
+                                class="w-20 h-20 sm:w-24 sm:h-24 flex flex-col items-center justify-center rounded-2xl border-2 transition-all duration-300 transform
+                                    {{ $sem_horario ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed opacity-60' :
+                                        ($has_appointment ? 'border-red-300 bg-red-50 text-red-700 cursor-not-allowed' :
+                                        ((isset($selected_day) && $selected_day === $day) ? 'bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg scale-105' :
+                                        ($show_as_allowed ? 'border-gray-200 hover:border-blue-300 hover:bg-blue-50 bg-white shadow-sm' : 'border-gray-200 bg-gray-50 text-gray-400 line-through'))) }}"
                             >
                                 <span class="font-bold text-base">{{ \Carbon\Carbon::parse($day)->format('d') }}</span>
                                 <span class="text-xs uppercase">{{ \Carbon\Carbon::parse($day)->locale('pt_BR')->isoFormat('MMM') }}</span>
                                 <span class="text-xs">{{ \Carbon\Carbon::parse($day)->locale('pt_BR')->isoFormat('ddd') }}</span>
-                                @if($has_appointment)
+                                @if($sem_horario)
+                                    <span class="text-xs font-bold mt-1">SEM HORÁRIO</span>
+                                @elseif($has_appointment)
                                     <span class="text-xs font-bold mt-1">OCUPADO</span>
                                 @elseif(!$show_as_allowed)
                                     <span class="text-xs font-bold mt-1">PAGO</span>

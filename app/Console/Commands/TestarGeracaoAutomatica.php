@@ -68,7 +68,7 @@ class TestarGeracaoAutomatica extends Command
 
             // Simular confirmação do agendamento
             $this->line("  🔄 Confirmando agendamento...");
-            $agendamento->update(['status' => 'Confirmado']);
+            $agendamento->update(['status' => 'Realizado']);
             
             // Verificar se a comanda foi criada
             $comandaCriada = Comanda::where('appointment_id', $agendamento->id)->first();

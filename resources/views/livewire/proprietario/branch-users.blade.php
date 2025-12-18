@@ -69,9 +69,9 @@
                                     {{-- Avatar --}}
                                     <div class="flex-shrink-0">
                                         @if(isset($user['user_photo']))
-                                            <img src="{{ tenant_asset($user['user_photo']) }}" 
-                                                 class="h-12 w-12 rounded-full object-cover border-2 border-gray-200" 
-                                                 alt="Foto do funcionário">
+                                                <img src="{{ tenant_asset('profile-photos/' . basename($user['user_photo'])) }}" 
+                                                    class="h-12 w-12 rounded-full object-cover border-2 border-gray-200" 
+                                                    alt="Foto do funcionário">
                                         @else
                                             <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                                                 <span class="text-lg font-medium text-white uppercase">
@@ -122,9 +122,9 @@
                                 <div class="flex items-center mb-4">
                                     <div class="flex-shrink-0">
                                         @if(isset($user['user_photo']))
-                                            <img src="{{ tenant_asset($user['user_photo']) }}" 
-                                                 class="h-12 w-12 rounded-full object-cover border-2 border-blue-200" 
-                                                 alt="Foto do funcionário">
+                                                <img src="{{ tenant_asset('profile-photos/' . basename($user['user_photo'])) }}" 
+                                                    class="h-12 w-12 rounded-full object-cover border-2 border-blue-200" 
+                                                    alt="Foto do funcionário">
                                         @else
                                             <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                                                 <span class="text-lg font-medium text-white uppercase">
@@ -167,9 +167,9 @@
                                         </label>
                                         <div class="mt-1 flex items-center space-x-4">
                                             @if(isset($user['photo']))
-                                                <img src="{{ asset('storage/' . $user['photo']) }}" 
-                                                     class="w-16 h-16 rounded-full object-cover border-2 border-gray-200" 
-                                                     alt="Foto atual">
+                                                   <img src="{{ $user['photo']->temporaryUrl() }}" 
+                                                       class="w-16 h-16 rounded-full object-cover border-2 border-gray-200" 
+                                                       alt="Foto atual">
                                             @endif
                                             <div class="flex-1">
                                                 <label class="relative cursor-pointer bg-white py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-50 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500 transition-colors">

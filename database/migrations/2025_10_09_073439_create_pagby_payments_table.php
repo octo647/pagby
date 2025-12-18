@@ -12,6 +12,7 @@ return new class extends Migration
         Schema::create('pagby_payments', function (Blueprint $table) {
             $table->id();
             $table->string('tenant_id');
+            $table->string('contact_id')->nullable();
             $table->string('mp_payment_id')->unique()->nullable();
             $table->string('plan'); // 'basico' ou 'premium'
             $table->string('status'); // 'pending', 'approved', 'rejected'

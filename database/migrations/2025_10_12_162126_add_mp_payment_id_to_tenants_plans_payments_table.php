@@ -9,14 +9,18 @@ return new class extends Migration
     public function up()
     {
         Schema::table('tenants_plans_payments', function (Blueprint $table) {
-            $table->string('mp_payment_id')->nullable()->after('external_id');
+            if (!Schema::hasColumn('tenants_plans_payments', 'mp_payment_id')) {
+                $table->string('mp_payment_id')->nullable()->after('external_id');
+            }
         });
     }
 
     public function down()
     {
         Schema::table('tenants_plans_payments', function (Blueprint $table) {
-            $table->dropColumn('mp_payment_id');
+            if (Schema::hasColumn('tenants_plans_payments', 'mp_payment_id')) {
+                $table->dropColumn('mp_payment_id');
+            }
         });
     }
 };

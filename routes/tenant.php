@@ -30,10 +30,19 @@ Route::middleware([
     
 
     //  ROTAS PÚBLICAS (SEM MIDDLEWARE)
+
+    // Rotas Google OAuth para tenants
+    Route::get('/auth/google', [\App\Http\Controllers\Auth\SocialController::class, 'redirectToGoogle'])->name('login.google');
+    Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\SocialController::class, 'handleGoogleCallback'])->name('login.google.callback');
+
+    // Rotas de recuperação de senha (password reset)
+    Route::get('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create']);
+    Route::post('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store']);
+    Route::get('reset-password/{token}', [\App\Http\Controllers\Auth\NewPasswordController::class, 'create']);
+    Route::post('reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store']);
     
 
-    Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])
-                ->name('register');
+    Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
     
     
     Route::post('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
@@ -61,8 +70,7 @@ Route::middleware([
 
             return view('tenants/' . ($tenant ? $tenant->id : 'default') . '/home', ['tenant' => $tenant, 'services' => $services]);
         })->name('tenant.home');
-    Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])
-                ->name('login');
+    Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('login');
     
     Route::post('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
         
@@ -79,8 +87,7 @@ Route::middleware([
    
      Route::get('/tenant-assinatura/waitRenew/{paymentId}', [PagBySubscriptionController::class, 'waitRenew'])->name('tenant-assinatura.waitRenew');
 
-     Route::get('/pagby-subscription/check-status/{paymentId}', [PagBySubscriptionController::class, 'checkStatus'])
-    ->name('pagby-subscription.check-status');
+    Route::get('/pagby-subscription/check-status/{paymentId}', [PagBySubscriptionController::class, 'checkStatus']);
 
     
     
@@ -232,8 +239,7 @@ Route::get('/plans', function () {
             ->name('tenant.dashboard');
 
 
-        Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])
-                    ->name('logout');
+        Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])->name('logout');                    
     });
 
     

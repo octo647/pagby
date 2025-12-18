@@ -56,6 +56,7 @@ foreach (config('tenancy.central_domains') as $domain) {
            Route::post('/webhook', [SubscriptionController::class, 'webhook'])->name('webhook');
            Route::get('/store', [SubscriptionController::class, 'store'])->name('store');
            Route::post('/cancelar', [SubscriptionController::class, 'cancelarAssinatura'])->name('cancelar');
+           Route::get('/success', [SubscriptionController::class, 'success'])->name('success');
         });
 
         // Rotas para debug e pagamento automático

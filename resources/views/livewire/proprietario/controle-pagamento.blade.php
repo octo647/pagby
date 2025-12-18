@@ -8,7 +8,7 @@
         <div class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
             <div class="flex flex-col">
                 <label class="font-semibold text-blue-700 mb-1">Filial</label>
-                <select wire:model="selectedBranch" wire:change="atualizarFuncionarios" class="border border-blue-300 rounded-lg px-3 py-2 focus:ring focus:ring-blue-200 bg-white shadow-sm">
+                    <select wire:model="selectedBranch" wire:change="atualizarFuncionarios" class="border border-blue-300 rounded-lg px-3 py-2 pr-10 lg:pr-16 text-base focus:ring focus:ring-blue-200 bg-white shadow-sm">
                     @foreach($branches as $branch)
                         <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
                     @endforeach
@@ -16,7 +16,7 @@
             </div>
             <div class="flex flex-col">
                 <label class="font-semibold text-blue-700 mb-1">Funcionário</label>
-                <select wire:model="selectedFuncionario" wire:change="calcularPagamentos" class="border border-blue-300 rounded-lg px-3 py-2 focus:ring focus:ring-blue-200 bg-white shadow-sm">
+                    <select wire:model="selectedFuncionario" wire:change="calcularPagamentos" class="border border-blue-300 rounded-lg px-3 py-2 pr-10 lg:pr-16 text-base focus:ring focus:ring-blue-200 bg-white shadow-sm">
                     <option value="">Todos</option>
                     @foreach($funcionarios as $func)
                         <option value="{{ $func->id }}">{{ $func->name }}</option>
@@ -25,7 +25,7 @@
             </div>
             <div class="flex flex-col">
                 <label class="font-semibold text-blue-700 mb-1">Período</label>
-                <select wire:model="periodoSelecionado" wire:change="setPeriodo($event.target.value)" class="border border-blue-300 rounded-lg px-3 py-2 focus:ring focus:ring-blue-200 bg-white shadow-sm">
+                    <select wire:model="periodoSelecionado" wire:change="setPeriodo($event.target.value)" class="border border-blue-300 rounded-lg px-3 py-2 pr-10 lg:pr-16 text-base focus:ring focus:ring-blue-200 bg-white shadow-sm" >
                     <option value="semanal">Semanal</option>
                     <option value="quinzenal">Quinzenal</option>
                     <option value="mensal">Mensal</option>

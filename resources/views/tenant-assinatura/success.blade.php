@@ -11,7 +11,7 @@
                     </svg>
                 </div>
                 <h2 class="text-4xl font-bold mb-4 text-white">🎉 Pagamento Confirmado!</h2>
-                <p class="text-xl text-white/80">Sua assinatura do Plano {{ $plan_name }} foi ativada com sucesso!</p>
+                <p class="text-xl text-white/80">Sua assinatura do Plano {{ $plan_name ?? 'Personalizado' }} foi ativada com sucesso!</p>
             </div>
 
             <!-- Detalhes da assinatura -->
@@ -23,14 +23,14 @@
                         <div class="flex justify-between items-center">
                             <span class="font-medium text-gray-600">Plano:</span>
                             <span class="font-bold text-purple-600 capitalize">
-                                {{ $plan_name }}
+                                {{ $plan_name ?? 'Não disponível' }}
                             </span>
                         </div>
                         
                         <div class="flex justify-between items-center">
                             <span class="font-medium text-gray-600">Cliente:</span>
                             <span class="font-semibold text-gray-800">
-                                {{ Auth::user()->name }}
+                                {{ Auth::user()?->name ?? 'Assinante' }}
                             </span>
                         </div>
                         
@@ -38,7 +38,7 @@
                             <span class="font-medium text-gray-600">Mensalidade:</span>
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                 <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
-                                {{$price}}
+                                {{ $price ? 'R$ ' . $price : 'Não disponível' }}
                             </span>
                         </div>
                     </div>

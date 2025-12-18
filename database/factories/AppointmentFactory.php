@@ -35,7 +35,7 @@ class AppointmentFactory extends Factory
             'end_time' => $this->faker->time('H:i'),
             'total' => $this->faker->randomFloat(2, 30, 300),
             'notes' => $this->faker->sentence(),
-            'status' => $this->faker->randomElement(['Pendente','Confirmado','Realizado','Cancelado','bloqueio']),
+            'status' => $this->faker->randomElement(['Pendente','Realizado','Cancelado','bloqueio']),
         ];
     }
 }

@@ -129,7 +129,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Quando habilitado, uma comanda será criada automaticamente sempre que
-    | um agendamento for confirmado (status = 'Confirmado').
+    | um agendamento for realizado (status = 'Realizado').
     |
     */
 

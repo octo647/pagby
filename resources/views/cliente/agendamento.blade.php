@@ -17,19 +17,42 @@
         </div>
     @endif
 
-    <div class="p-4 mx-auto max-w-4xl flex flex-col gap-4">
+    <div 
+        x-data="{
+            branchCount: 0,
+            chosenBranch: null,
+            professionalChosen: false,
+            serviceChosen: false,
+            showAgenda: false,
+        }"
+        x-init="
+            window.addEventListener('branchesCount', e => { branchCount = e.detail.count });
+            window.addEventListener('branchChosen', e => { chosenBranch = e.detail.branch });
+            window.addEventListener('professionalChosen', e => { professionalChosen = true });
+            window.addEventListener('serviceChosen', e => { serviceChosen = true });
+            window.addEventListener('showAgenda', e => { showAgenda = true });
+        "
+        class="p-4 mx-auto max-w-4xl flex flex-col gap-4"
+    >
+        <!-- Card Filial -->
         <div class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto">
             @livewire('branches')
         </div>
-        <div id="choose-employee" class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto">
+
+        <!-- Card Profissional -->
+        <div id="choose-employee" class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto" x-cloak
+            x-show="!showAgenda"
+            x-transition>
             @livewire('cliente.choose-employee')
         </div>
-        {{--<div id="choose-service" class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto">
-            @livewire('cliente.choose-service')
-        </div> --}}
-        <div id="agenda" class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto">
+
+        <!-- Card Horário -->
+        <div id="agenda" class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto"
+            x-show="professionalChosen && serviceChosen"
+            x-transition
+            x-init="$watch('professionalChosen', v => { if(v && serviceChosen) showAgenda = true }); $watch('serviceChosen', v => { if(v && professionalChosen) showAgenda = true });"
+        >
             @livewire('cliente.make-appointment')
         </div>
-
     </div>
 </x-app-layout>

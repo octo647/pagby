@@ -8,7 +8,7 @@
         <div class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
             <div class="flex flex-col">
                 <label class="font-semibold text-green-700 mb-1">Funcionário</label>
-                    <select wire:model.live="selectedFuncionario" class="border border-green-300 rounded-lg px-3 py-2 focus:ring focus:ring-green-200 bg-white shadow-sm">
+                    <select wire:model.live="selectedFuncionario" class="border border-green-300 rounded-lg lg:pr-24 px-3 py-2 focus:ring focus:ring-green-200 bg-white shadow-sm">
                     @foreach($funcionarios as $func)
                         <option value="{{ $func->id }}">{{ $func->name }}</option>
                     @endforeach

@@ -14,9 +14,7 @@ class AppointmentObserver
     public function created(Appointment $appointment): void
     {
         // Verificar se o agendamento foi criado já com status 'Confirmado'
-        if ($appointment->status === 'Confirmado') {
-            $this->criarComandaAutomatica($appointment);
-        }
+            // (Removido: lógica de status 'Confirmado')
     }
 
     /**
@@ -25,13 +23,11 @@ class AppointmentObserver
     public function updated(Appointment $appointment): void
     {
         // Verificar se o status mudou para 'Confirmado'
-        if ($appointment->isDirty('status') && $appointment->status === 'Confirmado') {
-            $this->criarComandaAutomatica($appointment);
-        }
+            // (Removido: lógica de status 'Confirmado')
     }
 
     /**
-     * Criar comanda automaticamente quando agendamento for confirmado
+    * Criar comanda automaticamente quando agendamento for realizado
      */
     private function criarComandaAutomatica(Appointment $appointment): void
     {

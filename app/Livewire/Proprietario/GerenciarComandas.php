@@ -16,6 +16,34 @@ use Illuminate\Support\Facades\Log;
 
 class GerenciarComandas extends Component
 {
+    public function salvarDescontosPainel()
+    {
+        $this->validate([
+            'desconto_servicos' => 'numeric|min:0',
+            'desconto_produtos' => 'numeric|min:0',
+        ]);
+        if ($this->comanda_detalhes) {
+            $comanda = \App\Models\Comanda::find($this->comanda_detalhes->id);
+            if ($comanda) {
+                $comanda->desconto_servicos = $this->desconto_servicos;
+                $comanda->desconto_produtos = $this->desconto_produtos;
+                $comanda->save();
+                $comanda->recalcularTotais();
+                // Atualiza o painel com os novos valores
+                $this->comanda_detalhes = $comanda->fresh([
+                    'branch',
+                    'funcionario',
+                    'comandaServicos.service',
+                    'comandaServicos.funcionario',
+                    'comandaProdutos.estoque',
+                    'appointment'
+                ]);
+                session()->flash('message', 'Descontos atualizados com sucesso!');
+            } else {
+                session()->flash('error', 'Comanda não encontrada para atualizar descontos.');
+            }
+        }
+    }
     public function selecionarFuncionarioServico($id)
     {
         $this->funcionario_id = $id;
@@ -41,14 +69,11 @@ class GerenciarComandas extends Component
             'funcionario_id' => $this->funcionario_id,
             'branch_id' => $this->branch_id
         ]);
-        if ($this->funcionario_id && $this->branch_id) {
+        if ($this->funcionario_id) {
             $user = User::find($this->funcionario_id);
             if ($user) {
                 $servicos = $user->services()
                     ->wherePivot('is_active', true)
-                    ->whereHas('branchServices', function($q) {
-                        $q->where('branch_id', $this->branch_id)->where('is_active', true);
-                    })
                     ->get();
                 \Illuminate\Support\Facades\Log::info('Serviços do funcionário encontrados', ['servicos' => $servicos->toArray()]);
                 $this->servicos_funcionario = $servicos;
@@ -59,7 +84,7 @@ class GerenciarComandas extends Component
                 $this->servicosDisponiveis = collect();
             }
         } else {
-            \Illuminate\Support\Facades\Log::info('Funcionário ou filial não selecionados');
+            \Illuminate\Support\Facades\Log::info('Funcionário não selecionado');
             $this->servicos_funcionario = collect();
             $this->servicosDisponiveis = collect();
         }
@@ -86,7 +111,8 @@ class GerenciarComandas extends Component
     public $funcionario_id = '';
     public $branch_id = '';
     public $observacoes = '';
-    public $desconto = 0;
+    public $desconto_servicos = 0;
+    public $desconto_produtos = 0;
     public $mostrar_modal_servico = false;
     public $service_id = '';
     public $funcionario_servico_id = '';
@@ -132,7 +158,8 @@ class GerenciarComandas extends Component
         'funcionario_id' => 'required|exists:users,id',
         'branch_id' => 'required|exists:branches,id',
         'observacoes' => 'nullable|string',
-        'desconto' => 'numeric|min:0',
+        'desconto_servicos' => 'numeric|min:0',
+        'desconto_produtos' => 'numeric|min:0',
     ];
 
     public function mount()
@@ -159,6 +186,12 @@ class GerenciarComandas extends Component
         // Aplicar filtros
         if ($this->filtro_branch) {
             $query->where('branch_id', $this->filtro_branch);
+        }
+        if ($this->searchTerm) {
+            $query->where(function($q) {
+                $q->where('cliente_nome', 'like', '%'.$this->searchTerm.'%')
+                  ->orWhere('cliente_telefone', 'like', '%'.$this->searchTerm.'%');
+            });
         }
 
         if ($this->filtro_status) {
@@ -266,8 +299,8 @@ class GerenciarComandas extends Component
             $this->funcionario_id = $comanda->funcionario_id;
             $this->branch_id = $comanda->branch_id;
             $this->observacoes = $comanda->observacoes;
-            $this->desconto = $comanda->desconto;
-
+            $this->desconto_servicos = $comanda->desconto_servicos;
+            $this->desconto_produtos = $comanda->desconto_produtos;
         } else {
             $this->resetForm();
         }
@@ -354,7 +387,8 @@ class GerenciarComandas extends Component
         $this->cliente_telefone = '';
         $this->funcionario_id = '';
         $this->observacoes = '';
-        $this->desconto = 0;
+        $this->desconto_servicos = 0;
+        $this->desconto_produtos = 0;
         // NÃO resetar $service_id aqui para manter o valor selecionado
         $user = Auth::user();
         $isProprietario = $user->roles->contains('name', 'Proprietario');
@@ -404,7 +438,8 @@ class GerenciarComandas extends Component
                     'funcionario_id' => $this->funcionario_id,
                     'branch_id' => $this->branch_id,
                     'observacoes' => $this->observacoes,
-                    'desconto' => $this->desconto,
+                    'desconto_servicos' => $this->desconto_servicos,
+                    'desconto_produtos' => $this->desconto_produtos,
                 ]);
                 $comanda->recalcularTotais();
                 session()->flash('message', 'Comanda atualizada com sucesso!');
@@ -418,7 +453,8 @@ class GerenciarComandas extends Component
                     'cliente_telefone' => $this->cliente_telefone,
                     'funcionario_id' => $this->funcionario_id,
                     'observacoes' => $this->observacoes,
-                    'desconto' => $this->desconto,
+                    'desconto_servicos' => $this->desconto_servicos,
+                    'desconto_produtos' => $this->desconto_produtos,
                     'client_id' => $this->client_id,
                 ]);
                 // Se serviço foi selecionado, adiciona à comanda

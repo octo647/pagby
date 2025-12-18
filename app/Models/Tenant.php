@@ -19,23 +19,27 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'type',
             'email',
             'phone',
-            'instagram',
-            'facebook',
             'whatsapp',
-            'name',
-            'status',
-            'address',
-            'complement',
-            'city',
-            'logo',
-            'name',
+            'instagram',
+            'facebook_client_id',
+            'facebook_client_secret',
+            'google_client_id',
+            'google_client_secret',
+            'social_login_enabled',            
+            'name', 
             'cnpj',
             'fantasy_name',
-            'slug',
+            'slug', 
+            'address',
+            'number',
+            'complement',
             'neighborhood',
             'cep',
+            'city',
             'state',
+            'logo',
             'plan',
+            'status',            
             'trial_started_at',
             'trial_ends_at',
             'subscription_status',
@@ -43,6 +47,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'subscription_started_at',
             'subscription_ends_at',
             'is_blocked',
+            'data',
+            'created_at',
+            'updated_at',
         ];
     }
 
@@ -99,10 +106,23 @@ class Tenant extends BaseTenant implements TenantWithDatabase
      */
     public function shouldBeBlocked(): bool
     {
-        return $this->is_blocked || 
-               $this->isTrialExpired() || 
-               $this->isSubscriptionExpired() ||
-               $this->subscription_status === 'suspended';
+        // Bloqueia se estiver bloqueado manualmente
+        if ($this->is_blocked) {
+            return true;
+        }
+        // Bloqueia se o trial expirou e NÃO tem assinatura ativa
+        if ($this->isTrialExpired() && !$this->hasActiveSubscription()) {
+            return true;
+        }
+        // Bloqueia se a assinatura paga expirou
+        if ($this->isSubscriptionExpired()) {
+            return true;
+        }
+        // Bloqueia se o status está suspenso
+        if ($this->subscription_status === 'suspended') {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -163,7 +183,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     public function hasApprovedPagByPayments(): bool
     {
-        return $this->pagByPayments()->where('status', 'approved')->exists();
+        return $this->pagByPayments()->whereIn('status', ['approved', 'authorized'])->exists();
     }
     /**
      * Retorna o nome legível do plano atual

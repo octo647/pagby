@@ -2,35 +2,25 @@
 
 namespace App\Livewire\Admin;
 
+
 use Livewire\Component;
+use App\Models\PagByPayment;
+use App\Models\User;
 
 class Planos extends Component
 {
-    public $planos;
+    public $payments;
 
     public function mount()
     {
-        $this->planos = [
-            (object)[
-                'nome' => 'Plano Básico',
-                'preco' => 29.90,
-                'beneficios' => 'Um profissional, Todas as funcionalidades,Suporte via e-mail'
-            ],
-            (object)[
-                'nome' => 'Plano Intermediário',
-                'preco' => 59.90,
-                'beneficios' => 'Dois profissionais, Todas as funcionalidades, Suporte via chat'
-            ],
-            (object)[
-                'nome' => 'Plano Avançado',
-                'preco' => 99.90,
-                'beneficios' => 'Três ou mais profissionais, Todas as funcionalidades, Suporte prioritário'
-            ],
-        ];
+        // Busca os pagamentos mais recentes (pode paginar depois)
+        $this->payments = PagByPayment::with('tenant')->orderByDesc('id')->take(50)->get();
     }
 
     public function render()
     {
-        return view('livewire.admin.planos');
+        return view('livewire.admin.planos', [
+            'payments' => $this->payments
+        ]);
     }
 }

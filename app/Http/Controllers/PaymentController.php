@@ -201,7 +201,7 @@ class PaymentController extends Controller
 
         return view('payment.success', [
             'title' => 'Pagamento Aprovado!',
-            'message' => 'Seu agendamento foi confirmado e o pagamento processado com sucesso.',
+            'message' => 'Seu agendamento foi processado com sucesso.',
             'payment_id' => $paymentId
         ]);
     }
@@ -264,7 +264,7 @@ class PaymentController extends Controller
 
             // Criar agendamento
             $appointment = Appointment::create($pending + [
-                'status' => $mpPayment->status === 'approved' ? 'Confirmado' : 'Pendente',
+                'status' => $mpPayment->status === 'approved' ? 'Pendente' : 'Pendente',
                 'payment_method' => 'mercadopago',
                 'payment_status' => $mpPayment->status
             ]);
@@ -309,7 +309,7 @@ class PaymentController extends Controller
                     
                     if ($mpPayment->status === 'approved') {
                         $payment->appointment->update([
-                            'status' => 'Confirmado',
+                            'status' => 'Pendente',
                             'payment_status' => 'approved'
                         ]);
                     }

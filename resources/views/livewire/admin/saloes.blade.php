@@ -35,10 +35,11 @@
             <tr wire:key="{{$index}}" class="bg-white border-b hover:bg-gray-50">
                 <td>
                     <div class="flex w-16 items-center">
+                    <a href="{{'https://'.$salon['slug'].'.'.env('APP_URL')}}" target="_blank">
                         <img src="{{asset($salon['logo'])}}" alt="Logo">
                     </div>
                 </td>
-                <td>{{$salon['id']}}</td>
+                <td>{{$salon['fantasy_name']}}</td>
                 @if($salon['plan'] && $salon['status'])
                 <td>{{$salon['plan']}} - {{$salon['status']}}</td>
                 @else
@@ -92,16 +93,16 @@
                 </select>
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">ID</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.id">
+                <label class="block font-semibold mb-1">Slug</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.slug">
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">Endereço</label>
+                <label class="block font-semibold mb-1">Nome Fantasia</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.fantasy_name">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Rua e número</label>
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.address">
-            </div>
-            <div class="mb-4">
-                <label class="block font-semibold mb-1">Número</label>
-                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.number">
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Complemento</label>
@@ -135,7 +136,7 @@
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Status</label>
                 <select class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.status">
-                    <option value="Ativo">Ativo</option>
+                    <option selected value="Ativo">Ativo</option>
                     <option value="Inativo">Inativo</option>
                 </select>
             </div>
@@ -151,6 +152,22 @@
         <div class="fixed top-0 right-0 w-full max-w-md h-full bg-white shadow-lg z-50 p-8 overflow-auto">
             <h2 class="text-xl font-bold mb-4">Criar Novo Salão</h2>
             <div class="mb-4">
+                <label class="block font-semibold mb-1">Selecionar Contato Existente</label>
+                <div class="flex items-center gap-2 mb-2">
+                    <button type="button" class="px-2 py-1 rounded bg-gray-200" wire:click="loadContacts({{ $contactsPage-1 }})" @if($contactsPage <= 1) disabled @endif>&lt;</button>
+                    <span>Página {{ $contactsPage }} de {{ $contactsTotalPages }}</span>
+                    <button type="button" class="px-2 py-1 rounded bg-gray-200" wire:click="loadContacts({{ $contactsPage+1 }})" @if($contactsPage >= $contactsTotalPages) disabled @endif>&gt;</button>
+                </div>
+                <select class="w-full border rounded px-2 py-1 mb-2" wire:change="selectContact($event.target.value)">
+                    <option value="">Selecione um contato...</option>
+                    @foreach($contacts as $contact)
+                        <option value="{{ $contact->id }}" @if($selectedContactId == $contact->id) selected @endif>
+                            {{ $contact->owner_name }} ({{ $contact->email }})
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="mb-4">
                 <label class="block font-semibold mb-1">Logo</label>
                 <input type="file" class="w-full border rounded px-2 py-1" wire:model="logoFile" accept="image/png,image/jpeg,image/jpg">
                 @if($logoFile)
@@ -161,15 +178,26 @@
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Tipo de Estabelecimento</label>
-                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.type">
-                    <option value="">Selecione...</option>
-                    <option value="Barbearia">Barbearia</option>
-                    <option value="SalaoBeleza">Salão de Beleza</option>
-                    <option value="Estetica">Clinica Estética</option>
-                    <option value="Veterinaria">Clínica Veterinária</option>    
-                    <option value="Spa">Spa</option>
-                    <option value="PetShop">PetShop</option>               
-                </select>
+                <input type="text" class="w-full border rounded px-2 py-1 mb-2" wire:model="newSalon.type" placeholder="Ex: Barbearia1, SalaoBeleza1, etc.">
+                <div class="flex gap-2 items-center mt-2">
+                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('templateModal').classList.remove('hidden')">Escolher Template</button>
+                </div>
+            </div>
+
+            <!-- Modal de seleção de template -->
+            <div id="templateModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative">
+                    <button type="button" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold" onclick="document.getElementById('templateModal').classList.add('hidden')">&times;</button>
+                    <h3 class="text-lg font-bold mb-4">Escolha um template</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                        @foreach($templateList as $template)
+                            <div class="cursor-pointer group" onclick="window.dispatchEvent(new CustomEvent('template-selected', { detail: '{{ $template['name'] }}' })); document.getElementById('templateModal').classList.add('hidden')">
+                                <img src="{{ $template['thumbnail'] }}" alt="{{ $template['name'] }}" class="rounded shadow group-hover:scale-105 transition-transform h-32 w-full object-cover mb-2">
+                                <div class="text-center font-semibold">{{ $template['name'] }}</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
             </div>
             <div class="mb-4">
                 <!-- Campo ID removido, será preenchido automaticamente com o valor do slug -->
@@ -286,17 +314,19 @@
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Plano</label>
                 <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.plan">
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione...</option> 
+                    <option value="Premium">Premium</option>                    
                     <option value="Básico">Básico</option>
-                    <option value="Intermediário">Intermediário</option>
-                    <option value="Avançado">Avançado</option>
+                    <option selected value="Teste">Teste</option>
+                   
+                    
                 </select>
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Status</label>
                 <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.status">
                     <option value="">Selecione...</option>
-                    <option value="Ativo">Ativo</option>
+                    <option selected value="Ativo">Ativo</option>
                     <option value="Inativo">Inativo</option>
                 </select>
             </div>
@@ -313,5 +343,24 @@
 <script>
     document.addEventListener('livewire:salonLogoUpdated', () => {
         window.location.reload();
+    });
+    // Integração segura com Livewire para seleção de template
+    window.addEventListener('template-selected', function(e) {
+        // Corrige seletor para atributos com dois-pontos
+        const el = document.querySelector('[wire\\:id]');
+        if (!el) return;
+        const wireId = el.getAttribute('wire:id');
+        if (window.Livewire && Livewire.find) {
+            const component = Livewire.find(wireId);
+            if (component) {
+                component.set('newSalon.type', e.detail);
+            }
+        } else if (window.livewire && window.livewire.find) {
+            // fallback para Livewire v2
+            const component = window.livewire.find(wireId);
+            if (component) {
+                component.set('newSalon.type', e.detail);
+            }
+        }
     });
 </script>

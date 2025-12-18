@@ -1,0 +1,1 @@
+/home/helder/projetos/pagby/resources/Templates/Barbearia1/home2.blade.php

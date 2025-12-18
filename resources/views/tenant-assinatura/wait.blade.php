@@ -133,7 +133,7 @@
                         document.getElementById('success-message').style.display = 'block';
                         
                         setTimeout(() => {
-                            window.location.href = '/tenant-assinatura/success?payment_id=' + data.external_id + '&status=approved&external_reference=' + data.payment_id;
+                            window.location.href = '/tenant-assinatura/success?payment_id=' + data.payment_id;
                         }, 2000);
                         
                     } else if (data.status === 'rejected') {

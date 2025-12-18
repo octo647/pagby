@@ -10,6 +10,7 @@ use App\Models\Appointment;
 use App\Models\Service;
 use App\Models\User;
 use Livewire\Attributes\On;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Plan;
 
@@ -341,7 +342,7 @@ public function confirmTime()
         // Verificar se o cliente já tem agendamento na data selecionada
         $existing_appointment = \App\Models\Appointment::where('customer_id', \Illuminate\Support\Facades\Auth::id())
             ->where('appointment_date', $this->selected_day)
-            ->whereIn('status', ['Confirmado', 'Pendente'])
+            ->where('status', 'Pendente')
             ->first();
             
         if ($existing_appointment) {
@@ -479,28 +480,7 @@ $weekday_pt = $dias_pt[$weekday_en] ?? $weekday_en;
 
     $total += $price;
 }
-$requireAdvance = $branch->require_advance_payment ?? false;
-//dd($requireAdvance, $total, $branch->require_advance_payment);
-
-if ($total > 0 && $requireAdvance) {
-    // Salve os dados do agendamento em sessão ou como "pendente"
-    session()->put('pending_appointment', [
-        'services' => $this->services_string,
-        'total' => $total,
-        'employee_id' => $this->ch_professional_id,
-        'customer_id' => Auth::id(),
-        'branch_id' => $branch_id,
-        'appointment_date' => $this->selected_day,
-        'start_time' => $this->selected_time,
-        'end_time' => date('H:i', strtotime($this->selected_time) + ($this->calculateTotalServiceTime($this->ch_services) * 60)),
-        'notes' => 'Agendamento realizado via sistema',
-        'updated_by' => Auth::id(),
-        'created_by' => Auth::id(),         
-    ]);
-    
-    // Redirecione para a página de pagamento
-    return $this->redirect(route('payment.page'), navigate: true);
-}
+// Removido: lógica de pagamento antecipado e sessão. Sempre cria o agendamento no banco.
     
    
 
@@ -524,7 +504,7 @@ if ($total > 0 && $requireAdvance) {
     
     $services_string = implode(', ', $service_names);
 
-    Appointment::create([
+    $appointment = Appointment::create([
         'employee_id' => $this->ch_professional_id,
         'branch_id' => $branch_id,
         'customer_id' => Auth::id(),
@@ -536,17 +516,34 @@ if ($total > 0 && $requireAdvance) {
         'notes' => 'Agendamento realizado via sistema',
         'updated_by' => Auth::id(),
         'created_by' => Auth::id(),
-        'status' => 'Confirmado',
+        'status' => 'Pendente',
     ]);
+    
+    // Criar comanda automaticamente após criar o agendamento
+    try {
+        $comanda = \App\Models\Comanda::criarDeAgendamento($appointment, 'Comanda criada automaticamente ao agendar.');
+    } catch (\Throwable $e) {
+        Log::error('[MakeAppointment] Erro ao criar comanda automaticamente', [
+            'appointment_id' => $appointment?->id,
+            'error' => $e->getMessage(),
+        ]);
+    }
+
+    // Envia notificação de confirmação com .ics para o cliente
+    if ($appointment && $appointment->customer) {
+        $appointment->customer->notify(new \App\Notifications\AppointmentConfirmed($appointment));
+    } else {
+        // Cliente não associado; nenhuma notificação enviada
+    }
 
     session()->flash('success', 'Agendamento realizado com sucesso!');
-    return $this->redirect(route('tenant.dashboard'), navigate: true);
+    return $this->redirect(route('tenant.dashboard', ['tabelaAtiva' => 'appointments']), navigate: true);
 }
 public function render()
 {
     // Buscar dias que já têm agendamentos do cliente atual
     $this->days_with_appointments = \App\Models\Appointment::where('customer_id', \Illuminate\Support\Facades\Auth::id())
-        ->whereIn('status', ['Confirmado', 'Pendente'])
+        ->where('status', 'Pendente')
         ->pluck('appointment_date')
         ->map(function($date) {
             return date('Y-m-d', strtotime($date));

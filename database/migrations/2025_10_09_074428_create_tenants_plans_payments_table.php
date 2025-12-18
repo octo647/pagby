@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();           
-            $table->index(['status', 'plan']);
+            $table->index(['status', 'plan_id']);
             $table->index('external_id');
         });
     }

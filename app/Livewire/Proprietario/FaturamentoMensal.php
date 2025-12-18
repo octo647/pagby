@@ -14,7 +14,7 @@ class FaturamentoMensal extends Component
     {
         $this->faturamentoMensal = DB::table('appointments')
             ->selectRaw('DATE_FORMAT(appointment_date, "%Y-%m") as mes, SUM(total) as total')
-            ->where('status', ['Confirmado', 'Realizado']) // ajuste conforme seu sistema
+            ->where('status', 'Realizado') // ajuste conforme seu sistema
             ->where('appointment_date', '>=', now()->subMonths(11)->startOfMonth())
             ->groupBy('mes')
             ->orderBy('mes')

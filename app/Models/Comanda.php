@@ -25,7 +25,8 @@ class Comanda extends Model
         'data_fechamento',
         'subtotal_servicos',
         'subtotal_produtos',
-        'desconto',
+        'desconto_servicos',
+        'desconto_produtos',
         'total_geral',
         'observacoes'
     ];
@@ -35,7 +36,8 @@ class Comanda extends Model
         'data_fechamento' => 'datetime',
         'subtotal_servicos' => 'decimal:2',
         'subtotal_produtos' => 'decimal:2',
-        'desconto' => 'decimal:2',
+        'desconto_servicos' => 'decimal:2',
+        'desconto_produtos' => 'decimal:2',
         'total_geral' => 'decimal:2'
     ];
 
@@ -48,6 +50,11 @@ class Comanda extends Model
     public function funcionario(): BelongsTo
     {
         return $this->belongsTo(User::class, 'funcionario_id');
+    }
+
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cliente_id');
     }
 
     public function comandaServicos(): HasMany
@@ -91,13 +98,15 @@ class Comanda extends Model
     {
         // Recalcular subtotal de serviços
         $this->subtotal_servicos = $this->comandaServicos()->sum('subtotal');
-        
         // Recalcular subtotal de produtos
         $this->subtotal_produtos = $this->comandaProdutos()->sum('subtotal');
-        
+        // Calcular descontos
+        $descontoServicos = $this->desconto_servicos ?? 0;
+        $descontoProdutos = $this->desconto_produtos ?? 0;
+        $valorDescontoServicos = ($descontoServicos > 0) ? ($this->subtotal_servicos * ($descontoServicos / 100)) : 0;
+        $valorDescontoProdutos = ($descontoProdutos > 0) ? ($this->subtotal_produtos * ($descontoProdutos / 100)) : 0;
         // Calcular total geral
-        $this->total_geral = $this->subtotal_servicos + $this->subtotal_produtos - $this->desconto;
-        
+        $this->total_geral = ($this->subtotal_servicos - $valorDescontoServicos) + ($this->subtotal_produtos - $valorDescontoProdutos);
         $this->save();
     }
 

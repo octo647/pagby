@@ -15,7 +15,16 @@
                 
                 
                 <!-- Mostrar plano selecionado se existir -->
-                @if(isset($selected_plan))
+                @if(isset($selected_plan) && $selected_plan === 'trial')
+                <div class="bg-gradient-to-r from-pink-500 to-indigo-500 text-white rounded-lg p-4 mb-6 shadow">
+                    <h3 class="text-lg font-semibold mb-2">
+                        🎉 Bem-vindo ao seu <span class="underline">período de teste grátis de 7 dias</span>!
+                    </h3>
+                    <p class="text-white/90 text-sm">
+                        Aproveite todas as funcionalidades do PagBy sem compromisso. Ao final do período, você poderá escolher o melhor plano para seu salão e continuar usando a plataforma normalmente.
+                    </p>
+                </div>
+                @elseif(isset($selected_plan))
                 <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
                     <h3 class="text-lg font-semibold text-purple-800 mb-2">
                         📋 Plano Selecionado: <span class="capitalize">{{ $selected_plan }}</span>
@@ -31,7 +40,11 @@
                     <p class="mb-4">✅ Seu negócio foi registrado com sucesso em nossa plataforma!</p>
                     <p class="mb-4">📧 Você receberá um email de confirmação em breve.</p>
                     
-                    @if(isset($selected_plan))
+                    @if(isset($selected_plan) && $selected_plan === 'trial')
+                        <p class="text-sm font-medium text-gray-700">
+                            ⏳ Você tem 7 dias para testar a plataforma. Antes do fim do período, avisaremos para que possa escolher um plano e continuar usando o PagBy sem interrupções.
+                        </p>
+                    @elseif(isset($selected_plan))
                         <p class="text-sm font-medium text-gray-700">
                             🚀 Próximo passo: Finalizar assinatura do plano {{ ucfirst($selected_plan) }}
                         </p>
@@ -41,7 +54,17 @@
                 </div>
 
                 <!-- Próximos passos -->
-                @if(isset($selected_plan))
+                @if(isset($selected_plan) && $selected_plan === 'trial')
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
+                    <ol class="text-blue-700 text-sm text-left space-y-1">
+                        <li><strong>1.</strong> Ativação automática do sistema</li>
+                        <li><strong>2.</strong> Receber dados de acesso por email</li>
+                        <li><strong>3.</strong> Aproveitar 7 dias grátis de todas as funcionalidades</li>
+                        <li><strong>4.</strong> Antes do fim do período, escolher um plano para continuar usando o PagBy</li>
+                    </ol>
+                </div>
+                @elseif(isset($selected_plan))
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
                     <ol class="text-blue-700 text-sm text-left space-y-1">
@@ -55,7 +78,13 @@
                 
                 <!-- Botões de ação -->
                 <div class="space-y-3">
-                    @if(isset($selected_plan))
+                    @if(isset($selected_plan) && $selected_plan === 'trial')
+                        <a href="{{ route('home') }}" 
+                           class="w-full bg-gradient-to-r from-pink-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-lg hover:from-pink-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 block text-center transition-all">
+                            <i class="fas fa-home mr-2"></i>
+                            Ir para o Início
+                        </a>
+                    @elseif(isset($selected_plan))
                         <!-- Botão para finalizar assinatura -->
                         <form action="{{ route('pagby-subscription.create') }}" method="POST">
                             @csrf
@@ -67,8 +96,6 @@
                                 Finalizar Assinatura {{ ucfirst($selected_plan) }}
                             </button>
                         </form>
-                        
-                        <!-- Botão secundário -->
                         <a href="{{ route('home') }}" 
                            class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 block text-center transition-colors">
                             ← Voltar ao Início
@@ -80,7 +107,6 @@
                             <i class="fas fa-star mr-2"></i>
                             Escolher Plano de Assinatura
                         </a>
-                        
                         <a href="{{ route('home') }}" 
                            class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 block text-center transition-colors">
                             Voltar ao Início

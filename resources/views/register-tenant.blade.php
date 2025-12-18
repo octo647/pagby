@@ -10,7 +10,14 @@
                 <p class="text-gray-600">Crie sua conta e comece a usar o PagBy</p>
                 
                 <!-- Mostrar plano selecionado se existir -->
-                @if(isset($selectedPlan))
+                @if(isset($selectedPlan) && $selectedPlan === 'trial')
+                <div class="mt-4 bg-gradient-to-r from-pink-500 to-indigo-500 text-white rounded-lg p-4 shadow">
+                    <p class="font-semibold text-lg">
+                        🎉 Você está começando com <span class="underline">30 dias grátis</span> de teste no PagBy!
+                    </p>
+                    <p class="text-white/90 mt-1 text-sm">Aproveite todas as funcionalidades sem compromisso.</p>
+                </div>
+                @elseif(isset($selectedPlan))
                 <div class="mt-4 bg-purple-50 border border-purple-200 rounded-lg p-3">
                     <p class="text-purple-800 font-semibold">
                         🎯 Plano selecionado: <span class="capitalize">{{ $selectedPlan }}</span>

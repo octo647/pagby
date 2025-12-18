@@ -71,9 +71,16 @@ class BranchUsers extends Component
     $user = User::find($userId);
     if (isset($this->branchUsers[$this->editedUserIndex]['photo'])) {
         $photo = $this->branchUsers[$this->editedUserIndex]['photo'];
-        $path = $photo->store('profile-photos', 'public');
-        
-        $user->photo = $path;
+        $tenantId = tenant('id') ?? (auth()->user()->tenant_id ?? null);
+       
+        if ($tenantId) {
+            $path = $photo->store('profile-photos', 'public');
+            $user->photo = "profile-photos/" . basename($path);
+        } else {
+            // fallback para padrão antigo se não houver tenantId
+            $path = $photo->store('profile-photos', 'public');
+            $user->photo = $path;
+        }
     }
 
     $user->save();

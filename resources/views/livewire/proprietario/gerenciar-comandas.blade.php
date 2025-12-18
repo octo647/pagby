@@ -8,7 +8,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
             <div>
                 <label for="search" class="block text-sm font-medium text-gray-700">Buscar</label>
-                <input wire:model.live="search" type="text" placeholder="Número, cliente, telefone..." 
+                <input wire:model.live="searchTerm" type="text" placeholder="Número, cliente, telefone..." 
                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
             </div>
 
@@ -480,11 +480,20 @@
                                 </select>
                             </div>
 
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700">Desconto (R$)</label>
-                                <input wire:model="desconto" type="number" step="0.01" min="0"
-                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                @error('desconto') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Desconto Serviços (%)</label>
+                                    <input wire:model="desconto_servicos" type="number" step="0.01" min="0" max="100"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    @error('desconto_servicos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Desconto Produtos (%)</label>
+                                    <input wire:model="desconto_produtos" type="number" step="0.01" min="0" max="100"
+                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                    @error('desconto_produtos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                </div>
                             </div>
 
                             <div>
@@ -727,9 +736,6 @@
                                         <span class="font-medium text-gray-700">Status:</span>
                                         <div>
                                             {!! $comanda_detalhes->status_badge !!}
-                                            @if($comanda_detalhes->status !== 'Aberta')
-                                                <div class="text-xs text-gray-500 mt-1">Comanda não pode ser editada</div>
-                                            @endif
                                         </div>
                                     </div>
                                     <div>
@@ -774,6 +780,25 @@
                                                 {{ $comanda_detalhes->data_abertura->format('d/m/Y H:i') }}
                                             @endif
                                         </div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-blue-900">Desconto Serviços (%)</label>
+                                            <input wire:model="desconto_servicos" type="number" step="0.01" min="0" max="100"
+                                                   class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            @error('desconto_servicos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-blue-900">Desconto Produtos (%)</label>
+                                            <input wire:model="desconto_produtos" type="number" step="0.01" min="0" max="100"
+                                                   class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            @error('desconto_produtos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+                                    </div>
+                                    <div class="mt-4 text-right">
+                                        <button wire:click="salvarDescontosPainel" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:border-blue-700 focus:ring focus:ring-blue-200 active:bg-blue-600 disabled:opacity-25 transition">Salvar Descontos</button>
                                     </div>
                                 </div>
                             </div>

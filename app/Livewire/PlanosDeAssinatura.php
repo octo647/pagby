@@ -103,22 +103,28 @@ class PlanosDeAssinatura extends Component
     }
     public function assinarPlano($planoId)
     {
-        // Auth::setUser(Auth::user()->fresh()); // <-- Removido pois pode causar erro se não for um modelo Eloquent
+        \Log::debug('INICIO assinarPlano', [
+            'user_id' => Auth::id(),
+            'planoId' => $planoId,
+        ]);
         $plano = Plan::find($planoId);
         $user = Auth::user();
         if ($plano) {
+            \Log::debug('Plano encontrado', ['plano_id' => $plano->id, 'user_id' => $user->id]);
             // Verifica se o usuário já tem um plano ativo
-            if ($user->hasRole('Cliente') && $user->plano_atual) {
+            if (is_object($user) && method_exists($user, 'hasRole') && $user->hasRole('Cliente') && $user->plano_atual) {
+                \Log::debug('Usuário já possui plano ativo', ['user_id' => $user->id]);
                 session()->flash('message', 'Você já possui um plano ativo.');
                 return;
             }
             // Dados para assinatura MercadoPago
-            //verifica o domínio central
             $centralDomain = config('tenancy.central_domains')[0];
             $tenant_id = tenant()->id;
             $urlCentral = "https://{$centralDomain}/tenant-assinatura/store?tenant_id={$tenant_id}&plan_id={$planoId}&user_email={$user->email}";
-           
+            \Log::debug('Redirecionando para assinatura', ['url' => $urlCentral]);
             return redirect()->away($urlCentral); 
+        } else {
+            \Log::debug('Plano não encontrado', ['planoId' => $planoId]);
         }
     }
            
@@ -135,6 +141,15 @@ class PlanosDeAssinatura extends Component
     }
     public function salvarNovoPlano()
     {
+        \Log::debug('INICIO salvarNovoPlano', [
+            'user_id' => Auth::id(),
+            'nomePlano' => $this->nomePlano,
+            'preco' => $this->preco,
+            'duracaoDias' => $this->duracaoDias,
+            'servicosIncluidos' => $this->servicosIncluidos,
+            'servicosAdicionais' => $this->servicosAdicionais,
+        ]);
+
         // Validar dados do plano
         $this->validate([
             'nomePlano' => 'required|string|max:255',
@@ -160,8 +175,9 @@ class PlanosDeAssinatura extends Component
             'allowed_days' => $this->allowedDays, // Adiciona os dias permitidos
             'created_by' => Auth::id(), // ID do usuário que criou o plano
         ]);
+        \Log::debug('Plano criado?', ['plano_id' => $plano->id ?? null]);
         $plano->services()->sync($this->servicosIncluidos);
-        
+
         // Sincronizar serviços adicionais com descontos
         $servicosAdicionaisComDescontos = [];
         foreach ($this->servicosAdicionais as $servicoId) {
@@ -171,10 +187,25 @@ class PlanosDeAssinatura extends Component
         }
         $plano->additionalServices()->sync($servicosAdicionaisComDescontos);
 
+        // Preencher tabela tenants_plans na base central
+        $tenantId = tenant() ? tenant()->id : null;
+        if ($tenantId) {
+            \App\Models\TenantPlan::on('mysql')->create([
+                'tenant_id' => $tenantId,
+                'name' => $this->nomePlano,
+                'price' => $this->preco,
+                'duration_days' => $this->duracaoDias,
+                'active' => true,
+            ]);
+        }
+
         // Atualiza a lista de planos
         $this->modalNovoPlano = false;
         $this->mount();
-        
+        \Log::debug('FIM salvarNovoPlano', [
+            'user_id' => Auth::id(),
+            'plano_id' => $plano->id ?? null,
+        ]);
         session()->flash('message', 'Plano criado com sucesso!');
     }
     public function addFeature()

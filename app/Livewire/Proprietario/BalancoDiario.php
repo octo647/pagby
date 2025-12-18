@@ -25,7 +25,7 @@ class BalancoDiario extends Component
     {
         $this->data = now()->format('Y-m-d');
         $this->branches = Branch::all();
-        $this->branch_id = $this->branches->first()->id ?? null;
+        $this->branch_id = $this->branches->first()->id ?? null;     
         $this->comandasDoDia = collect();
         $this->carregarComandas();
         $this->buscarCaixa();
@@ -51,6 +51,7 @@ class BalancoDiario extends Component
             ->whereDate('data_abertura', $dia)
             ->where('branch_id', $branchId)
             ->get();
+           
 
         $this->totalPago = $this->comandasDoDia
             ->where('status', 'Finalizada')

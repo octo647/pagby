@@ -86,6 +86,22 @@ class Services extends Component
         }
         $serv = $this->salon_serv[$serviceIndex];
 
+        // Validação backend
+        $errors = [];
+        if (empty($serv['price']) || !is_numeric($serv['price']) || $serv['price'] <= 0) {
+            $errors['price'] = 'O preço é obrigatório e deve ser um valor positivo.';
+        }
+        if (empty($serv['time']) || !is_numeric($serv['time']) || intval($serv['time']) <= 0) {
+            $errors['time'] = 'O tempo é obrigatório e deve ser um número inteiro positivo.';
+        }
+        if (!empty($errors)) {
+            foreach ($errors as $field => $msg) {
+                $this->addError('salon_serv.' . $serviceIndex . '.' . $field, $msg);
+            }
+            session()->flash('error', 'Preencha corretamente todos os campos obrigatórios.');
+            return;
+        }
+
         $photoName = null;
 
         // Se for upload novo
@@ -114,7 +130,7 @@ class Services extends Component
 
         $this->editedServiceIndex = null;
         $this->editedServiceField = null;
-}
+    }
    
     public function deleteService($serviceIndex)
     {

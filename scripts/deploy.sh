@@ -17,40 +17,53 @@ echo "📦 Compilando assets..."
 npm run build
 
 # Configurações do rsync
-REMOTE_HOST="helde663@pagby.com.br"
-REMOTE_PATH="/home4/helde663/pagby/"
+REMOTE_HOST="helder@69.6.222.77"
+REMOTE_PATH="/var/www/pagby/"
 
-# Sincronizar projeto completo (excluindo arquivos desnecessários)
+
+# Sincronizar projeto completo (sem sobrescrever/apagar tenants do servidor)
 echo "📤 Sincronizando projeto com HostGator (rsync)..."
-rsync -avz --progress --delete-after -e 'ssh -p 2222' \
+rsync -avz --no-perms --progress --delete-after -e 'ssh -p 22022' \
     --exclude='.git/' \
     --exclude='node_modules/' \
     --exclude='vendor/' \
-    --exclude='storage/logs/' \
-    --exclude='storage/framework/cache/' \
-    --exclude='storage/framework/sessions/' \
-    --exclude='storage/framework/views/' \
+    --exclude='storage/' \
+    --exclude='bootstrap/cache/*' \
     --exclude='.env*' \
     --exclude='config/tenancy.php' \
+    --exclude='resources/views/tenants/' \
+    --exclude='public/tenants/' \
+    --exclude='public/images/tenants/' \
     ./ $REMOTE_HOST:$REMOTE_PATH
 
 # Enviar DIRETAMENTE o .env.production como .env
 echo "📄 Enviando configuração de produção..."
-rsync -avz -e 'ssh -p 2222' .env.production $REMOTE_HOST:$REMOTE_PATH/.env
+rsync -avz --no-perms -e 'ssh -p 22022' .env.production $REMOTE_HOST:$REMOTE_PATH/.env
+
 
 # Comandos no servidor via SSH
+
 echo "🔧 Executando comandos no servidor..."
-ssh -p 2222 helde663@pagby.com.br << 'ENDSSH'
-cd /home4/helde663/pagby
-chmod -R 755 storage/
-chmod -R 755 bootstrap/cache/
-chmod -R 755 public/images/
+ssh -p 22022 helder@69.6.222.77 << 'ENDSSH'
+cd /var/www/pagby/
+
+# Instala dependências de produção (evita problemas com Collision)
+composer install --no-dev --optimize-autoloader
+
+# Pequeno delay para garantir gravação do .env
+sleep 2
+
+# Limpa todos os caches do Laravel
 php artisan config:clear
 php artisan cache:clear
 php artisan view:clear
 php artisan route:clear
+
+# Recria o cache de configuração
+php artisan config:cache
+php artisan config:clear
+echo "Permissões e dependências ajustadas."
 ENDSSH
 
-echo "✅ Deploy completed successfully!"
+echo "✅ Instalação bem sucedida!"
 echo "🔍 Verifique: https://pagby.com.br"
-echo "📊 Próximos deploys serão muito mais rápidos!"

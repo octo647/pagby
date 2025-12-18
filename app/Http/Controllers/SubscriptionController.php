@@ -20,22 +20,94 @@ class SubscriptionController extends Controller
     // Exibe página de sucesso
     public function success(Request $request)
     {
-        $payment_id = $request->query('payment_id');
-        $payment = TenantsPlansPayment::on('mysql')->where('external_id', $payment_id)->first();
-      
-        if ($payment) {
-        $plan_name = $payment->plan;
+        Log::info('=== Success Route Acessada ===');
+        Log::info('Success Request:', $request->all());
+        Log::info('Host:', ['host' => $request->getHost()]);
         
+        // Detecta se está no domínio central ou tenant
+        $host = $request->getHost();
+        $isCentral = in_array($host, ['www.pagby.com.br', 'pagby.com.br', 'localhost']);
         
-        } else {
-            $plan = null;
-           
-        }
-        return view('tenant-assinatura.success', [
+        // Se está no CENTRAL, busca o pagamento e redireciona para o tenant
+        if ($isCentral) {
+            // Mercado Pago envia preapproval_id na URL
+            $preapprovalId = $request->query('preapproval_id');
+            $payment_id = $request->query('payment_id');
             
-            'plan_name' => $plan_name ? $plan_name : null,
+            // Buscar pagamento pelo preapproval_id ou payment_id
+            $payment = null;
+            
+            if ($preapprovalId) {
+                $payment = TenantsPlansPayment::on('mysql')->where('mp_payment_id', $preapprovalId)->first();
+                Log::info('Buscando por preapproval_id:', ['preapproval_id' => $preapprovalId, 'found' => $payment ? 'sim' : 'não']);
+            }
+            
+            if (!$payment && $payment_id) {
+                $payment = TenantsPlansPayment::on('mysql')->where('id', $payment_id)
+                    ->orWhere('external_id', $payment_id)
+                    ->first();
+                Log::info('Buscando por payment_id:', ['payment_id' => $payment_id, 'found' => $payment ? 'sim' : 'não']);
+            }
+            
+            // Se encontrou o pagamento, redireciona para o domínio do tenant
+            if ($payment && $payment->tenant_id) {
+                $tenantDomain = "{$payment->tenant_id}.pagby.com.br";
+                $successUrl = "https://{$tenantDomain}/tenant-assinatura/success"
+                    . "?payment_id={$payment->id}"
+                    . "&plan_name=" . urlencode($payment->plan)
+                    . "&price=" . urlencode(number_format($payment->amount, 2, ',', '.'));
+                
+                Log::info('Redirecionando para tenant:', ['url' => $successUrl]);
+                return redirect()->away($successUrl);
+            }
+            
+            // Se não encontrou, retorna erro
+            Log::error('Pagamento não encontrado no central', [
+                'preapproval_id' => $preapprovalId,
+                'payment_id' => $payment_id
+            ]);
+            return redirect()->route('home')->with('error', 'Pagamento não encontrado');
+        }
+        
+        // Se está no TENANT, exibe a página de sucesso com os dados da URL
+        $payment_id = $request->query('payment_id');
+        $plan_name = $request->query('plan_name');
+        $price = $request->query('price');
+        
+        Log::info('🏢 Exibindo success no TENANT:', [
+            'payment_id_from_url' => $payment_id,
+            'plan_name_from_url' => $plan_name,
+            'price_from_url' => $price
+        ]);
+        
+        // Buscar dados do pagamento no central para garantir
+        if ($payment_id) {
+            $payment = TenantsPlansPayment::on('mysql')->find($payment_id);
+            if ($payment) {
+                $plan_name = $payment->plan;
+                $price = number_format($payment->amount, 2, ',', '.');
+                
+                Log::info('💾 Dados do pagamento recuperados do banco:', [
+                    'payment_id' => $payment->id,
+                    'plan_name' => $plan_name,
+                    'price' => $price,
+                    'tenant_id' => $payment->tenant_id
+                ]);
+            } else {
+                Log::error('❌ Pagamento não encontrado no banco:', ['payment_id' => $payment_id]);
+            }
+        }
+        
+        Log::info('📄 Dados enviados para view:', [
+            'plan_name' => $plan_name,
             'payment_id' => $payment_id,
-            'price' => $payment ? number_format($payment->amount, 2, ',', '.') : null,
+            'price' => $price
+        ]);
+        
+        return view('tenant-assinatura.success', [
+            'plan_name' => $plan_name,
+            'payment_id' => $payment_id,
+            'price' => $price,
         ]);
     }
 
@@ -324,9 +396,13 @@ private function mpGet($url, $accessToken)
     }
 
     // Cria registro local do pagamento (status pending) NA BASE CENTRAL
+
+ 
+
     $payment = TenantsPlansPayment::on('mysql')->create([
         'external_id' => 'tenant-subscription-' . uniqid(),
         'tenant_id' => $tenantId,
+        'plan_id' => $planId,
         'plan' => $plan->name,
         'amount' => $plan->price,        
         'status' => 'pending',
@@ -344,6 +420,15 @@ private function mpGet($url, $accessToken)
     // Cria assinatura recorrente via API MercadoPago ORIGINÁRIA DO CENTRAL
     $accessToken = config('services.tenant.access_token'); // Token do central
 
+    // URL de retorno para o tenant específico
+    $backUrl = "https://{$tenantId}.pagby.com.br/tenant-assinatura/success?payment_id={$payment->id}";
+
+    Log::info('🔗 Preparando assinatura MercadoPago:', [
+        'tenant_id' => $tenantId,
+        'payment_id' => $payment->id,
+        'back_url' => $backUrl
+    ]);
+
     $data = [
         "reason" => $plan->name,
         "auto_recurring" => [
@@ -354,7 +439,7 @@ private function mpGet($url, $accessToken)
             
         ],
         "payer_email" => $userEmail,
-        "back_url" => route('tenant-assinatura.congrats'), // Rota do central
+        "back_url" => $backUrl, // Rota do tenant específico
         "status" => "pending",
         "external_reference" => $payment->external_id,
         "notification_url" => route('tenant-assinatura.webhook') // Webhook do central
@@ -499,16 +584,21 @@ public function debugPayment($paymentId)
  */
 public function congrats(Request $request)
 {
-
     Log::info('=== MercadoPago Congrats Callback ===');
     Log::info('Congrats Request:', $request->all());
     
-    $subscriptionId = $request->get('preference-id') ?? $request->get('subscription_id');
+    // Mercado Pago envia preapproval_id para assinaturas
+    $preapprovalId = $request->get('preapproval_id');
     $status = $request->get('status', 'approved');
     
-    if ($subscriptionId) {
-        // Buscar pagamento pelo ID da assinatura
-        $payment = TenantsPlansPayment::where('mp_payment_id', $subscriptionId)->first();
+    Log::info('🔍 Buscando pagamento:', [
+        'preapproval_id' => $preapprovalId,
+        'status' => $status
+    ]);
+    
+    if ($preapprovalId) {
+        // Buscar pagamento pelo preapproval_id
+        $payment = TenantsPlansPayment::on('mysql')->where('mp_payment_id', $preapprovalId)->first();
         
         if ($payment) {
             $payment->status = $status === 'approved' ? 'authorized' : $status;
@@ -516,19 +606,28 @@ public function congrats(Request $request)
             
             Log::info('✅ Pagamento atualizado via congrats:', [
                 'payment_id' => $payment->id,
-                'status' => $payment->status
+                'status' => $payment->status,
+                'tenant_id' => $payment->tenant_id
             ]);
             
             // Ativar tenant se aprovado
-            if ($status === 'approved') {
+            if ($status === 'approved' || $status === 'authorized') {
                 $this->activateTenantSubscription($payment);
             }
             
-            return redirect()->away("https://{$payment->tenant_id}.pagby.com.br/tenant-assinatura/success?payment_id={$payment->id}");
+            // Redirecionar para o tenant específico
+            $tenantDomain = "{$payment->tenant_id}.pagby.com.br";
+            $successUrl = "https://{$tenantDomain}/tenant-assinatura/success?payment_id={$payment->id}";
+            
+            Log::info('↗️ Redirecionando para tenant:', ['url' => $successUrl]);
+            return redirect()->away($successUrl);
+        } else {
+            Log::error('❌ Pagamento não encontrado:', ['preapproval_id' => $preapprovalId]);
         }
     }
     
-    // Fallback para success normal
+    // Fallback: se não encontrou o pagamento, vai para success genérico
+    Log::warning('⚠️ Fallback: redirecionando para success genérico');
     return redirect()->route('tenant-assinatura.success');
 }
 

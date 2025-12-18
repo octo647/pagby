@@ -347,8 +347,8 @@ private function getSalaoHomeTemplate($tenantId)
  */
 private function createTenantStorageLink($tenantId)
 {
-    $storagePath = storage_path("tenant{$tenantId}/app/public");
-    $publicPath = public_path("storage/tenant{$tenantId}");
+    $storagePath = storage_path("{$tenantId}/app/public");
+    $publicPath = public_path("storage/{$tenantId}");
     
     if (!is_link($publicPath) && is_dir($storagePath)) {
         symlink($storagePath, $publicPath);

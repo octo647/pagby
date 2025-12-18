@@ -41,5 +41,15 @@
         </div>
 
         @livewireScripts
+
+        <script>
+        document.addEventListener('livewire:init', function () {
+            window.addEventListener('confirm-cancel', event => {
+                if (confirm('Tem certeza que deseja cancelar este agendamento?')) {
+                    window.Livewire.dispatch('atualizarStatus', { id: event.detail.id, status: 'Cancelado' });
+                }
+            });
+        });
+        </script>
     </body>
 </html>

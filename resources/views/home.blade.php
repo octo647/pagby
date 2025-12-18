@@ -26,6 +26,18 @@
     </header>
 
     <main class="flex-1 flex flex-col items-center justify-center text-center px-4 py-10">
+        <!-- Banner Trial -->
+        <div class="w-full max-w-2xl mx-auto mb-8">
+            <div class="bg-gradient-to-r from-pink-500 to-indigo-500 text-white rounded-xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between">
+                <div class="text-left">
+                    <h2 class="text-2xl font-bold mb-1">Experimente grátis por 30 dias!</h2>
+                    <p class="text-white/90">Cadastre seu salão e marcaremos uma demonstração do PagBy sem compromisso.</p>
+                </div>
+                <a href="{{ route('register-tenant', ['plan' => 'trial']) }}" class="mt-4 md:mt-0 bg-white text-pink-600 font-bold px-6 py-3 rounded-full shadow hover:bg-pink-50 transition">
+                    Começar teste grátis
+                </a>
+            </div>
+        </div>
         <!-- Hero Section -->
         <div class="fade-in max-w-3xl">
             <h1 class="text-4xl md:text-5xl font-extrabold mb-4 text-pink-600 ">Bem-vindo ao PagBy!</h1>
@@ -177,7 +189,7 @@
         </div>
         
         <!-- Stats Section -->
-        <div class="fade-in mt-16 max-w-4xl w-full">
+    <!--    <div class="fade-in mt-16 max-w-4xl w-full">
             <div class="bg-gradient-to-r from-pink-900/30 to-indigo-900/30 rounded-2xl p-8">
                 <h2 class="text-2xl md:text-3xl font-bold mb-8 text-center">O PagBy em Números</h2>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -199,9 +211,10 @@
                 </div>
             </div>
         </div>
+        -->
         
         <!-- Testimonials -->
-        <div id="depoimentos" class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full">
+     <!--   <div id="depoimentos" class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full">
             <h2 class="text-2xl md:text-3xl font-semibold mb-6 text-white">O que dizem nossos clientes</h2>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -240,6 +253,7 @@
                 @endforeach
             </div>
         </div>
+        -->
 
         <!-- SEÇÃO DE PLANOS PAGBY -->
         <div id="planos" class="fade-in mt-16 max-w-6xl w-full">
@@ -252,9 +266,9 @@
                 </p>
             </div>
 
-            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+<!--            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"> -->
                 <!-- Plano Básico -->
-                <div class="bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-purple-500 transition-all duration-300 transform hover:scale-105">
+<!--                <div class="bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-purple-500 transition-all duration-300 transform hover:scale-105">
                     <div class="text-center mb-6">
                         <h3 class="text-2xl font-bold text-gray-800 mb-2">Básico</h3>
                         <div class="text-4xl font-bold text-purple-600 mb-1">
@@ -305,9 +319,10 @@
                 </a>
 
                 </div>
+                -->
 
                 <!-- Plano Premium -->
-                <div class="bg-white rounded-2xl shadow-xl p-8 border-2 border-pink-500 relative transform hover:scale-105 transition-all duration-300">
+<!--                <div class="bg-white rounded-2xl shadow-xl p-8 border-2 border-pink-500 relative transform hover:scale-105 transition-all duration-300">
                     <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
                         <span class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
                             MAIS POPULAR
@@ -363,9 +378,10 @@
                     
                 </div>
             </div>
+-->
 
             <!-- Garantia -->
-            <div class="text-center mt-12">
+<!--            <div class="text-center mt-12">
                 <p class="text-white/80 mb-4">
                     🛡️ Cancele quando quiser
                 </p>
@@ -374,9 +390,9 @@
                 </p>
             </div>
         </div>
-        
+-->        
         <!-- Why PagBy Section -->
-        <div class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full text-center">
+     <div class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full text-center">
             <h3 class="text-2xl font-bold mb-4">Por que PagBy?</h3>
             <p class="max-w-2xl mx-auto text-white/80">
                 PagBy nasceu para simplificar a rotina de quem vive de beleza e bem-estar. Com tecnologia de ponta, segurança e facilidade, você foca no que faz de melhor: encantar seus clientes!

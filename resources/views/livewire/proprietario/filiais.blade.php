@@ -97,12 +97,13 @@
                     <span class="ml-2 text-sm text-gray-700">Requer pagamento antecipado</span>
                 </label>
                 <label class="flex items-center">
-                    <input type="checkbox" wire:model.live="branch.require_comission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                    <input type="checkbox" wire:model.live="branch.require_commission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500
+                    @if($branch['require_commission']) mb-2 checked @endif">
                     <span class="ml-2 text-sm text-gray-700">Definir comissão para funcionários?</span>
                 </label>
-                @if($branch['require_comission'])
+                @if($branch['require_commission'])
                 <label class="flex items-center">                    
-                    <span class="ml-2 text-sm text-gray-700">Valor da comissão: &nbsp;</span> <input type="text" wire:model="branch.commission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" size="2">&nbsp;%
+                    <span class="ml-2 text-sm text-gray-700">Valor da comissão: &nbsp;</span> <input type="text" wire:model="branch.commission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" size="3">&nbsp;%
                 </label>
                 @endif
                 @error('branch.require_advance_payment') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -148,7 +149,7 @@
                         <td class="py-3 px-4 border-b">{{ $branch->email }}</td>
                         <td class="py-3 px-4 border-b">
                             <button wire:click="edit({{ $branch->id }})" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mr-2">
-                                Editar
+                               Editar&nbsp; 
                             </button>
                             <button wire:click="delete({{ $branch->id }})" onclick="return confirm('Tem certeza que deseja excluir esta filial?')" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm">
                                 Excluir
@@ -236,7 +237,7 @@
                 @endif
                 
                 <!-- Configurações Especiais -->
-                @if($branch->require_advance_payment || $branch->require_comission)
+                @if($branch->require_advance_payment || $branch->require_commission)
                     <div class="border-t pt-3 mb-4">
                         <h4 class="text-xs font-medium text-gray-700 uppercase tracking-wide mb-2">Configurações</h4>
                         <div class="space-y-1">
@@ -246,7 +247,7 @@
                                 </span>
                             @endif
                             
-                            @if($branch->require_comission)
+                            @if($branch->require_commission)
                                 <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                     💰 Comissão: {{ $branch->commission }}%
                                 </span>

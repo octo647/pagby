@@ -1,6 +1,8 @@
 <?php
 
+
 namespace App\Livewire\Admin;
+
 
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -8,10 +10,71 @@ use App\Models\Tenant;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
+
 use Illuminate\Support\Facades\Artisan;
+
+use Illuminate\Support\Facades\DB;
 
 class Saloes extends Component
 {
+    public $templateList = [];
+    use WithFileUploads;
+
+    public function mount()
+    {
+        $this->loadSaloes();
+        $this->loadTemplateList();
+    }
+        /**
+         * Carrega todos os templates disponíveis em resources/Templates
+         * e monta a lista para o modal, incluindo o caminho da miniatura.
+         */
+        public function loadTemplateList()
+        {
+            $templateDir = resource_path('Templates');
+            $publicImagesDir = public_path('images');
+            $this->templateList = [];
+            if (is_dir($templateDir)) {
+                foreach (scandir($templateDir) as $entry) {
+                    if ($entry === '.' || $entry === '..') continue;
+                    $templatePath = $templateDir . DIRECTORY_SEPARATOR . $entry;
+                    if (is_dir($templatePath)) {
+                        // Tenta encontrar uma miniatura padrão ou alternativa
+                        // Busca arquivos photo.*, ambiente.*, hero.*
+                        $thumbnail = null;
+                        $patterns = ['photo.', 'ambiente.', 'hero.'];
+                        if (is_dir("$publicImagesDir/$entry")) {
+                            $files = scandir("$publicImagesDir/$entry");
+                            foreach ($patterns as $pattern) {
+                                foreach ($files as $file) {
+                                    if (strpos($file, $pattern) === 0) {
+                                        $thumbPath = "/images/$entry/$file";
+                                        if (file_exists(public_path($thumbPath))) {
+                                            $thumbnail = $thumbPath;
+                                            break 2;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // Se não encontrar, usa uma imagem placeholder
+                        if (!$thumbnail) {
+                            $thumbnail = '/images/placeholder-template.png';
+                        }
+                        $this->templateList[] = [
+                            'name' => $entry,
+                            'thumbnail' => $thumbnail,
+                        ];
+                    }
+                }
+            }
+        }
+    public function loadSaloes()
+    {
+        $this->saloes = Tenant::all()->map(function($salon) {
+            return $salon->toArray();
+        })->toArray();
+    }
     use WithFileUploads;
     public $logoFile;
     public $saloes = [];
@@ -19,19 +82,41 @@ class Saloes extends Component
     public $newSalon = [];
     public $editedSalonIndex = null;
     public $editedSalonField = null;
-    
-    public function mount()
+    public $contact;
+
+    // Novas propriedades para contatos
+    public $contacts = [];
+    public $contactsPage = 1;
+    public $contactsTotalPages = 1;
+    public $selectedContactId = null;
+
+    public function loadContacts($page = 1)
     {
-        $this->loadSaloes();
-        $this->resetNewSalon();
+        $perPage = 10;
+        $query = \App\Models\Contact::orderByDesc('created_at');
+        $total = $query->count();
+        $this->contactsTotalPages = (int) ceil($total / $perPage);
+        $this->contacts = $query->skip(($page-1)*$perPage)->take($perPage)->get();
+        $this->contactsPage = $page;
     }
-    
-    private function loadSaloes()
+
+    public function selectContact($contactId)
     {
-        $this->saloes = Tenant::all()->map(function($salon) {
-            return $salon->toArray();
-        })->toArray();
-       
+        $contact = \App\Models\Contact::find($contactId);
+        if ($contact) {
+            $this->selectedContactId = $contactId;
+            $this->newSalon['email'] = $contact->email;
+            $this->newSalon['phone'] = $contact->phone;
+            $this->newSalon['name'] = $contact->tenant_name;
+            $this->newSalon['address'] = $contact->address;
+            $this->newSalon['cep'] = $contact->cep;
+            $this->newSalon['neighborhood'] = $contact->neighborhood;
+            $this->newSalon['city'] = $contact->city;
+            $this->newSalon['state'] = $contact->state;
+            if (!empty($contact->tipo)) {
+                $this->newSalon['type'] = $contact->tipo;
+            }
+        }
     }
     
     private function resetNewSalon()
@@ -40,33 +125,44 @@ class Saloes extends Component
             'id' => '',
             'type' => 'barbearia', // Default type
             'email' => '',
-            'phone' => '',
+            'phone' => '', 
+            'whatsapp' => '',  
             'status' => '',
             'instagram' => '',
-            'facebook' => '',
-            'whatsapp' => '',            
+            'facebook_client_id' => '',
+            'facebook_client_secret' => '',
+            'google_client_id' => '',
+            'google_client_secret' => '',
+            'social_login_enabled' => 0, // Corrigido para inteiro
             'name' => '',
             'cnpj' => '',
             'fantasy_name' => '',
             'slug' => '',
-            'cep' => '',
-            'neighborhood' => '',
-            'state' => '',
-            'logo' => '',
-            'plan' => '',
-            'data' => null, // Assuming this is a JSON field, adjust as necessary
             'address' => '',
             'number' => null,
             'complement' => '',
+            'neighborhood' => '',
+            'cep' => '',
             'city' => '',
+            'state' => '',
+            'logo' => '',
+            'plan' => '',
+            'status' => '',
+            'trial_started_at' => null,
+            'trial_ends_at' => null,
+            'subscription_ends_at' => null,
+            'is_blocked' => false,
+            'data' => null, // Assuming this is a JSON field, adjust as necessary
+            'created_at' => null,
+            'updated_at' => null
         ];
     }
     
     public function createSalon()
-    {   
-        
+    {
         $this->showCreateSalonPanel = true;
         $this->resetNewSalon();
+        $this->loadContacts(1);
         session()->flash('message', 'Painel de criação aberto.');
     }
     
@@ -148,28 +244,40 @@ class Saloes extends Component
             }
 
             $salonModel->update([
-                'email' => $salon['email'] ?? null,
                 'type' => $salon['type'] ?? null,
+                'email' => $salon['email'] ?? null,
+                'phone' => $salon['phone'] ?? null,                
                 'whatsapp' => $salon['whatsapp'] ?? null,
                 'instagram' => $salon['instagram'] ?? null,
-                'facebook' => $salon['facebook'] ?? null,
+                'facebook_client_id' => $salon['facebook_client_id'] ?? null,
+                'facebook_client_secret' => $salon['facebook_client_secret'] ?? null,
+                'google_client_id' => $salon['google_client_id'] ?? null,
+                'google_client_secret' => $salon['google_client_secret'] ?? null,
+                'social_login_enabled' => $salon['social_login_enabled'] ?? null,
                 'name' => $salon['name'] ?? null,
                 'cnpj' => $salon['cnpj'] ?? null,
                 'fantasy_name' => $salon['fantasy_name'] ?? null,
                 'slug' => $salon['slug'] ?? null,
-                'cep' => $salon['cep'] ?? null,
+                'address' => $salon['address'] ?? null,
+                'number' => $salon['number'] ?? null,
+                'complement' => $salon['complement'] ?? null,                
                 'neighborhood' => $salon['neighborhood'] ?? null,
+                'cep' => $salon['cep'] ?? null,
+                'city' => $salon['city'] ?? null,
                 'state' => $salon['state'] ?? null,
                 'logo' => $salon['logo'] ?? null,
                 'plan' => $salon['plan'] ?? null,
-                'data' => $salon['data'] ?? null,
-                'phone' => $salon['phone'] ?? null,
                 'status' => $salon['status'] ?? null,
-                'address' => $salon['address'] ?? null,
-                'number' => $salon['number'] ?? null,
-                'complement' => $salon['complement'] ?? null,
-                'city' => $salon['city'] ?? null,
-                'plan' => $salon['plan'] ?? null
+                'trial_started_at' => $salon['trial_started_at'] ?? null,
+                'trial_ends_at' => $salon['trial_ends_at'] ?? null,
+                'subscription_started_at' => $salon['subscription_started_at'] ?? null,
+                'subscription_ends_at' => $salon['subscription_ends_at'] ?? null,
+                'is_blocked' => $salon['is_blocked'] ?? false,
+                'data' => $salon['data'] ?? null,
+                'created_at' => $salon['created_at'] ?? null,
+                'updated_at' => $salon['updated_at'] ?? null          
+                
+               
             ]);
 
             $this->editedSalonIndex = null;
@@ -180,24 +288,43 @@ class Saloes extends Component
             session()->flash('error', 'Salão não encontrado.');
         }
     }
+
+    public function databaseExists($dbName)
+    {
+        $result = DB::select("SHOW DATABASES LIKE ?", [$dbName]);
+        return !empty($result);
+    }
     
     public function saveNewSalon()
     {
-        
-         // Isso vai parar a execução e mostrar a mensagem
-        // O id do salão será igual ao slug
         $this->newSalon['id'] = $this->newSalon['slug'];
+        // Deleta a base de dados do tenant, se já existir (MySQL)
+        // Usa apenas o id do salão como nome do banco de dados
+        $dbName = $this->newSalon['id'];
+        
+        try {
+            if ($this->databaseExists($dbName)) {
+                DB::statement("DROP DATABASE IF EXISTS `$dbName`");
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao tentar deletar base de dados existente do tenant: ' . $e->getMessage());
+        }
+
+        // Isso vai parar a execução e mostrar a mensagem
+        // O id do salão será igual ao slug
+        
         $this->validate([
             'newSalon.slug' => 'required',
             'logoFile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
         // Domínio baseado no ambiente
         $domainSuffix = env('TENANT_DOMAIN_SUFFIX', '.localhost');
-    
-        $tenant = Tenant::create($this->newSalon);
+        // Garante que social_login_enabled seja inteiro
+        $this->newSalon['social_login_enabled'] = (int) ($this->newSalon['social_login_enabled'] ?? 0);
+        //cria o novo tenant se não existir
+        $tenant = Tenant::firstOrCreate(['id' => $this->newSalon['id']], $this->newSalon);
 
         // Cria o domínio para o salão
-        
         $tenant->createDomain(['domain' => $this->newSalon['id'] . $domainSuffix]);
 
         // Inicia automaticamente o período de teste de 30 dias
@@ -212,38 +339,47 @@ class Saloes extends Component
         //Criar a estrutura de diretórios
         $this->createTenantDirectoryStructure($this->newSalon['id'], $this->newSalon['type'] ?? 'barbearia');
 
-        // Salvar logo se enviada (após copiar imagens padrão)
+        // Salvar logo se enviada (em public/tenants/{tenant}/logo.{ext})
         if ($this->logoFile) {
             $slug = $this->newSalon['slug'];
+            $originalName = $this->logoFile->getClientOriginalName();
             $ext = $this->logoFile->getClientOriginalExtension();
-            $path = "images/$slug/logo.$ext";
+            Log::info('Upload de logo recebido', [
+                'original_name' => $originalName,
+                'extension' => $ext,
+                'mime' => $this->logoFile->getMimeType(),
+            ]);
+            $logoDir = public_path("tenants/$slug");
+            if (!is_dir($logoDir)) {
+                mkdir($logoDir, 0755, true);
+            }
+            $logoPath = $logoDir . "/logo.$ext";
             try {
-                $result = $this->logoFile->storeAs("images/$slug", "logo.$ext", 'public');
-                Log::info('Resultado do storeAs (criação)', ['result' => $result]);
+                $this->logoFile->storeAs("tmp", "logo.$ext", 'local');
+                $tmpPath = storage_path("app/tmp/logo.$ext");
+                copy($tmpPath, $logoPath);
+                unlink($tmpPath);
+                Log::info('LogoFile salvo em ' . $logoPath);
             } catch (\Exception $e) {
-                Log::error('Erro ao salvar logoFile no storage (criação)', [
+                Log::error('Erro ao salvar logoFile em public/tenants', [
                     'exception' => $e->getMessage(),
                     'trace' => $e->getTraceAsString(),
                 ]);
             }
-            $storagePath = storage_path("app/public/images/$slug/logo.$ext");
-            $publicPath = public_path("images/$slug/logo.$ext");
-            Log::info('LogoFile salvo em storage (criação)', [
-                'storagePath' => $storagePath,
-                'exists' => file_exists($storagePath),
-            ]);
-            if (file_exists($storagePath)) {
-                copy($storagePath, $publicPath);
-                Log::info('LogoFile copiado para public (criação)', [
-                    'publicPath' => $publicPath,
-                    'exists' => file_exists($publicPath),
-                ]);
-            }
             // Atualiza o campo logo no banco
-            $tenant->logo = $path;
+            $tenant->logo = "tenants/$slug/logo.$ext";
             $tenant->save();
         }
+        // Atualiza o nome temporário do salão na tabela pagbypayments
+        $contact = \App\Models\Contact::where('email', $this->newSalon['email'])->first();
+        if ($contact) {
+            \App\Models\PagByPayment::where('tenant_id', 'temp_' . $contact->id)->update(['tenant_id' => $tenant->id]);
+        }
+        
         $this->dispatch('salonLogoUpdated');
+
+        // Limpa o cache de views para garantir que novos symlinks/templates sejam reconhecidos
+        \Artisan::call('view:clear');
 
         $this->showCreateSalonPanel = false;
         $this->loadSaloes(); // Recarrega a lista
@@ -257,21 +393,24 @@ class Saloes extends Component
     {
         $basePath = env('HOSTGATOR_PUBLIC_PATH', public_path());
         $storagePath = env('HOSTGATOR_STORAGE_PATH', storage_path());
-        
-        // Diretórios a serem criados
+
+        // Diretórios principais
         $directories = [
-            // Para imagens do tenant (logo, etc)
-            $basePath . "/images/$tenantId",
-            // Para uploads via Livewire/Laravel
-            storage_path("app/public/images/$tenantId"),
-            // Para views personalizadas
-            resource_path("views/tenants/$tenantId"),
-            // Para storage específico do tenant
-            $storagePath . "/$tenantId/app/public/profile-photos",
-            $storagePath . "/$tenantId/app/public/services",
-            $storagePath . "/$tenantId/app/public/gallery",
-            $storagePath . "/$tenantId/framework/cache",
+            $basePath . "/images/tenant$tenantId",
+            storage_path("app/public/images/tenant$tenantId"),
+            resource_path("views/tenants/tenant$tenantId"),
+            $storagePath . "/tenant$tenantId/app/public/profile-photos",
+            $storagePath . "/tenant$tenantId/app/public/services",
+            $storagePath . "/tenant$tenantId/app/public/gallery",
+            $storagePath . "/tenant$tenantId/framework/cache",
         ];
+
+        // Subdiretórios padrões para a home do tenant
+        $viewSubdirs = [
+            resource_path("views/tenants/$tenantId/partials"),
+            resource_path("views/tenants/$tenantId/components"),
+        ];
+        $directories = array_merge($directories, $viewSubdirs);
 
         // Criar todos os diretórios
         foreach ($directories as $directory) {
@@ -279,12 +418,50 @@ class Saloes extends Component
                 mkdir($directory, 0755, true);
             }
         }
-        //Copia as imagens em Barbearia ou Salao_de_beleza para o novo diretório
-        $this->copyImages($tenantId, $tenantType);
 
-        // Criar arquivo home.blade.php personalizado
-        $this->createTenantHomeView($tenantId, $tenantType);
-        
+
+        // Cria symlink para o diretório de imagens do template
+
+        // Usa diretamente o nome informado em $tenantType (ex: SalaoBeleza1, Barbearia1)
+        $templateType = trim($tenantType);
+        $templateImages = public_path("images/$templateType");
+        $tenantImages = public_path("images/$tenantId");
+        Log::info('Tentando criar symlink de imagens', ['templateImages' => $templateImages, 'tenantImages' => $tenantImages]);
+        // Remove qualquer arquivo, diretório ou symlink existente antes de criar o symlink
+        // Remover qualquer coisa existente
+        if (file_exists($tenantImages) || is_link($tenantImages)) {
+            @unlink($tenantImages);
+            if (file_exists($tenantImages)) {
+                \Illuminate\Support\Facades\File::deleteDirectory($tenantImages);
+            }
+        }
+        // Só cria se não existir mais nada
+        if (!file_exists($tenantImages) && !is_link($tenantImages) && file_exists($templateImages)) {
+            symlink($templateImages, $tenantImages);
+            Log::info('Symlink de imagens criado', ['from' => $templateImages, 'to' => $tenantImages]);
+        } else if (file_exists($tenantImages) || is_link($tenantImages)) {
+            Log::error('Falha ao criar symlink: destino ainda existe', ['tenantImages' => $tenantImages]);
+        } else {
+            Log::error('Diretório de template de imagens não encontrado', ['templateImages' => $templateImages]);
+        }
+
+        // Cria symlink para o template home.blade.php
+        $templateHome = resource_path("Templates/$templateType/home.blade.php");
+        $tenantHome = resource_path("views/tenants/$tenantId/home.blade.php");
+            Log::info('Tentando criar symlink do home.blade.php', ['templateHome' => $templateHome, 'tenantHome' => $tenantHome]);
+        if (!is_link($tenantHome)) {
+            if (file_exists($tenantHome)) {
+                unlink($tenantHome);
+            }
+            if (file_exists($templateHome)) {
+                symlink($templateHome, $tenantHome);
+                Log::info('Symlink do home.blade.php criado', ['from' => $templateHome, 'to' => $tenantHome]);
+                    Log::info('Symlink do home.blade.php criado', ['from' => $templateHome, 'to' => $tenantHome]);
+            } else {
+                    Log::error('Arquivo de template home.blade.php não encontrado', ['templateHome' => $templateHome]);
+            }
+        }
+
         // Criar link simbólico para storage público
         $this->createTenantStorageLink($tenantId);
     }
@@ -294,11 +471,7 @@ class Saloes extends Component
     private function copyImages($tenantId, $tenantType)
     {
         
-        $source = public_path("images/$tenantType");
-        $destination = public_path("images/$tenantId");
-
-        // Copiar todos os arquivos de imagem do diretório padrão para o diretório do tenant
-        File::copyDirectory($source, $destination);
+        // Não faz mais cópia, apenas symlink criado em createTenantDirectoryStructure
     }
 
    /**
@@ -320,11 +493,35 @@ class Saloes extends Component
  */
 private function createTenantStorageLink($tenantId)
 {
-    $storagePath = storage_path("tenant{$tenantId}/app/public");
-    $publicPath = public_path("storage/tenant{$tenantId}");
-    
+    $storagePath = storage_path("{$tenantId}/app/public");
+    $publicPath = public_path("storage/{$tenantId}");
+
+    // Log para diagnóstico
+    Log::info('Tentando criar symlink', [
+        'storagePath' => $storagePath,
+        'publicPath' => $publicPath,
+        'storage_exists' => is_dir($storagePath),
+        'public_exists' => is_dir(dirname($publicPath)),
+    ]);
+
+    // Garante que o diretório de origem existe
+    if (!is_dir($storagePath)) {
+        mkdir($storagePath, 0755, true);
+        Log::info('Diretório de origem criado', ['storagePath' => $storagePath]);
+    }
+
+    // Garante que o diretório pai do destino existe
+    if (!is_dir(dirname($publicPath))) {
+        mkdir(dirname($publicPath), 0755, true);
+        Log::info('Diretório pai do symlink criado', ['publicPath' => dirname($publicPath)]);
+    }
+
     if (!is_link($publicPath) && is_dir($storagePath)) {
         symlink($storagePath, $publicPath);
+        Log::info('Symlink criado', [
+            'from' => $storagePath,
+            'to' => $publicPath
+        ]);
     }
 }
 
@@ -335,10 +532,9 @@ private function createTenantStorageLink($tenantId)
     {
         // Busca os dados do contato correspondente
         $contact = \App\Models\Contact::where('email', $this->newSalon['email'])->first();
-        
         if (!$contact) {
             // Se não encontrar o contato, tenta buscar pelo nome do salão ou outros dados
-            $contact = \App\Models\Contact::where('salon_name', $this->newSalon['name'])->first();
+            $contact = \App\Models\Contact::where('tenant_name', $this->newSalon['name'])->first();
         }
 
         // Inicializa tenancy para o tenant específico
@@ -427,10 +623,14 @@ private function createTenantStorageLink($tenantId)
                     storage_path("$slug/framework/cache"),
                     storage_path("$slug"),
                 ];
-        
+
                 foreach ($dirs as $dir) {
-                    if (is_dir($dir)) {
-                        File::deleteDirectory($dir);
+                    // Só apaga se for diretório real, não se for symlink
+                    if (is_link($dir)) {
+                        unlink($dir);
+                        Log::info("Symlink removido: $dir");
+                    } elseif (is_dir($dir)) {
+                        \Illuminate\Support\Facades\File::deleteDirectory($dir);
                         Log::info("Diretório excluído: $dir");
                     }
                 }

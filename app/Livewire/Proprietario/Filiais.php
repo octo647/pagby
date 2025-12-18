@@ -20,7 +20,7 @@ class Filiais extends Component
        'state' => '',
        'complement' => '',
        'require_advance_payment' => false,
-       'require_comission' => false,
+       'require_commission' => false,
        'commission' => 0
    ];
 
@@ -40,17 +40,18 @@ class Filiais extends Component
       
    }
 
-   public function edit($id)
-   {
-    $branch = \App\Models\Branch::find($id);
-    $branchArray = $branch->toArray();
-    // Cast boolean fields for Livewire checkboxes
-    $branchArray['require_advance_payment'] = (bool) $branchArray['require_advance_payment'];
-    $branchArray['require_comission'] = (bool) $branchArray['require_comission'];
-    $this->branch = $branchArray;
-    $this->isEditing = true;
-    $this->showForm = true;
-   }
+    public function edit($id)
+    {
+     $branch = \App\Models\Branch::find($id);
+     $branchArray = $branch->toArray();
+     // Cast boolean fields for Livewire checkboxes
+     $branchArray['require_advance_payment'] = (bool) $branchArray['require_advance_payment'];
+     // Se houver valor de comissão, marcar o checkbox
+     $branchArray['require_commission'] = (isset($branchArray['commission']) && $branchArray['commission'] > 0) ? true : false;
+     $this->branch = $branchArray;
+     $this->isEditing = true;
+     $this->showForm = true;
+    }
 
    public function save()
    {
@@ -65,6 +66,11 @@ class Filiais extends Component
            'branch.state' => 'nullable|string|max:255',
            'branch.complement' => 'nullable|string|max:255',
        ]);
+
+       // Normaliza comissão: aceita vírgula e converte para ponto
+       if (isset($this->branch['commission'])) {
+           $this->branch['commission'] = str_replace(',', '.', $this->branch['commission']);
+       }
 
        if ($this->isEditing) {
            $branch = \App\Models\Branch::find($this->branch['id']);
@@ -101,10 +107,18 @@ class Filiais extends Component
            'state' => '',
            'complement' => '',
            'require_advance_payment' => false,
-           'require_comission' => false,
+           // Se comissão for preenchida, marcar o checkbox
+           'require_commission' => false,
            'commission' => 0
        ];
        $this->isEditing = false;
+   }
+   public function updated($propertyName)
+   {
+       // Se o valor da comissão for preenchido, marcar o checkbox automaticamente
+       if ($propertyName === 'branch.commission') {
+           $this->branch['require_commission'] = !empty($this->branch['commission']) && $this->branch['commission'] > 0 ? true : false;
+       }
    }
 
    public function cancelForm()

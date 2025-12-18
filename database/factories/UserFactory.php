@@ -27,12 +27,12 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'phone' => fake()->phoneNumber(),
             'whatsapp' => fake()->boolean(),
-            'cpf' => $this->faker->unique()->numerify('###########'),
+            'cpf' => $this->faker->unique()->numerify('###.###.###-##'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'origin' => fake()->randomElement(['Web', 'Instagram', 'Facebook', 'Google', 'Twitter', 'LinkedIn', 'TikTok', 'WhatsApp', 'Telegram','Indicação', 'Indicação de Cliente', 'Indicação de Amigo']),
             'status' => 'Ativo',
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => static::$password ??= Hash::make('123456'),
             'remember_token' => Str::random(10),
         ];
     }

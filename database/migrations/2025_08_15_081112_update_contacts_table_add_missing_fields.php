@@ -12,15 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('contacts', function (Blueprint $table) {
-            // Adicionar campos que estão sendo usados pelo model mas não existem na migração original
+            // Adicionar campos se não existirem
             if (!Schema::hasColumn('contacts', 'owner_name')) {
                 $table->string('owner_name')->nullable();
             }
             if (!Schema::hasColumn('contacts', 'tipo')) {
                 $table->string('tipo')->nullable();
-            }
-            if (!Schema::hasColumn('contacts', 'tenant_name')) {
-                $table->string('tenant_name')->nullable();
             }
             if (!Schema::hasColumn('contacts', 'neighborhood')) {
                 $table->string('neighborhood')->nullable();
@@ -31,12 +28,13 @@ return new class extends Migration
             if (!Schema::hasColumn('contacts', 'employee_count')) {
                 $table->integer('employee_count')->nullable();
             }
-            
-            // Renomear o campo 'salon' para 'tenant_name' se existir
-            if (Schema::hasColumn('contacts', 'salon') && !Schema::hasColumn('contacts', 'tenant_name')) {
-                $table->renameColumn('salon', 'tenant_name');
-            }
         });
+        // Renomear o campo 'salon' para 'tenant_name' se apropriado (fora do closure para evitar problemas de transação)
+        if (Schema::hasColumn('contacts', 'salon') && !Schema::hasColumn('contacts', 'tenant_name')) {
+            Schema::table('contacts', function (Blueprint $table) {
+                $table->renameColumn('salon', 'tenant_name');
+            });
+        }
     }
 
     /**
@@ -45,13 +43,28 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('contacts', function (Blueprint $table) {
-            // Reverter as alterações
-            $table->dropColumn(['owner_name', 'tipo', 'neighborhood']);
-            
-            // Renomear de volta se necessário
-            if (Schema::hasColumn('contacts', 'salon_name')) {
-                $table->renameColumn('salon_name', 'salon');
+            // Remover campos apenas se existirem
+            if (Schema::hasColumn('contacts', 'owner_name')) {
+                $table->dropColumn('owner_name');
+            }
+            if (Schema::hasColumn('contacts', 'tipo')) {
+                $table->dropColumn('tipo');
+            }
+            if (Schema::hasColumn('contacts', 'neighborhood')) {
+                $table->dropColumn('neighborhood');
+            }
+            if (Schema::hasColumn('contacts', 'cpf')) {
+                $table->dropColumn('cpf');
+            }
+            if (Schema::hasColumn('contacts', 'employee_count')) {
+                $table->dropColumn('employee_count');
             }
         });
+        // Renomear de volta se necessário
+        if (Schema::hasColumn('contacts', 'tenant_name') && !Schema::hasColumn('contacts', 'salon')) {
+            Schema::table('contacts', function (Blueprint $table) {
+                $table->renameColumn('tenant_name', 'salon');
+            });
+        }
     }
 };

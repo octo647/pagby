@@ -423,7 +423,19 @@ public function webhook(Request $request)
                         $externalReference = 'pagby-subscription-' . $payment->id;
                         $payment->external_reference = $externalReference;
                         $payment->save();
-                        
+
+                        // Atualiza o status do tenant se pagamento aprovado/authorized
+                        if (in_array($payment->status, ['authorized', 'approved'])) {
+                            $tenant = Tenant::on('mysql')->find($payment->tenant_id);
+                            if ($tenant) {
+                                $tenant->subscription_status = 'active';
+                                $tenant->save();
+                                Log::info('Tenant ativado via webhook:', [
+                                    'tenant_id' => $tenant->id,
+                                    'tenant_name' => $tenant->name
+                                ]);
+                            }
+                        }
 
                         Log::info('✅ Assinatura atualizada via webhook:', [
                             'local_id' => $payment->id,

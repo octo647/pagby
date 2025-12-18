@@ -72,7 +72,9 @@
     </div>
     <div>
         <x-input-label for="cep" :value="__('CEP')" />
-        <x-text-input id="cep" name="cep" type="text" class="mt-1 block w-full" :value="old('cep', $user->cep)" />
+        <x-text-input id="cep" name="cep" type="text" class="mt-1 block w-full" :value="old('cep', $user->cep)" maxlength="9" pattern="\d{5}-?\d{3}" required autocomplete="postal-code" />
+        <x-input-error :messages="$errors->get('cep')" class="mt-2" />
+        <span id="cep-error" class="text-red-500 text-xs mt-1 hidden">CEP inválido. Verifique e tente novamente.</span>
     </div>
     <div>
         <x-input-label for="street" :value="__('Rua')" />
@@ -126,25 +128,62 @@ function previewPhoto(event) {
     </x-primary-button>
 </div>
 
-    
 </form>
+
 <script>
-document.getElementById('cep').addEventListener('blur', function() {
-    let cep = this.value.replace(/\D/g, '');
-    if (cep.length === 8) {
-        fetch('https://viacep.com.br/ws/' + cep + '/json/')
-            .then(response => response.json())
-            .then(data => {
-                if (!data.erro) {
-                    document.getElementById('street').value = data.logradouro || '';
-                    document.getElementById('neighborhood').value = data.bairro || '';
-                    document.getElementById('city').value = data.localidade || '';
-                    document.getElementById('state').value = data.uf || '';
-                }
-            });
+function previewPhoto(event) {
+    const [file] = event.target.files;
+    const preview = document.getElementById('photo-preview');
+    if (file) {
+        preview.src = URL.createObjectURL(file);
+        preview.style.display = 'block';
+    } else {
+        preview.src = '';
+        preview.style.display = 'none';
     }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const cepInput = document.getElementById('cep');
+    const cepError = document.getElementById('cep-error');
+    function validarCep(cep) {
+        cep = cep.replace(/\D/g, '');
+        if (cep.length !== 8) return false;
+        // Consulta API para validar existência real
+        return fetch(`https://viacep.com.br/ws/${cep}/json/`)
+            .then(res => res.json())
+            .then(data => !data.erro);
+    }
+    cepInput.addEventListener('blur', function() {
+        const valor = cepInput.value;
+        if (!/^\d{5}-?\d{3}$/.test(valor)) {
+            cepError.textContent = 'Formato de CEP inválido.';
+            cepError.classList.remove('hidden');
+            return;
+        }
+        const cep = valor.replace(/\D/g, '');
+        if (cep.length === 8) {
+            fetch('https://viacep.com.br/ws/' + cep + '/json/')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.erro) {
+                        document.getElementById('street').value = data.logradouro || '';
+                        document.getElementById('neighborhood').value = data.bairro || '';
+                        document.getElementById('city').value = data.localidade || '';
+                        document.getElementById('state').value = data.uf || '';
+                        cepError.classList.add('hidden');
+                    } else {
+                        cepError.textContent = 'CEP não encontrado. Verifique e tente novamente.';
+                        cepError.classList.remove('hidden');
+                    }
+                });
+        }
+    });
+    cepInput.addEventListener('input', function() {
+        cepError.classList.add('hidden');
+    });
 });
-</script>
+
 
 
 </section>

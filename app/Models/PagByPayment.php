@@ -14,16 +14,18 @@ class PagByPayment extends Model
 
     protected $fillable = [
         'id',
-        'contact_id',
         'tenant_id',
+        'contact_id',        
         'mp_payment_id',
+        'external_id',
         'plan',
+        'employee_count',
         'status',
         'amount',
         'payment_method',
         'mp_data',
-        'external_reference',  
-        'description'
+        'created_at',
+        'updated_at'
     ];
 
     protected $casts = [

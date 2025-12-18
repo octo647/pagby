@@ -25,30 +25,54 @@
             <x-input-error :messages="$errors->get('password')" class="mt-2" />
         </div>
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
+        <!-- Remember Me + Forgot Password aligned -->
+        <div class="flex items-center justify-between mt-4">
             <label for="remember_me" class="inline-flex items-center">
                 <input id="remember_me" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
                 <span class="ms-2 text-sm text-gray-600">{{ __('Lembre-se de mim') }}</span>
             </label>
-        </div>
-
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}">
+            @if (tenant())
+                @php
+                    // Detecta se está em subdomínio (ex: dumont.localhost) ou path (localhost/dumont)
+                    $host = request()->getHost();
+                    $isSubdomain = false;
+                    if (tenant()->id && (
+                        str_starts_with($host, tenant()->id . '.') ||
+                        str_contains($host, tenant()->id . '.')
+                    )) {
+                        $isSubdomain = true;
+                    }
+                @endphp
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-4" href="{{ $isSubdomain ? '/forgot-password' : '/' . tenant()->id . '/forgot-password' }}">
+                    {{ __('Esqueceu sua senha?') }}
+                </a>
+            @else
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-4" href="{{ route('password.request') }}">
                     {{ __('Esqueceu sua senha?') }}
                 </a>
             @endif
+        </div>
+        <div class="mt-4 flex justify-between items-center">
 
-            <x-primary-button class="ms-3">
-                {{ __('Entrar') }}
+
+            <a href="/register" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                {{ __('Não tem uma conta? Registre-se') }}
+        </div>
+
+        <div class="flex justify-center mt-4">
+            
+
+            <x-primary-button class="w-full py-2 px-4 text-base font-semibold rounded-lg">
+               <span class="block w-full text-center "> {{ __('Entrar') }}</span>
             </x-primary-button>
+            
         </div>
     </form>
      
     <!-- Login Social - APENAS se o tenant tiver configurado -->
-     
+    
      @if(tenant())
+     <!-- 
     <div class="social-login">
         <div class="divider">Ou entre com</div>       
         
@@ -60,7 +84,9 @@
                 </path>
             </svg>
 
-        <a href="http://localhost:8000/auth/google?tenant={{ tenant()->id }}" >    Entrar ou registrar com Google
+        <a href="{{ config('app.env') === 'production'
+            ? 'https://' . tenant()->id . '.pagby.com.br/auth/google'
+            : url('/' . tenant()->id . '/auth/google') }}">Entrar ou registrar com Google
         </a>
         </button>
     <div class="my-2"></div>
@@ -75,6 +101,7 @@
 
         
     </div>
+    -->
     @endif
     
     

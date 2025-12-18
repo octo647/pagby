@@ -22,20 +22,25 @@ class ServiceUserTableSeeder extends Seeder
         $services_ids = Service::all()->pluck('id')->toArray();
         // Pegue o role_id do papel "Funcionário"
         $funcionarioId = \App\Models\Role::where('role', 'Funcionário')->first() ?->id; 
+     
         // Pegue os ids dos usuários que têm o papel de Funcionário na tabela role_user
         $employeeIds = DB::table('role_user')
         ->where('role_id', $funcionarioId)
+
         ->pluck('user_id')
         ->toArray();
+    
         // Associa os usuários funcionários aos serviços        
         foreach ($employeeIds as $employeeId) {
-            $random_services = array_rand(array_flip($services_ids), rand(3, 7));
+            $random_services = array_rand(array_flip($services_ids), rand(3, 6));
+         
             foreach ($random_services as $service_id) {
                 // Verifica se o usuário já está associado ao serviço
                 $exists = DB::table('service_user')
                     ->where('user_id', $employeeId)
                     ->where('service_id', $service_id)
                     ->exists();
+                   
                 
                 // Se não estiver associado, faz a associação
                 if (!$exists) {

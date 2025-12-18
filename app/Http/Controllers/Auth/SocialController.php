@@ -11,17 +11,13 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialController extends Controller
 {
-public function redirectToGoogle(Request $request)
+    public function redirectToGoogle(Request $request)
     {
-        // Pegue o tenant da query string (vindo do botão de login do tenant)
-        $tenantHost = $request->get('tenant');
-   
+        // No contexto do tenant, não precisa buscar via query string
+        $tenantHost = tenant('id') ?? (tenant() ? tenant()->id : null);
         if (!$tenantHost) {
             return redirect('/login')->with('error', 'Tenant não identificado.');
         }
-
-        // Salve o tenant na sessão do central
-        session(['tenant_host' => $tenantHost]);
 
         // (Opcional) Defina as credenciais manualmente se necessário
         config([
@@ -30,35 +26,35 @@ public function redirectToGoogle(Request $request)
             'services.google.redirect' => env('GOOGLE_REDIRECT_URI'),
         ]);
 
-
         return Socialite::driver('google')->redirect();
     }
 
     public function handleGoogleCallback(Request $request)
     {
         // Obtenha os dados do usuário autenticado pelo Google
-        \Log::info('Session ID: ' . session()->getId());
-        \Log::info('Session data:', session()->all());
         $socialUser = Socialite::driver('google')->user();
-      
 
-        // Recupere o tenant da sessão do central
-        $tenantHost = session('tenant_host');
-        if (!$tenantHost) {
-            return redirect('/login')->with('error', 'Tenant não identificado.');
+        // Aqui você pode autenticar ou registrar o usuário diretamente no tenant
+        $userModel = config('auth.providers.users.model');
+        $user = $userModel::where('email', $socialUser->getEmail())->first();
+        if (!$user) {
+            $user = $userModel::create([
+                'name' => $socialUser->getName() ?? $socialUser->getEmail(),
+                'email' => $socialUser->getEmail(),
+                'password' => Hash::make(Str::random(24)),
+                'email_verified_at' => now(),
+                'google_id' => $socialUser->getId(),
+                'photo' => $socialUser->getAvatar(),
+            ]);
+        } else {
+            $user->update([
+                'name' => $socialUser->getName() ?? $user->name,
+                'google_id' => $socialUser->getId(),
+            ]);
         }
 
-        // Monte a URL do tenant com os dados do usuário
-        $params = http_build_query([
-            'name'        => $socialUser->getName(),
-            'email'       => $socialUser->getEmail(),
-            'provider'    => 'google',
-            'provider_id' => $socialUser->getId(),
-            'avatar'      => $socialUser->getAvatar(),
-        ]);
-        $tenantUrl = "http://{$tenantHost}.localhost:8000/auth/social-callback?{$params}";
-
-        return redirect()->away($tenantUrl);
+        Auth::guard('web')->login($user, true);
+        return redirect()->intended('/dashboard');
     }
 
     /**
