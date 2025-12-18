@@ -81,6 +81,22 @@ class SalonUsers extends Component
             // Atualiza função (role)
             $role = Role::where('role', $this->editingRole)->first();
             if ($role) {
+                // Se está mudando para Funcionário, verifica o limite
+                if ($this->editingRole === 'Funcionário') {
+                    $currentEmployeeCount = DB::table('branch_user')->count();
+                    $tenant = tenancy()->tenant;
+                    $employeeLimit = $tenant->employee_count ?? 1;
+                    
+                    // Verifica se o usuário já é funcionário
+                    $isAlreadyEmployee = $user->roles()->where('role', 'Funcionário')->exists();
+                    
+                    if (!$isAlreadyEmployee && $currentEmployeeCount >= $employeeLimit) {
+                        session()->flash('error', "Limite de funcionários atingido! Seu plano permite apenas {$employeeLimit} funcionário(s). Para adicionar mais funcionários, atualize seu plano.");
+                        $this->editingUserId = null;
+                        return;
+                    }
+                }
+                
                 // Remove todas as funções e adiciona a nova
                 $user->roles()->sync([$role->id]);
             }
@@ -124,10 +140,16 @@ class SalonUsers extends Component
         
 
         $roles = Role::pluck('role');
+        
+        $tenant = tenancy()->tenant;
+        $employeeLimit = $tenant->employee_count ?? 1;
+        $currentEmployeeCount = DB::table('branch_user')->count();
 
         return view('livewire.salon-users', [
             'salon_users' => $salon_users,
             'roles' => $roles,
+            'employeeLimit' => $employeeLimit,
+            'currentEmployeeCount' => $currentEmployeeCount,
         ]);
     }
 }

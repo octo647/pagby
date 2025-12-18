@@ -124,6 +124,7 @@ class Saloes extends Component
         $this->newSalon = [
             'id' => '',
             'type' => 'barbearia', // Default type
+            'employee_count' => 1, // Default employee count
             'email' => '',
             'phone' => '', 
             'whatsapp' => '',  
@@ -374,6 +375,12 @@ class Saloes extends Component
         $contact = \App\Models\Contact::where('email', $this->newSalon['email'])->first();
         if ($contact) {
             \App\Models\PagByPayment::where('tenant_id', 'temp_' . $contact->id)->update(['tenant_id' => $tenant->id]);
+            
+            // Transfere o employee_count do contact para o tenant se não foi definido
+            if (!isset($this->newSalon['employee_count']) || $this->newSalon['employee_count'] <= 0) {
+                $tenant->employee_count = $contact->employee_count ?? 1;
+                $tenant->save();
+            }
         }
         
         $this->dispatch('salonLogoUpdated');

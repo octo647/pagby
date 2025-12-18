@@ -4,15 +4,15 @@
             
     
     {{-- Notificações de Sucesso/Aviso --}}
-    @if (session()->has('message') || session()->has('warning'))
+    @if (session()->has('message') || session()->has('warning') || session()->has('error'))
         <div class="mb-6">
-            <div class="flex items-center p-4 text-sm text-green-800 rounded-lg bg-green-50 border border-green-200" role="alert">
+            <div class="flex items-center p-4 text-sm {{ session()->has('error') ? 'text-red-800 bg-red-50 border-red-200' : 'text-green-800 bg-green-50 border-green-200' }} rounded-lg border" role="alert">
                 <svg class="shrink-0 inline w-5 h-5 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 15H8a1 1 0 0 1 0-2h1v-3H8a1 1 0 0 1 0-2h2a1 1 0 0 1 1 1v4h1a1 1 0 0 1 0 2Z"/>
                 </svg>
                 <span class="sr-only">Info</span>
                 <div>
-                    <span class="font-medium">{{ session('message') ?? session('warning') }}</span>
+                    <span class="font-medium">{{ session('message') ?? session('warning') ?? session('error') }}</span>
                 </div>
             </div>
         </div>
@@ -27,6 +27,20 @@
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
                     <p class="text-gray-600 mt-1">Gerencie usuários, funções e status do salão</p>
+                </div>
+                {{-- Indicador de Limite de Funcionários --}}
+                <div class="mt-4 sm:mt-0">
+                    <div class="inline-flex items-center px-4 py-2 rounded-lg {{ $currentEmployeeCount >= $employeeLimit ? 'bg-red-100 border border-red-300' : 'bg-blue-100 border border-blue-300' }}">
+                        <svg class="w-5 h-5 mr-2 {{ $currentEmployeeCount >= $employeeLimit ? 'text-red-600' : 'text-blue-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        <span class="text-sm font-semibold {{ $currentEmployeeCount >= $employeeLimit ? 'text-red-700' : 'text-blue-700' }}">
+                            Funcionários: {{ $currentEmployeeCount }}/{{ $employeeLimit }}
+                        </span>
+                    </div>
+                    @if($currentEmployeeCount >= $employeeLimit)
+                        <p class="text-xs text-red-600 mt-1 text-right">Limite atingido</p>
+                    @endif
                 </div>
             </div>
         </div>
