@@ -12,8 +12,12 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tenants', function (Blueprint $table) {
-            $table->timestamp('trial_started_at')->nullable()->after('status');
-            $table->timestamp('trial_ends_at')->nullable()->after('trial_started_at');
+            if (!Schema::hasColumn('tenants', 'trial_started_at')) {
+                $table->timestamp('trial_started_at')->nullable()->after('status');
+            }
+            if (!Schema::hasColumn('tenants', 'trial_ends_at')) {
+                $table->timestamp('trial_ends_at')->nullable()->after('trial_started_at');
+            }
         });
     }
 
