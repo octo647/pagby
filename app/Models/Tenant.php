@@ -40,11 +40,10 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'state',
             'logo',
             'plan',
-            'status',            
+            'status',
             'trial_started_at',
             'trial_ends_at',
             'subscription_status',
-            'current_plan',
             'subscription_started_at',
             'subscription_ends_at',
             'is_blocked',
@@ -63,7 +62,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     ];
 
     /**
-     * Verifica se está no período de teste
+     * Verifica se está no período de trial
      */
     public function isInTrial(): bool
     {
@@ -73,7 +72,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
-     * Verifica se o período de teste expirou
+     * Verifica se o trial expirou
      */
     public function isTrialExpired(): bool
     {
@@ -111,7 +110,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         if ($this->is_blocked) {
             return true;
         }
-        // Bloqueia se o trial expirou e NÃO tem assinatura ativa
+        // Bloqueia se trial expirou e não tem assinatura ativa
         if ($this->isTrialExpired() && !$this->hasActiveSubscription()) {
             return true;
         }
@@ -127,13 +126,14 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
-     * Inicia o período de teste
+     * Inicia período de trial
      */
     public function startTrial(): void
     {
         $this->trial_started_at = now();
-        $this->trial_ends_at = now()->addDays(30);
+        $this->trial_ends_at = now()->addDays(config('pricing.trial.duration_days', 30));
         $this->subscription_status = 'trial';
+        $this->employee_count = 1; // Começa com 1, pode aumentar até 5 no trial
         $this->is_blocked = false;
         $this->save();
     }
@@ -141,9 +141,9 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     /**
      * Ativa uma assinatura paga
      */
-    public function activateSubscription(string $planName, int $durationDays = 30): void
+    public function activateSubscription(int $employeeCount, int $durationDays = 30): void
     {
-        $this->current_plan = $planName;
+        $this->employee_count = $employeeCount;
         $this->subscription_started_at = now();
         $this->subscription_ends_at = now()->addDays($durationDays);
         $this->subscription_status = 'active';
@@ -187,15 +187,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return $this->pagByPayments()->whereIn('status', ['approved', 'authorized'])->exists();
     }
     /**
-     * Retorna o nome legível do plano atual
+     * Retorna o preço mensal baseado no número de funcionários
      */
-    public function getPlanDisplayName(): string
+    public function getMonthlyPrice(): float
     {
-        return match($this->current_plan) {
-            'basico' => 'Básico',
-            'premium' => 'Premium',
-            default => 'Trial'
-        };
+        // Trial não paga
+        if ($this->isInTrial()) {
+            return 0;
+        }
+        
+        // R$ 30 por funcionário
+        $pricePerEmployee = config('pricing.base_price_per_employee', 30.00);
+        return $this->employee_count * $pricePerEmployee;
     }
 
     /**
@@ -204,11 +207,18 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function getSubscriptionStatusDisplay(): string
     {
         if ($this->isInTrial()) {
-            return 'Trial ativo até ' . $this->trial_ends_at->format('d/m/Y');
+            $daysLeft = $this->trial_ends_at->diffInDays(now());
+            return "Trial ativo ({$daysLeft} dias restantes) - até " . $this->trial_ends_at->format('d/m/Y');
         }
         
         if ($this->hasActiveSubscription()) {
-            return 'Assinatura ativa até ' . $this->subscription_ends_at->format('d/m/Y');
+            $employees = $this->employee_count;
+            $price = $this->getMonthlyPrice();
+            return "Plano Ativo: {$employees} funcionário" . ($employees > 1 ? 's' : '') . " - R$ " . number_format($price, 2, ',', '.') . "/mês até " . $this->subscription_ends_at->format('d/m/Y');
+        }
+        
+        if ($this->isTrialExpired()) {
+            return 'Trial expirado - Escolha um plano para continuar';
         }
         
         if ($this->shouldBeBlocked()) {
@@ -219,11 +229,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     }
 
     /**
-     * Verifica se pode fazer upgrade/downgrade
+     * Verifica se pode alterar número de funcionários
      */
-    public function canChangePlan(): bool
+    public function canChangeEmployeeCount(): bool
     {
-        return $this->hasActiveSubscription() && !$this->shouldBeBlocked();
+        return !$this->shouldBeBlocked();
     }
 
 
