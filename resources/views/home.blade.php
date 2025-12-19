@@ -257,137 +257,116 @@
 
         <!-- SEÇÃO DE PLANOS PAGBY -->
         <div id="planos" class="fade-in mt-16 max-w-6xl w-full">
-            <div class="text-center mb-16">
+            <div class="text-center mb-12">
                 <h2 class="text-4xl font-bold mb-4 text-white">
-                    Escolha Seu Plano
+                    Plano Simples e Transparente
                 </h2>
                 <p class="text-xl text-white/80 max-w-2xl mx-auto">
-                    Planos flexíveis para impulsionar seu negócio
+                    Pague apenas pelo que usar. Sem taxas escondidas.
                 </p>
             </div>
 
-<!--            <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto"> -->
-                <!-- Plano Básico -->
-<!--                <div class="bg-white rounded-2xl shadow-xl p-8 border-2 border-transparent hover:border-purple-500 transition-all duration-300 transform hover:scale-105">
-                    <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Básico</h3>
-                        <div class="text-4xl font-bold text-purple-600 mb-1">
-                            R$ 29,90
-                            <span class="text-lg text-gray-500 font-normal">/mês</span>
+            <!-- Pricing Card -->
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl overflow-hidden">
+                    <!-- Trial Banner -->
+                    <div class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-center py-4 px-6">
+                        <p class="text-lg font-bold">🎉 Experimente GRÁTIS por 30 dias - Sem cartão de crédito!</p>
+                    </div>
+
+                    <div class="p-8 md:p-12">
+                        <!-- Preço Principal -->
+                        <div class="text-center mb-10">
+                            <div class="inline-block">
+                                <div class="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 mb-2">
+                                    R$ 30
+                                </div>
+                                <div class="text-gray-600 text-xl">
+                                    por funcionário/mês
+                                </div>
+                            </div>
                         </div>
-                        <p class="mb-2 text-purple-600 font-semibold">(por profissional)</p>
-                        <p class="text-gray-600">Ideal para começar</p>
-                    </div>
 
-                    <ul class="space-y-3 mb-8 text-gray-700">
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Agendamentos online
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Pagamentos via PIX/Cartão
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Gestão de clientes
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Suporte a planos de assinatura
-                        </li>
-
-
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Suporte por email
-                        </li>
-                    </ul>
-                <a href="{{ route('pagby-subscription.choose-plan', ['plan' => 'basico']) }}" 
-                class="block w-full bg-purple-600 text-white py-3 rounded-lg font-semibold hover:bg-purple-700 transition-colors text-center">
-                    Escolher Básico
-                </a>
-
-                </div>
-                -->
-
-                <!-- Plano Premium -->
-<!--                <div class="bg-white rounded-2xl shadow-xl p-8 border-2 border-pink-500 relative transform hover:scale-105 transition-all duration-300">
-                    <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <span class="bg-gradient-to-r from-pink-500 to-purple-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                            MAIS POPULAR
-                        </span>
-                    </div>
-
-                    <div class="text-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Premium</h3>
-                        <div class="text-4xl font-bold text-pink-600 mb-1">
-                            R$ 59,90
-                            <span class="text-lg text-gray-500 font-normal">/mês</span>
+                        <!-- Exemplo de cálculo -->
+                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
+                            <h3 class="font-bold text-gray-800 mb-4 text-center">📊 Exemplos de preço:</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                                <div class="bg-white rounded-lg p-4 shadow">
+                                    <div class="text-2xl font-bold text-purple-600">1</div>
+                                    <div class="text-xs text-gray-600 mb-1">funcionário</div>
+                                    <div class="font-bold text-gray-800">R$ 30/mês</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 shadow">
+                                    <div class="text-2xl font-bold text-purple-600">2</div>
+                                    <div class="text-xs text-gray-600 mb-1">funcionários</div>
+                                    <div class="font-bold text-gray-800">R$ 60/mês</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 shadow">
+                                    <div class="text-2xl font-bold text-purple-600">5</div>
+                                    <div class="text-xs text-gray-600 mb-1">funcionários</div>
+                                    <div class="font-bold text-gray-800">R$ 150/mês</div>
+                                </div>
+                                <div class="bg-white rounded-lg p-4 shadow">
+                                    <div class="text-2xl font-bold text-purple-600">10</div>
+                                    <div class="text-xs text-gray-600 mb-1">funcionários</div>
+                                    <div class="font-bold text-gray-800">R$ 300/mês</div>
+                                </div>
+                            </div>
                         </div>
-                        <p class="mb-2 text-purple-600 font-semibold">(por profissional)</p>
-                        <p class="text-gray-600">Recursos completos</p>
-                    </div>
 
-                    <ul class="space-y-3 mb-8 text-gray-700">
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Todos recursos do Básico
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Relatórios avançados
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Múltiplas filiais
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Integração WhatsApp
-                        </li>
-                        <li class="flex items-center">
-                            <svg class="w-5 h-5 text-green-500 mr-3" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                            </svg>
-                            Suporte prioritário
-                        </li>
-                    </ul>
-                <a href="{{ route('pagby-subscription.choose-plan', ['plan' => 'premium']) }}" 
-                class="block w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-3 rounded-lg font-semibold hover:from-pink-700 hover:to-purple-700 transition-all text-center">
-                    Escolher Premium
-                </a>
-                    
+                        <!-- Features -->
+                        <div class="mb-8">
+                            <h3 class="font-bold text-gray-800 mb-6 text-center text-xl">✨ Tudo incluso em todos os planos:</h3>
+                            <div class="grid md:grid-cols-2 gap-4">
+                                @foreach(config('pricing.features') as $feature)
+                                <div class="flex items-center bg-white rounded-lg p-3 shadow-sm">
+                                    <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    <span class="text-gray-700">{{ $feature }}</span>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <!-- CTA Button -->
+                        <div class="text-center">
+                            <a href="{{ route('register-tenant', ['plan' => 'trial']) }}" 
+                               class="inline-block bg-gradient-to-r from-pink-600 to-purple-600 text-white px-12 py-5 rounded-full text-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
+                                Começar Teste Grátis de 30 Dias
+                            </a>
+                            <p class="text-sm text-gray-500 mt-4">
+                                Não precisa de cartão de crédito • Cancele quando quiser
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
--->
 
-            <!-- Garantia -->
-<!--            <div class="text-center mt-12">
-                <p class="text-white/80 mb-4">
-                    🛡️ Cancele quando quiser
-                </p>
-                <p class="text-sm text-white/60">
-                    Pagamentos via PIX, cartão de crédito e débito
-                </p>
+            <!-- Garantias -->
+            <div class="text-center mt-12 space-y-4">
+                <div class="flex flex-col md:flex-row justify-center items-center gap-6 text-white/90">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Dados 100% seguros</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Suporte dedicado</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"></path>
+                        </svg>
+                        <span>Atualizações constantes</span>
+                    </div>
+                </div>
+            </div>
+        </div>
             </div>
         </div>
 -->        
