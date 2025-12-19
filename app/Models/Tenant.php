@@ -207,7 +207,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function getSubscriptionStatusDisplay(): string
     {
         if ($this->isInTrial()) {
-            $daysLeft = $this->trial_ends_at->diffInDays(now());
+            $daysLeft = now()->diffInDays($this->trial_ends_at, false);
+            $daysLeft = max(0, ceil($daysLeft)); // Arredondar para cima e não permitir negativo
             return "Trial ativo ({$daysLeft} dias restantes) - até " . $this->trial_ends_at->format('d/m/Y');
         }
         
