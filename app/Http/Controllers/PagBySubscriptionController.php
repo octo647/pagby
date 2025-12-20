@@ -84,15 +84,19 @@ class PagBySubscriptionController extends Controller
         ]
     ];
 //dd($request->all());
-    $plan = $request->input('plan');
-    $tenantId = $request->input('tenant_id');
-    
-
-    $selectedPlan = $plans[$plan];
-    $planData = $plans[$plan]; // ADICIONAR esta linha
-    session(['selected_plan' => $plan]);
-
-    return view('pagby-subscription.select-plan', compact('selectedPlan', 'plan', 'planData'));
+    // Novo modelo: apenas um plano, preço único
+    $employeeCount = $request->input('employee_count') ?? $request->input('employee_count_hidden');
+    $price = config('pricing.promo_price_first_year', 40.00); // valor promocional
+    $planName = 'Plano Pagby';
+    $planDescription = 'Assinatura única por funcionário';
+    $planData = [
+        'name' => $planName,
+        'description' => $planDescription,
+        'price' => $price,
+        'employee_count' => $employeeCount
+    ];
+    session(['selected_plan' => $planName]);
+    return view('pagby-subscription.select-plan', compact('planData'));
 }
  
 

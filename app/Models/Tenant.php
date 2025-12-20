@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Models;
-
 use Stancl\Tenancy\Database\Models\Tenant as BaseTenant;
 use Stancl\Tenancy\Contracts\TenantWithDatabase;
 use Stancl\Tenancy\Database\Concerns\HasDatabase;
@@ -9,8 +8,38 @@ use Stancl\Tenancy\Database\Concerns\HasDomains;
 
 class Tenant extends BaseTenant implements TenantWithDatabase
 {
-    
     use HasDatabase, HasDomains;
+
+    /**
+     * Retorna o preço por funcionário considerando promoção do primeiro ano
+     */
+    public function getCurrentPricePerEmployee(): float
+    {
+        $promoPrice = config('pricing.promo_price_first_year', 40.00);
+        $promoMonths = config('pricing.promo_duration_months', 12);
+        $basePrice = config('pricing.base_price_per_employee', 60.00);
+
+        // Buscar a data da primeira assinatura paga
+        $firstPayment = $this->pagByPayments()
+            ->whereIn('status', ['approved', 'authorized'])
+            ->orderBy('created_at', 'asc')
+            ->first();
+
+        $promoStart = null;
+        if ($firstPayment && $firstPayment->created_at) {
+            $promoStart = $firstPayment->created_at;
+        } elseif ($this->subscription_started_at) {
+            $promoStart = $this->subscription_started_at;
+        }
+
+        if ($promoStart) {
+            $monthsSincePromoStart = $promoStart->diffInMonths(now());
+            if ($monthsSincePromoStart < $promoMonths) {
+                return $promoPrice;
+            }
+        }
+        return $basePrice;
+    }
 
     public static function getCustomColumns(): array
     {
@@ -35,22 +64,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'number',
             'complement',
             'neighborhood',
-            'cep',
-            'city',
-            'state',
-            'logo',
-            'plan',
-            'status',
-            'trial_started_at',
-            'trial_ends_at',
-            'subscription_status',
-            'subscription_started_at',
-            'subscription_ends_at',
-            'is_blocked',
-            'data',
-            'created_at',
-            'updated_at',
         ];
+
     }
 
     protected $casts = [
@@ -195,9 +210,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         if ($this->isInTrial()) {
             return 0;
         }
-        
-        // R$ 30 por funcionário
-        $pricePerEmployee = config('pricing.base_price_per_employee', 30.00);
+        $pricePerEmployee = $this->getCurrentPricePerEmployee();
         return $this->employee_count * $pricePerEmployee;
     }
 

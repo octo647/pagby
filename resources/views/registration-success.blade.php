@@ -15,34 +15,23 @@
                 
                 
                 <!-- Mostrar plano selecionado se existir -->
-                @if(isset($selected_plan) && $selected_plan === 'trial')
+               
                 <div class="bg-gradient-to-r from-pink-500 to-indigo-500 text-white rounded-lg p-4 mb-6 shadow">
                     <h3 class="text-lg font-semibold mb-2">
-                        🎉 Bem-vindo ao seu <span class="underline">período de teste grátis de 7 dias</span>!
+                        🎉 Bem-vindo ao seu <span class="underline">período de teste grátis de 30 dias</span>!
                     </h3>
                     <p class="text-white/90 text-sm">
-                        Aproveite todas as funcionalidades do PagBy sem compromisso. Ao final do período, você poderá escolher o melhor plano para seu salão e continuar usando a plataforma normalmente.
-                    </p>
+                        Aproveite todas as funcionalidades do PagBy sem compromisso. 
                 </div>
-                @elseif(isset($selected_plan))
-                <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-                    <h3 class="text-lg font-semibold text-purple-800 mb-2">
-                        📋 Plano Selecionado: <span class="capitalize">{{ $selected_plan }}</span>
-                    </h3>
-                    <p class="text-purple-600 text-sm">
-                        Você escolheu o plano {{ $selected_plan === 'basico' ? 'Básico' : 'Premium' }}. 
-                        Agora vamos finalizar sua assinatura!
-                    </p>
-                </div>
-                @endif
+                
 
                 <div class="text-gray-600 mb-8">
                     <p class="mb-4">✅ Seu negócio foi registrado com sucesso em nossa plataforma!</p>
-                    <p class="mb-4">📧 Você receberá um email de confirmação em breve.</p>
+                    <p class="mb-4">📧 Você receberá um email/whatsapp de confirmação em breve.</p>
                     
                     @if(isset($selected_plan) && $selected_plan === 'trial')
                         <p class="text-sm font-medium text-gray-700">
-                            ⏳ Você tem 7 dias para testar a plataforma. Antes do fim do período, avisaremos para que possa escolher um plano e continuar usando o PagBy sem interrupções.
+                            ⏳ Em breve você receberá instruções para aproveitar ao máximo seu período de teste.
                         </p>
                     @elseif(isset($selected_plan))
                         <p class="text-sm font-medium text-gray-700">
@@ -58,10 +47,11 @@
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
                     <ol class="text-blue-700 text-sm text-left space-y-1">
-                        <li><strong>1.</strong> Ativação automática do sistema</li>
-                        <li><strong>2.</strong> Receber dados de acesso por email</li>
-                        <li><strong>3.</strong> Aproveitar 7 dias grátis de todas as funcionalidades</li>
-                        <li><strong>4.</strong> Antes do fim do período, escolher um plano para continuar usando o PagBy</li>
+                        <li><strong>1.</strong> Ativação do sistema após aceitação dos termos</li>
+
+                        <li><strong>2.</strong> Configuração do sistema</li>
+                        <li><strong>3.</strong> Aproveitar 30 dias grátis de todas as funcionalidades</li>
+                        
                     </ol>
                 </div>
                 @elseif(isset($selected_plan))
@@ -132,7 +122,7 @@
                 <div class="mt-6 pt-6 border-t border-gray-200">
                     <p class="text-sm text-gray-500 mb-2">❓ Precisa de ajuda?</p>
                     <div class="text-sm text-gray-600">
-                        <p><a href="mailto:suporte@pagby.com.br" class="text-blue-500">📧 Email: suporte@pagby.com.br</a></p>
+                        <p><a href="mailto:suportepagby@gmail.com" class="text-blue-500">📧 Email: suportepagby@gmail.com</a></p>
                         <p><a href="https://wa.me/5532987007302" class="text-blue-500">📱 WhatsApp: (32) 98700-7302</a></p>
                     </div>
                 </div>

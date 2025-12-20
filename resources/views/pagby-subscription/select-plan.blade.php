@@ -7,9 +7,9 @@
             <div class="bg-white rounded-2xl shadow-xl p-8 mb-8">
                 <div class="mb-6">
                     <h1 class="text-4xl font-bold mb-2 text-gray-800">
-                        Plano {{ ucfirst($plan) }}
+                        {{ $planData['name'] }}
                     </h1>
-                    <p class="text-gray-600">Você escolheu o melhor para seu negócio!</p>
+                    <p class="text-gray-600">Assinatura única por funcionário</p>
                 </div>
                 
                 <div class="text-center mb-8">
@@ -29,67 +29,12 @@
                         ✨ O que está incluído:
                     </h3>
                     <div class="grid md:grid-cols-2 gap-4 text-left">
-                        @if($plan === 'basico')
-                            <div class="space-y-2">
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Agendamentos online ilimitados</span>
-                                </div>                                
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Pagamentos via PIX e cartão</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Gestão de clientes completa</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Suporte a planos de assinatura</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Suporte via email</span>
-                                </div>
+                        @foreach(config('pricing.features') as $feature)
+                            <div class="flex items-center text-green-600">
+                                <i class="fas fa-check mr-2"></i>
+                                <span>{{ $feature }}</span>
                             </div>
-                        @else
-                            <div class="space-y-2">
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Todos os recursos do Básico</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Relatórios avançados e analytics</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Múltiplas filiais</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Integração com WhatsApp</span>
-                                </div>
-                            </div>
-                            <div class="space-y-2">
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Suporte prioritário 24/7</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>API para integrações</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Backup automático</span>
-                                </div>
-                                <div class="flex items-center text-green-600">
-                                    <i class="fas fa-check mr-2"></i>
-                                    <span>Domínio personalizado</span>
-                                </div>
-                            </div>
-                        @endif
+                        @endforeach
                     </div>
                 </div>
 
@@ -99,7 +44,7 @@
                     
                     <form action="{{ route('tenant.renew') }}" method="POST">
                         @csrf
-                        <input type="hidden" name="plan" value="{{ $plan }}">
+                        <input type="hidden" name="plan" value="pagby-unico">
                         <input type="hidden" name="tenant_id" value="{{ tenant()->id }}">
                         
                         <button type="submit" 
