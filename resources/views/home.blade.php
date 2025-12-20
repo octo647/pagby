@@ -262,7 +262,7 @@
                     Plano Simples e Transparente
                 </h2>
                 <p class="text-xl text-white/80 max-w-2xl mx-auto">
-                    Pague apenas pelo que usar. Sem taxas escondidas.
+                    Sem taxas escondidas.
                 </p>
             </div>
 
@@ -271,7 +271,7 @@
                 <div class="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl overflow-hidden">
                     <!-- Trial Banner -->
                     <div class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-center py-4 px-6">
-                        <p class="text-lg font-bold">🎉 Experimente GRÁTIS por 30 dias - Sem cartão de crédito!</p>
+                        <p class="text-lg font-bold">🎉 Experimente GRÁTIS por 30 dias </p>
                     </div>
 
                     <div class="p-8 md:p-12">
@@ -279,44 +279,46 @@
                         <div class="text-center mb-10">
                             <div class="inline-block">
                                 <div class="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 mb-2">
-                                    R$ 30
+                                    R$ {{ number_format(config('pricing.promo_price_first_year'), 0, ',', '.') }}
                                 </div>
                                 <div class="text-gray-600 text-xl">
-                                    por funcionário/mês
+                                    por funcionário/mês no 1º ano
                                 </div>
+                                <div class="text-gray-600 text-xl">
+                                    Depois: R$ {{ number_format(config('pricing.base_price_per_employee'), 0, ',', '.') }} por funcionário/mês
+                                </div>
+                                <div class="text-lg text-green-600 font-bold mt-2">Promoção: {{ round((1 - config('pricing.promo_price_first_year') / config('pricing.base_price_per_employee')) * 100) }}% OFF!</div>
+                                
                             </div>
                         </div>
 
                         <!-- Exemplo de cálculo -->
                         <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
-                            <h3 class="font-bold text-gray-800 mb-4 text-center">📊 Exemplos de preço:</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                            <h3 class="font-bold text-gray-800 mb-4 text-center">📊 Exemplos de preço no 1º ano:</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
                                 <div class="bg-white rounded-lg p-4 shadow">
                                     <div class="text-2xl font-bold text-purple-600">1</div>
                                     <div class="text-xs text-gray-600 mb-1">funcionário</div>
-                                    <div class="font-bold text-gray-800">R$ 30/mês</div>
+                                    <div class="font-bold text-gray-800">R$ {{ number_format(config('pricing.promo_price_first_year'), 0, ',', '.') }}/mês </div>
+                                    
                                 </div>
                                 <div class="bg-white rounded-lg p-4 shadow">
                                     <div class="text-2xl font-bold text-purple-600">2</div>
                                     <div class="text-xs text-gray-600 mb-1">funcionários</div>
-                                    <div class="font-bold text-gray-800">R$ 60/mês</div>
+                                    <div class="font-bold text-gray-800">R$ {{ number_format(2 * config('pricing.promo_price_first_year'), 0, ',', '.') }}/mês </div>
                                 </div>
                                 <div class="bg-white rounded-lg p-4 shadow">
-                                    <div class="text-2xl font-bold text-purple-600">5</div>
+                                    <div class="text-2xl font-bold text-purple-600">3</div>
                                     <div class="text-xs text-gray-600 mb-1">funcionários</div>
-                                    <div class="font-bold text-gray-800">R$ 150/mês</div>
+                                    <div class="font-bold text-gray-800">R$ {{ number_format(3 * config('pricing.promo_price_first_year'), 0, ',', '.') }}/mês </div>
                                 </div>
-                                <div class="bg-white rounded-lg p-4 shadow">
-                                    <div class="text-2xl font-bold text-purple-600">10</div>
-                                    <div class="text-xs text-gray-600 mb-1">funcionários</div>
-                                    <div class="font-bold text-gray-800">R$ 300/mês</div>
-                                </div>
+                                
                             </div>
                         </div>
 
                         <!-- Features -->
                         <div class="mb-8">
-                            <h3 class="font-bold text-gray-800 mb-6 text-center text-xl">✨ Tudo incluso em todos os planos:</h3>
+                            <h3 class="font-bold text-gray-800 mb-6 text-center text-xl">✨ Tudo incluso no plano:</h3>
                             <div class="grid md:grid-cols-2 gap-4">
                                 @foreach(config('pricing.features') as $feature)
                                 <div class="flex items-center bg-white rounded-lg p-3 shadow-sm">
@@ -335,9 +337,7 @@
                                class="inline-block bg-gradient-to-r from-pink-600 to-purple-600 text-white px-12 py-5 rounded-full text-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
                                 Começar Teste Grátis de 30 Dias
                             </a>
-                            <p class="text-sm text-gray-500 mt-4">
-                                Não precisa de cartão de crédito • Cancele quando quiser
-                            </p>
+                            
                         </div>
                     </div>
                 </div>
@@ -369,7 +369,7 @@
         </div>
             </div>
         </div>
--->        
+       
         <!-- Why PagBy Section -->
      <div class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full text-center">
             <h3 class="text-2xl font-bold mb-4">Por que PagBy?</h3>

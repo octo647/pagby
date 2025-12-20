@@ -25,7 +25,10 @@
             
             <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 mb-8">
                 <div class="text-6xl font-bold text-gray-900 mb-2">
-                    R$ 30<span class="text-2xl text-gray-600">/mês</span>
+                    <span class="text-6xl font-bold text-gray-900 mb-2">R$ {{ number_format($tenant->getCurrentPricePerEmployee(), 2, ',', '.') }}<span class="text-2xl text-gray-600">/mês</span></span>
+                    @if($tenant->getCurrentPricePerEmployee() < config('pricing.base_price_per_employee'))
+                        <div class="text-lg text-green-600 font-bold mt-2">Promoção: R$ {{ number_format(config('pricing.promo_price_first_year'), 2, ',', '.') }} por funcionário/mês no 1º ano!</div>
+                    @endif
                 </div>
                 <p class="text-xl text-gray-700">por funcionário</p>
                 <p class="text-sm text-gray-600 mt-2">Simples assim. Sem taxas ocultas.</p>
@@ -59,7 +62,12 @@
                     <div class="flex justify-between items-center mb-4">
                         <span class="text-lg text-gray-700">Valor mensal:</span>
                         <span id="monthly-price" class="text-3xl font-bold text-blue-600">
-                            R$ {{ number_format($tenant->employee_count * 30, 2, ',', '.') }}
+                            <span id="monthly-price">
+                                R$ {{ number_format($tenant->employee_count * $tenant->getCurrentPricePerEmployee(), 2, ',', '.') }}
+                                @if($tenant->getCurrentPricePerEmployee() < config('pricing.base_price_per_employee'))
+                                    <span class="text-base text-green-600">(promoção 1º ano)</span>
+                                @endif
+                            </span>
                         </span>
                     </div>
                     <div class="text-sm text-gray-600 space-y-1">
@@ -117,13 +125,25 @@
 
 <script>
 function updatePrice(employeeCount) {
-    const pricePerEmployee = 30;
-    const totalPrice = employeeCount * pricePerEmployee;
-    
-    document.getElementById('monthly-price').textContent = 
-        'R$ ' + totalPrice.toFixed(2).replace('.', ',');
-    
-    document.getElementById('employee-text').textContent = 
+    const pricePerEmployee = @json($tenant->getCurrentPricePerEmployee());
+    const basePrice = @json(config('pricing.base_price_per_employee'));
+    let totalPrice = 0;
+    let promoText = '';
+    employeeCount = parseInt(employeeCount);
+    if (employeeCount > 0) {
+        totalPrice = employeeCount * pricePerEmployee;
+        if (pricePerEmployee < basePrice) {
+            promoText = ' (promoção 1º ano)';
+        } else {
+            promoText = '';
+        }
+    } else {
+        totalPrice = 0;
+        promoText = '';
+    }
+    document.getElementById('monthly-price').innerHTML =
+        'R$ ' + totalPrice.toFixed(2).replace('.', ',') + '<span class="text-base text-green-600">' + promoText + '</span>';
+    document.getElementById('employee-text').textContent =
         employeeCount + ' funcionário' + (employeeCount > 1 ? 's' : '');
 }
 </script>
