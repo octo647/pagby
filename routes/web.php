@@ -10,28 +10,30 @@ use App\Http\Controllers\TenantRegistrationController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PagBySubscriptionController;
 use App\Http\Controllers\Auth\SocialController;
-use Illuminate\Console\View\Components\Success;
 use App\Http\Middleware\VerifyCsrfToken;
-use Illuminate\Support\Facades\Request;
 
+// Todas as rotas devem estar dentro do loop central_domains para evitar conflitos com tenants
 foreach (config('tenancy.central_domains') as $domain) {
     Route::domain($domain)->group(function () {
         Route::get('/', function () {
             return view('home');
         })->name('home');
         
+        // Rotas de registro e contrato
+        Route::get('/contrato', function() {
+            return view('tenant.subscription.contrato', ['tenant' => (object)['fantasy_name' => 'Seu Negócio', 'cnpj' => '00.000.000/0000-00']]);
+        })->name('contrato');
+        
+        Route::get('/register-tenant', [TenantRegistrationController::class, 'showForm'])->name('register-tenant');
+        Route::post('/register-tenant', [TenantRegistrationController::class, 'register']);
+        Route::get('/registration-success', [TenantRegistrationController::class, 'registrationSuccess'])->name('registration-success');
+        Route::get('/registration-finalize/{contact_id?}', [PagBySubscriptionController::class, 'showPaymentForm'])->name('registration-finalize');
+        
         // CORRIGIR: Escolher plano (nome correto da rota)
         Route::get('/escolher-plano/{plan}', [PagBySubscriptionController::class, 'choosePlan'])
              ->name('pagby-subscription.choose-plan')
              ->where('plan', 'basico|premium');
         
-        
-        // REMOVER DUPLICAÇÃO: manter apenas uma vez
-        Route::get('/register-tenant', [TenantRegistrationController::class, 'showForm'])->name('register-tenant');
-        Route::post('/register-tenant', [TenantRegistrationController::class, 'register']);
-        Route::get('/registration-success', [TenantRegistrationController::class, 'registrationSuccess'])->name('registration-success'); 
-        
-
         Route::get('/funcionalidades', function () {
             return view('funcionalidades');
         })->name('funcionalidades');
@@ -39,6 +41,9 @@ foreach (config('tenancy.central_domains') as $domain) {
         
         // CORRIGIR: ASSINATURAS PAGBY (nomes corretos)
         Route::prefix('pagby-subscription')->name('pagby-subscription.')->group(function () {
+            Route::get('/payment', [PagBySubscriptionController::class, 'showPaymentForm'])->name('payment');
+            Route::post('/payment', [PagBySubscriptionController::class, 'processPayment'])->name('payment.process');
+            Route::post('/asaas-pay/{paymentId}', [PagBySubscriptionController::class, 'asaasPay'])->name('asaas-pay');
             Route::post('/create', [PagBySubscriptionController::class, 'createSubscription'])->name('create');
             
             Route::get('/wait/{paymentId}', [PagBySubscriptionController::class, 'wait'])->name('wait');
@@ -48,6 +53,9 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::get('/pending', [PagBySubscriptionController::class, 'pending'])->name('pending');
             Route::post('/webhook', [PagBySubscriptionController::class, 'webhook'])->name('webhook');
             Route::get('/history', [PagBySubscriptionController::class, 'history'])->name('history');
+            
+            // Endpoint de teste para simular webhook Asaas (apenas desenvolvimento)
+            Route::get('/simulate-webhook/{paymentId}', [PagBySubscriptionController::class, 'simulateAsaasWebhook'])->name('simulate-webhook');
         });
 
         // Rotas para assinaturas de planos dos tenants
@@ -77,67 +85,43 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::get('/planos', [PlanAdminController::class, 'index'])->name('admin.planos');
         });
 
-        // ROTAS OAUTH DENTRO DO DOMAIN GROUP (IMPORTANTE!)
+        // ROTAS OAUTH
         Route::middleware(['web'])->group(function () {
-            // Rota para testar se o controller funciona
-            Route::get('/social-test', [SocialController::class, 'test']);
-
-            // Rotas principais do Google OAuth
+            // Google OAuth
             Route::get('/auth/google', [SocialController::class, 'redirectToGoogle'])
                 ->name('login.google');
-                
-            Route::get('/auth/google/callback', [SocialController::class, 'handleGoogleCallback']);
-             //Rotas principais do Facebook OAuth
+            Route::get('/auth/google/callback', [SocialController::class, 'handleGoogleCallback'])
+                ->name('login.google.callback');
+            
+            // Facebook OAuth
             Route::get('/auth/facebook', [SocialController::class, 'redirectToFacebook'])
-                ->name('social.facebook.redirect');
+                ->name('login.facebook');
             Route::get('/auth/facebook/callback', [SocialController::class, 'handleFacebookCallback'])
-                ->name('social.facebook.callback');
-
-            // Rota de teste manual
-            Route::get('/test-google-manual', function() {
-                $clientId = '512714176901-j3o91gdq0marhksv66ckvkee6ehnov7r.apps.googleusercontent.com';
-                $redirectUri = 'http://localhost:8000/auth/google/callback';
-                
-                $authUrl = "https://accounts.google.com/o/oauth2/v2/auth?" . http_build_query([
-                    'client_id' => $clientId,
-                    'redirect_uri' => $redirectUri,
-                    'response_type' => 'code',
-                    'scope' => 'openid profile email',
-                    'access_type' => 'online',
-                    'prompt' => 'consent',
-                ]);
-                
-               
-                
-                return redirect()->away($authUrl);
-            });
-            Route::get('auth/google', [SocialController::class, 'redirectToGoogle'])->name('login.google');
-                Route::get('auth/google/callback', [SocialController::class, 'handleGoogleCallback'])->name('login.google.callback');
+                ->name('login.facebook.callback');
         });
 
-        // Rotas principais do Facebook OAuth
-        Route::get('auth/facebook', [SocialController::class, 'redirectToFacebook'])->name('login.facebook');
-        Route::get('auth/facebook/callback', [SocialController::class, 'handleFacebookCallback'])->name('login.facebook.callback');
-
-        Route::middleware('auth')->group(function () {
+        Route::middleware(['auth'])->group(function () {
             Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
             Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
             Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
             Route::get('/dashboard', [DashboardController::class, 'dashboard'])->name('dashboard');
         });
+        
+
         Route::post('webhook/mercado-pago', [SubscriptionController::class, 'webhook'])
             ->name('mercado-pago.webhook')
             ->withoutMiddleware([VerifyCsrfToken::class]);
 
         require __DIR__.'/auth.php';
-
-
-
     });
+}
 
 
 
 
-} 
+
+
+
+
 
 

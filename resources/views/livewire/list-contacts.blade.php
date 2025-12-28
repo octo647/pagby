@@ -162,10 +162,10 @@
                 </div>
             </form>
         </div>
-    @endif
+    @endif 
 
     <div class="relative overflow-x-auto shadow-md rounded-lg">
-        
+     
     <table class="w-full text-sm text-left text-gray-500">
         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
@@ -179,7 +179,9 @@
             </tr>
         </thead>
         
+        <tbody>
         @foreach($contacts as $index=>$contact)
+       
         <tr wire:key="{{$index}}" class="bg-white border-b hover:bg-gray-50">
             <td class="py-3 px-4">{{$contact['owner_name'] ?? $contact['name'] ?? ''}}</td>
             <td class="py-3 px-4">{{$contact['email']}}</td>

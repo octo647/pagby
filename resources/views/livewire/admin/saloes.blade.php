@@ -315,9 +315,10 @@
                 <label class="block font-semibold mb-1">Plano</label>
                 <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.plan">
                     <option value="">Selecione...</option> 
-                    <option value="Premium">Premium</option>                    
-                    <option value="Básico">Básico</option>
-                    <option selected value="Teste">Teste</option>
+                    <option value="mensal">Mensal</option>                    
+                    <option value="trimestral">Trimestral</option>
+                    <option selected value="semestral">Semestral</option>
+                    <option value="anual">Anual</option>
                    
                     
                 </select>

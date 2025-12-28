@@ -122,11 +122,10 @@
 
                 <!-- Botões de ação -->
                 <div class="flex flex-col gap-4">
-                    <a href="{{ route('register-tenant', ['plan' => $plan]) }}" 
+                    <a href="{{ route('pagby-subscription.payment') }}" 
                        class="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-4 px-8 rounded-lg font-bold text-lg hover:from-purple-700 hover:to-pink-700 transition-all transform hover:scale-105">
                         🚀 Continuar com {{ ucfirst($plan) }}
                     </a>
-                    
                     <a href="{{ route('home') }}#planos" 
                        class="text-gray-600 hover:text-gray-800 transition-colors">
                         ← Voltar aos planos

@@ -142,9 +142,6 @@ class ServicosRealizados extends Component
         return view('livewire.proprietario.servicos-realizados', [
             'agendamentos' => $agendamentos,
             'grouped' => $grouped,  
-            'showMonthFilter' => $this->showMonthFilter,
-            'showDateFilter' => $this->showDateFilter,
-            'employeeDetails' => $this->employeeDetails,
         ]);
     }
 

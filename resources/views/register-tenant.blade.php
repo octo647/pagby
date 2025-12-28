@@ -64,12 +64,53 @@
 
             <!-- Formulário -->
             <form action="{{ route('register-tenant') }}" method="POST" class="space-y-6" id="registration-form">
+<script>
+// Salva e restaura todos os campos principais do formulário no localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const fields = [
+        'owner_name', 'cpf', 'email', 'phone', 'tenant_name',
+        'employee_count', 'cep', 'address', 'neighborhood', 'city', 'state'
+    ];
+    fields.forEach(function(field) {
+        const input = document.getElementById(field);
+        if (input) {
+            // Preencher campo se houver valor salvo
+            const saved = localStorage.getItem('pagby_' + field);
+            if (saved) input.value = saved;
+            // Salvar alterações
+            input.addEventListener('input', function() {
+                localStorage.setItem('pagby_' + field, input.value);
+            });
+        }
+    });
+
+    // Restaurar radio "tipo"
+    const tipo = localStorage.getItem('pagby_tipo');
+    if (tipo) {
+        const radio = document.querySelector('input[name="tipo"][value="' + tipo + '"]');
+        if (radio) radio.checked = true;
+    }
+    // Salvar radio "tipo"
+    document.querySelectorAll('input[name="tipo"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            if (radio.checked) {
+                localStorage.setItem('pagby_tipo', radio.value);
+            }
+        });
+    });
+});
+</script>
                 @csrf
                 
                 <!-- Hidden field para o plano selecionado -->
                 @if(isset($selectedPlan))
                     <input type="hidden" name="selected_plan" value="{{ $selectedPlan }}">
                 @endif
+                @if(isset($selectedEmployeeCount))
+                    <input type="hidden" name="selected_employee_count" value="{{ $selectedEmployeeCount }}">
+                @endif
+
+                <!-- Aceite do contrato -->
 
                 <!-- Seção: Dados do Proprietário -->
                 <div class="border-b border-gray-200 pb-6">
@@ -97,7 +138,7 @@
                         </div>
                         <div>
                         <label for="cpf" class="block text-sm font-medium text-gray-700 mb-2">
-                            CPF *
+                            CPF/CNPJ *
                         </label>
                         <input type="text" 
                                id="cpf" 
@@ -161,12 +202,12 @@
                         </label>
                         <div class="space-y-3">
                             <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                <input type="radio" 
-                                       name="tipo" 
-                                       value="Barbearia" 
-                                       {{ old('tipo') == 'Barbearia' ? 'checked' : '' }}
-                                       class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300">
-                                <span class="ml-3 text-gray-900">🔥 Barbearia</span>
+                                    <input type="radio" 
+                                        name="tipo" 
+                                        value="Barbearia" 
+                                        {{ old('tipo') == 'Barbearia' ? 'checked' : '' }}
+                                        class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300">
+                                    <span class="ml-3 text-gray-900">✂️ Barbearia</span>
                             </label>
                             <label class="flex items-center p-3 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                                 <input type="radio" 
@@ -190,23 +231,7 @@
                         @enderror
                     </div>
                     
-                    <!-- Número de profissionais -->
-                    <div>
-                        <label for="employee_count" class="block text-sm font-medium text-gray-700 mb-2">
-                            Número de Profissionais *
-                        </label>
-                        <input type="number" 
-                               id="employee_count" 
-                               name="employee_count" 
-                               value="{{ old('employee_count') }}" 
-                               required 
-                               min="1"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white @error('employee_count') border-red-500 @enderror"
-                               placeholder="Número de profissionais">
-                        @error('employee_count')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
+                    <!-- Número de profissionais removido, agora enviado como campo oculto -->
 
                     <div>
                         <label for="tenant_name" class="block text-sm font-medium text-gray-700 mb-2">
@@ -345,6 +370,13 @@
                 </div>
 
                 <!-- Botão de submit -->
+                                <!-- Aceite do contrato -->
+                                <div class="flex items-start mb-6">
+                                    <input type="checkbox" id="contract_accepted" name="contract_accepted" value="1" required class="mt-1 mr-2">
+                                    <label for="contract_accepted" class="text-sm text-gray-700 select-none">
+                                        Eu li e aceito os <a href="{{ route('contrato') }}" target="_blank" class="text-purple-600 underline hover:text-purple-800">Termos e Contrato da Plataforma PagBy</a> *
+                                    </label>
+                                </div>
                 <div class="pt-6">
                     <button type="submit" 
                             id="submit-btn"

@@ -1,3 +1,3 @@
-@if($message =Session::get('chooseone'))
+@if($message = Session::get('chooseone'))
     {{$message}}
 @endif

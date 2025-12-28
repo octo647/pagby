@@ -10,10 +10,10 @@ use App\Models\Tenant;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
-
 use Illuminate\Support\Facades\Artisan;
-
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 
 class Saloes extends Component
 {
@@ -113,9 +113,13 @@ class Saloes extends Component
             $this->newSalon['neighborhood'] = $contact->neighborhood;
             $this->newSalon['city'] = $contact->city;
             $this->newSalon['state'] = $contact->state;
-            if (!empty($contact->tipo)) {
-                $this->newSalon['type'] = $contact->tipo;
-            }
+            $this->newSalon['whatsapp'] = $contact->phone;
+            $this->newSalon['fantasy_name'] = $contact->tenant_name;
+            $this->newSalon['cnpj'] = $contact->cnpj;
+            $this->newSalon['slug'] = Str::slug($contact->tenant_name) ?? '';
+            $this->newSalon['employee_count'] = $contact->employee_count ?? 1;
+            $this->newSalon['type'] = $contact->tipo ?? 'barbearia'; // Default type
+            $this->newSalon['plan'] = $contact->subscription_plan ?? 'mensal'; // Default plan
         }
     }
     
@@ -164,6 +168,8 @@ class Saloes extends Component
         $this->showCreateSalonPanel = true;
         $this->resetNewSalon();
         $this->loadContacts(1);
+        // Garante que o campo logo está limpo ao criar
+        $this->newSalon['logo'] = '';
         session()->flash('message', 'Painel de criação aberto.');
     }
     
@@ -208,15 +214,15 @@ class Saloes extends Component
                     Log::error('Slug está vazio, upload abortado');
                 } else {
                     $ext = $this->logoFile->getClientOriginalExtension();
-                    $path = "images/$slug/logo.$ext";
+                    $path = "images/tenants/$slug/logo.$ext";
                     // Garante que o diretório existe
-                    $storageDir = storage_path("app/public/images/$slug");
+                    $storageDir = storage_path("app/public/images/tenants/$slug");
                     if (!is_dir($storageDir)) {
                         mkdir($storageDir, 0755, true);
                     }
                     // Tenta salvar no storage/app/public/images/{slug}/logo.{ext} com tratamento de erro
                     try {
-                        $result = $this->logoFile->storeAs("images/$slug", "logo.$ext", 'public');
+                        $result = $this->logoFile->storeAs("images/tenants/$slug", "logo.$ext", 'public');
                         Log::info('Resultado do storeAs', ['result' => $result]);
                     } catch (\Exception $e) {
                         Log::error('Erro ao salvar logoFile no storage', [
@@ -225,12 +231,12 @@ class Saloes extends Component
                         ]);
                     }
                     Log::info('LogoFile salvo em storage', [
-                        'storagePath' => storage_path("app/public/images/$slug/logo.$ext"),
-                        'exists' => file_exists(storage_path("app/public/images/$slug/logo.$ext")),
+                        'storagePath' => storage_path("app/public/images/tenants/$slug/logo.$ext"),
+                        'exists' => file_exists(storage_path("app/public/images/tenants/$slug/logo.$ext")),
                     ]);
                     // Copia para public/images/{slug}/logo.{ext}
-                    $storagePath = storage_path("app/public/images/$slug/logo.$ext");
-                    $publicPath = public_path("images/$slug/logo.$ext");
+                    $storagePath = storage_path("app/public/images/tenants/$slug/logo.$ext");
+                    $publicPath = public_path("images/tenants/$slug/logo.$ext");
                     if (file_exists($storagePath)) {
                         copy($storagePath, $publicPath);
                         Log::info('LogoFile copiado para public', [
@@ -322,8 +328,12 @@ class Saloes extends Component
         $domainSuffix = env('TENANT_DOMAIN_SUFFIX', '.localhost');
         // Garante que social_login_enabled seja inteiro
         $this->newSalon['social_login_enabled'] = (int) ($this->newSalon['social_login_enabled'] ?? 0);
-        //cria o novo tenant se não existir
-        $tenant = Tenant::firstOrCreate(['id' => $this->newSalon['id']], $this->newSalon);
+        // Cria o novo tenant se não existir, removendo o campo logo para não sobrescrever depois
+        $newSalonData = $this->newSalon;
+        if (isset($newSalonData['logo'])) {
+            unset($newSalonData['logo']);
+        }
+        $tenant = Tenant::firstOrCreate(['id' => $this->newSalon['id']], $newSalonData);
 
         // Cria o domínio para o salão
         $tenant->createDomain(['domain' => $this->newSalon['id'] . $domainSuffix]);
@@ -340,7 +350,7 @@ class Saloes extends Component
         //Criar a estrutura de diretórios
         $this->createTenantDirectoryStructure($this->newSalon['id'], $this->newSalon['type'] ?? 'barbearia');
 
-        // Salvar logo se enviada (em public/tenants/{tenant}/logo.{ext})
+        // Salvar logo se enviada (em public/tenants/$tenantId/logo.{ext})
         if ($this->logoFile) {
             $slug = $this->newSalon['slug'];
             $originalName = $this->logoFile->getClientOriginalName();
@@ -350,7 +360,7 @@ class Saloes extends Component
                 'extension' => $ext,
                 'mime' => $this->logoFile->getMimeType(),
             ]);
-            $logoDir = public_path("tenants/$slug");
+            $logoDir = public_path("images/tenants/$slug");
             if (!is_dir($logoDir)) {
                 mkdir($logoDir, 0755, true);
             }
@@ -367,18 +377,28 @@ class Saloes extends Component
                     'trace' => $e->getTraceAsString(),
                 ]);
             }
-            // Atualiza o campo logo no banco
-            $tenant->logo = "tenants/$slug/logo.$ext";
+            // Atualiza o campo logo no banco e no array
+            $logoRelPath = "images/tenants/$slug/logo.$ext";
+            $tenant->logo = $logoRelPath;
             $tenant->save();
+            Log::info('Logo salvo no banco', ['tenant_id' => $tenant->id, 'logo' => $tenant->logo]);
+            $this->newSalon['logo'] = $logoRelPath;
+        } else {
+            // Se não houver upload, não sobrescreve o campo logo existente
+            if (!empty($this->newSalon['logo'])) {
+                $tenant->logo = $this->newSalon['logo'];
+                $tenant->save();
+                Log::info('Logo salvo no banco (sem upload)', ['tenant_id' => $tenant->id, 'logo' => $tenant->logo]);
+            }
         }
         // Atualiza o nome temporário do salão na tabela pagbypayments
         $contact = \App\Models\Contact::where('email', $this->newSalon['email'])->first();
         if ($contact) {
             \App\Models\PagByPayment::where('tenant_id', 'temp_' . $contact->id)->update(['tenant_id' => $tenant->id]);
-            
             // Transfere o employee_count do contact para o tenant se não foi definido
             if (!isset($this->newSalon['employee_count']) || $this->newSalon['employee_count'] <= 0) {
                 $tenant->employee_count = $contact->employee_count ?? 1;
+                // Salva apenas employee_count, não sobrescreve logo
                 $tenant->save();
             }
         }
@@ -403,13 +423,13 @@ class Saloes extends Component
 
         // Diretórios principais
         $directories = [
-            $basePath . "/images/tenant$tenantId",
-            storage_path("app/public/images/tenant$tenantId"),
-            resource_path("views/tenants/tenant$tenantId"),
-            $storagePath . "/tenant$tenantId/app/public/profile-photos",
-            $storagePath . "/tenant$tenantId/app/public/services",
-            $storagePath . "/tenant$tenantId/app/public/gallery",
-            $storagePath . "/tenant$tenantId/framework/cache",
+            $basePath . "/tenants/$tenantId",
+            storage_path("app/public/images/$tenantId"),
+            resource_path("views/tenants/$tenantId"),
+            $storagePath . "/app/public/profile-photos",
+            $storagePath . "/app/public/services",
+            $storagePath . "/app/public/gallery",
+            $storagePath . "/framework/cache",
         ];
 
         // Subdiretórios padrões para a home do tenant
@@ -432,7 +452,7 @@ class Saloes extends Component
         // Usa diretamente o nome informado em $tenantType (ex: SalaoBeleza1, Barbearia1)
         $templateType = trim($tenantType);
         $templateImages = public_path("images/$templateType");
-        $tenantImages = public_path("images/$tenantId");
+        $tenantImages = public_path("images/tenants/$tenantId");
         Log::info('Tentando criar symlink de imagens', ['templateImages' => $templateImages, 'tenantImages' => $tenantImages]);
         // Remove qualquer arquivo, diretório ou symlink existente antes de criar o symlink
         // Remover qualquer coisa existente
@@ -604,6 +624,11 @@ private function createTenantStorageLink($tenantId)
         $salon = Tenant::find($id);
         if ($salon) {
             $slug = $salon->slug;
+            if (empty($slug) || $slug === 'tenants' || $slug === '/') {
+                Log::error("Tentativa de exclusão perigosa: slug inválido", ['id' => $id, 'slug' => $slug]);
+                session()->flash('error', 'Slug do tenant inválido. Operação abortada.');
+                return;
+            }
             $dbName = $salon->tenancy_db_name ?? "tenant{$id}";
             try {
                 // Exclui o registro do tenant
@@ -619,7 +644,7 @@ private function createTenantStorageLink($tenantId)
                     Log::warning("Base de dados {$dbName} não encontrada para exclusão.");
                 }
 
-                // Remove diretórios criados
+                // Remove diretórios criados (apenas do tenant específico)
                 $dirs = [
                     public_path("images/$slug"),
                     storage_path("app/public/images/$slug"),
@@ -632,7 +657,11 @@ private function createTenantStorageLink($tenantId)
                 ];
 
                 foreach ($dirs as $dir) {
-                    // Só apaga se for diretório real, não se for symlink
+                    // Protege contra exclusão da pasta raiz de tenants
+                    if (realpath($dir) === realpath(resource_path('views/tenants')) || $dir === resource_path('views/tenants')) {
+                        Log::error("Tentativa de exclusão da pasta raiz de tenants bloqueada", ['dir' => $dir]);
+                        continue;
+                    }
                     if (is_link($dir)) {
                         unlink($dir);
                         Log::info("Symlink removido: $dir");

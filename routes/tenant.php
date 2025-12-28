@@ -22,6 +22,7 @@ use App\Models\TenantsPlansPayment;
 use App\Http\Controllers\PagBySubscriptionController;
 use App\Models\PagByPayment;
 
+
 Route::middleware([
     'web',
     InitializeTenancyByDomain::class,

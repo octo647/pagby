@@ -15,29 +15,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
      */
     public function getCurrentPricePerEmployee(): float
     {
-        $promoPrice = config('pricing.promo_price_first_year', 40.00);
-        $promoMonths = config('pricing.promo_duration_months', 12);
         $basePrice = config('pricing.base_price_per_employee', 60.00);
-
-        // Buscar a data da primeira assinatura paga
-        $firstPayment = $this->pagByPayments()
-            ->whereIn('status', ['approved', 'authorized'])
-            ->orderBy('created_at', 'asc')
-            ->first();
-
-        $promoStart = null;
-        if ($firstPayment && $firstPayment->created_at) {
-            $promoStart = $firstPayment->created_at;
-        } elseif ($this->subscription_started_at) {
-            $promoStart = $this->subscription_started_at;
-        }
-
-        if ($promoStart) {
-            $monthsSincePromoStart = $promoStart->diffInMonths(now());
-            if ($monthsSincePromoStart < $promoMonths) {
-                return $promoPrice;
-            }
-        }
         return $basePrice;
     }
 
@@ -64,6 +42,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'number',
             'complement',
             'neighborhood',
+            'contract_accpted_at',
+            'logo', // agora será salvo na coluna correta
         ];
 
     }

@@ -34,7 +34,7 @@ class RoleUser extends Component
     }
 
     public function render(){
-        return view('livewire.role-user',['usuarios'=> $this->usuarios]);
+        return view('livewire.role-user');
     }
     
     

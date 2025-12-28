@@ -31,7 +31,7 @@ class ListUsers extends Component
     }
 
     public function render(){
-        return view('livewire.list-users',['usuarios'=> $this->usuarios]);
+        return view('livewire.list-users');
     }
     
     

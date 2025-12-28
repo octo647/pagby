@@ -21,6 +21,8 @@ class Contact extends Model
         'neighborhood',
         'city',
         'state',
+        'subscription_plan',
+        'contract_accepted_at',
     ];
     use HasFactory;
 }

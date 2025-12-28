@@ -17,13 +17,16 @@ class PagByPayment extends Model
         'tenant_id',
         'contact_id',        
         'mp_payment_id',
+        'asaas_payment_id',
         'external_id',
         'plan',
         'employee_count',
         'status',
+        'type',
         'amount',
         'payment_method',
         'mp_data',
+        'description',
         'created_at',
         'updated_at'
     ];

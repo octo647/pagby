@@ -23,14 +23,14 @@
                         <div class="flex justify-between items-center">
                             <span class="font-medium text-gray-600">Plano:</span>
                             <span class="font-bold text-purple-600 capitalize">
-                                {{ session('plan') ?? $plan ?? 'Premium' }}
+                                {{ $plan_name ?? session('plan') ?? $plan ?? '' }}
                             </span>
                         </div>
                         
                         <div class="flex justify-between items-center">
                             <span class="font-medium text-gray-600">Cliente:</span>
                             <span class="font-semibold text-gray-800">
-                                {{ session('tenant_name') ?? 'Novo Cliente' }}
+                                {{ $tenant_name ?? session('tenant_name') ?? 'Novo Cliente' }}
                             </span>
                         </div>
                         
@@ -82,7 +82,7 @@
                             </div>
                             <div>
                                 <p class="font-semibold">Email de Boas-vindas</p>
-                                <p class="text-sm">Dados de acesso em até 10 minutos</p>
+                                <p class="text-sm">Verifique sua caixa de entrada para mais informações.</p>
                             </div>
                         </div>
                     </div>
@@ -94,7 +94,7 @@
                             </div>
                             <div>
                                 <p class="font-semibold">Treinamento Gratuito</p>
-                                <p class="text-sm">Nossa equipe te ajuda a começar</p>
+                                <p class="text-sm">Nossa equipe te ajuda a começar. Aguarde nosso contato em breve.</p>
                             </div>
                         </div>
                         
@@ -113,10 +113,7 @@
 
             <!-- Botões de ação -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <a href="#" 
-                   class="bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-4 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-bold text-lg transform hover:scale-105">
-                    🚀 Acessar Minha Conta
-                </a>
+               
                 
                 <a href="{{ route('home') }}" 
                    class="bg-white text-gray-700 px-8 py-4 rounded-lg hover:bg-gray-50 transition-colors font-semibold border-2 border-gray-200">
@@ -132,8 +129,8 @@
                     <a href="https://wa.me/5532987007302" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg transition-colors">
                         📱 WhatsApp: (32) 98700-7302
                     </a>
-                    <a href="mailto:suporte@pagby.com.br" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">
-                        📧 suporte@pagby.com.br
+                    <a href="mailto:suportepagby@gmail.com" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors">
+                        📧 suportepagby@gmail.com
                     </a>
                 </div>
             </div>

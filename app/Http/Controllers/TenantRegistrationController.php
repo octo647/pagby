@@ -11,12 +11,17 @@ class TenantRegistrationController extends Controller
     public function showForm(Request $request)
     {
         $selectedPlan = $request->get('plan'); // Receber o plano selecionado
+        $employeeCount = $request->get('employees'); // Receber número de funcionários
         // Aceitar trial como plano válido
         if ($selectedPlan) {
             session(['selected_plan' => $selectedPlan]);
         }
+        if ($employeeCount) {
+            session(['selected_employee_count' => $employeeCount]);
+        }
         return view('register-tenant', [
-            'selectedPlan' => $selectedPlan ?? session('selected_plan')
+            'selectedPlan' => $selectedPlan ?? session('selected_plan'),
+            'selectedEmployeeCount' => $employeeCount ?? session('selected_employee_count')
         ]);
     }
 
@@ -30,13 +35,14 @@ class TenantRegistrationController extends Controller
             'phone' => 'required|string|min:10|max:15',
             'tipo' => 'required|in:Barbearia,Salão de Beleza,Outro',
             'tenant_name' => 'required|string|max:255|min:2',
-            'employee_count' => 'nullable|integer|min:1',
+            'selected_employee_count' => 'nullable|integer|min:1',
             'cep' => 'required|string|size:9', // 00000-000
             'address' => 'required|string|max:255',
             'neighborhood' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'state' => 'required|string|size:2',
-            'selected_plan' => 'nullable|string|in:basico,premium,trial'
+            'selected_plan' => 'required|string|in:mensal,trimestral,semestral,anual',
+            'contract_accepted' => 'required|accepted',
         ], [
             // Mensagens personalizadas para validação
             'email.unique' => 'Este email já está registrado em nosso sistema. Por favor, use um email diferente ou entre em contato conosco pelo e-mail <a href="mailto:suporte@pagby.com.br" class="text-blue-500">suporte@pagby.com.br</a> ou pelo WhatsApp: <a href="https://wa.me/5532987007302" class="text-blue-500">(32) 98700-7302</a>.',
@@ -64,8 +70,18 @@ class TenantRegistrationController extends Controller
             $validatedData['phone'] = preg_replace('/\D/', '', $validatedData['phone']);
             $validatedData['cep'] = preg_replace('/\D/', '', $validatedData['cep']);
             $validatedData['cpf'] = preg_replace('/\D/', '', $validatedData['cpf']);
-            
-            // Criar o contato no banco de dados - CORRIGIDO: atribuir à variável
+
+
+            // Salvar data/hora do aceite do contrato
+            $validatedData['contract_accepted_at'] = now();
+
+            // Salvar o plano de assinatura no campo subscription_plan
+            $validatedData['subscription_plan'] = $validatedData['selected_plan'] ?? null;
+
+            // Salvar o número de funcionários corretamente
+            $validatedData['employee_count'] = $validatedData['selected_employee_count'] ?? 1;
+
+            // Criar o contato no banco de dados
             $contact = Contact::create($validatedData);
 
             // Pegar o plano da sessão se existir
@@ -136,8 +152,7 @@ class TenantRegistrationController extends Controller
         $contactId = session('contact_id');
         $selectedPlan = session('selected_plan');
 
-        // Remove as variáveis de sessão após exibir a página
-        session()->forget(['registration_completed', 'registration_time']);
+        // As variáveis de sessão só serão removidas após o início do pagamento
 
         return view('registration-success', [
             'contact_id' => $contactId,

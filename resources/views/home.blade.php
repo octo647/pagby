@@ -26,18 +26,6 @@
     </header>
 
     <main class="flex-1 flex flex-col items-center justify-center text-center px-4 py-10">
-        <!-- Banner Trial -->
-        <div class="w-full max-w-2xl mx-auto mb-8">
-            <div class="bg-gradient-to-r from-pink-500 to-indigo-500 text-white rounded-xl shadow-lg p-6 flex flex-col md:flex-row items-center justify-between">
-                <div class="text-left">
-                    <h2 class="text-2xl font-bold mb-1">Experimente grátis por 30 dias!</h2>
-                    <p class="text-white/90">Cadastre seu salão e marcaremos uma demonstração do PagBy sem compromisso.</p>
-                </div>
-                <a href="{{ route('register-tenant', ['plan' => 'trial']) }}" class="mt-4 md:mt-0 bg-white text-pink-600 font-bold px-6 py-3 rounded-full shadow hover:bg-pink-50 transition">
-                    Começar teste grátis
-                </a>
-            </div>
-        </div>
         <!-- Hero Section -->
         <div class="fade-in max-w-3xl">
             <h1 class="text-4xl md:text-5xl font-extrabold mb-4 text-pink-600 ">Bem-vindo ao PagBy!</h1>
@@ -259,91 +247,48 @@
         <div id="planos" class="fade-in mt-16 max-w-6xl w-full">
             <div class="text-center mb-12">
                 <h2 class="text-4xl font-bold mb-4 text-white">
-                    Plano Simples e Transparente
+                    Escolha seu plano Pagby
                 </h2>
                 <p class="text-xl text-white/80 max-w-2xl mx-auto">
-                    Sem taxas escondidas.
+                    Selecione a periodicidade e o número de funcionários para ver o valor do plano.
                 </p>
             </div>
 
-            <!-- Pricing Card -->
-            <div class="max-w-4xl mx-auto">
-                <div class="bg-gradient-to-br from-white to-gray-50 rounded-3xl shadow-2xl overflow-hidden">
-                    <!-- Trial Banner -->
-                    <div class="bg-gradient-to-r from-pink-500 to-purple-500 text-white text-center py-4 px-6">
-                        <p class="text-lg font-bold">🎉 Experimente GRÁTIS por 30 dias </p>
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl p-8">
+                <form id="form-plano" class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+                    <div>
+                        <label for="periodicidade" class="block font-bold mb-2 text-gray-800">Periodicidade</label>
+                        <select id="periodicidade" name="periodicidade" class="w-40 px-2 py-2 rounded-md border border-gray-300 text-gray-800 bg-white focus:ring-pink-500 focus:border-pink-500 text-base">
+                            <option value="mensal">Mensal</option>
+                            <option value="trimestral">Trimestral</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
                     </div>
-
-                    <div class="p-8 md:p-12">
-                        <!-- Preço Principal -->
-                        <div class="text-center mb-10">
-                            <div class="inline-block">
-                                <div class="text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600 mb-2">
-                                    R$ {{ number_format(config('pricing.promo_price_first_year'), 0, ',', '.') }}
-                                </div>
-                                <div class="text-gray-600 text-xl">
-                                    por funcionário/mês no 1º ano
-                                </div>
-                                <div class="text-gray-600 text-xl">
-                                    Depois: R$ {{ number_format(config('pricing.base_price_per_employee'), 0, ',', '.') }} por funcionário/mês
-                                </div>
-                                <div class="text-lg text-green-600 font-bold mt-2">Promoção: {{ round((1 - config('pricing.promo_price_first_year') / config('pricing.base_price_per_employee')) * 100) }}% OFF!</div>
-                                
-                            </div>
-                        </div>
-
-                        <!-- Exemplo de cálculo -->
-                        <div class="bg-blue-50 border-2 border-blue-200 rounded-xl p-6 mb-8">
-                            <h3 class="font-bold text-gray-800 mb-4 text-center">📊 Exemplos de preço no 1º ano:</h3>
-                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-center">
-                                <div class="bg-white rounded-lg p-4 shadow">
-                                    <div class="text-2xl font-bold text-purple-600">1</div>
-                                    <div class="text-xs text-gray-600 mb-1">funcionário</div>
-                                    <div class="font-bold text-gray-800">R$ {{ number_format(config('pricing.promo_price_first_year'), 0, ',', '.') }}/mês </div>
-                                    
-                                </div>
-                                <div class="bg-white rounded-lg p-4 shadow">
-                                    <div class="text-2xl font-bold text-purple-600">2</div>
-                                    <div class="text-xs text-gray-600 mb-1">funcionários</div>
-                                    <div class="font-bold text-gray-800">R$ {{ number_format(2 * config('pricing.promo_price_first_year'), 0, ',', '.') }}/mês </div>
-                                </div>
-                                <div class="bg-white rounded-lg p-4 shadow">
-                                    <div class="text-2xl font-bold text-purple-600">3</div>
-                                    <div class="text-xs text-gray-600 mb-1">funcionários</div>
-                                    <div class="font-bold text-gray-800">R$ {{ number_format(3 * config('pricing.promo_price_first_year'), 0, ',', '.') }}/mês </div>
-                                </div>
-                                
-                            </div>
-                        </div>
-
-                        <!-- Features -->
-                        <div class="mb-8">
-                            <h3 class="font-bold text-gray-800 mb-6 text-center text-xl">✨ Tudo incluso no plano:</h3>
-                            <div class="grid md:grid-cols-2 gap-4">
-                                @foreach(config('pricing.features') as $feature)
-                                <div class="flex items-center bg-white rounded-lg p-3 shadow-sm">
-                                    <svg class="w-6 h-6 text-green-500 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <span class="text-gray-700">{{ $feature }}</span>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        <!-- CTA Button -->
-                        <div class="text-center">
-                            <a href="{{ route('register-tenant', ['plan' => 'trial']) }}" 
-                               class="inline-block bg-gradient-to-r from-pink-600 to-purple-600 text-white px-12 py-5 rounded-full text-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
-                                Começar Teste Grátis de 30 Dias
-                            </a>
-                            
-                        </div>
+                    <div>
+                        <label for="numFuncionarios" class="block font-bold mb-2 text-gray-800">Nº de Funcionários</label>
+                        <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="7" value="1" class="w-32 px-2 py-2 rounded-md border border-gray-300 text-gray-800 bg-white focus:ring-pink-500 focus:border-pink-500 text-base" />
                     </div>
+                </form>
+                <div class="mt-8 text-center">
+                                        <div id="avisoFuncionarios" class="hidden text-red-600 text-lg font-semibold mb-4">
+                                            Para mais de 7 funcionários, consulte valores pelo WhatsApp <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-700" target="_blank">{{ config('pagby.whatsapp_display') }}</a>.
+                                        </div>
+                    <div id="equivalenteMensalLabel" class="text-3xl font-extrabold text-pink-600 mb-2">
+                        Equivalente mensal:
+                    </div>
+                    <div id="valorPlano" class="text-5xl font-bold text-purple-700 mb-2">
+                        R$ 60,00/mês
+                    </div>
+                    <div id="valorTotalPlano" class="text-lg text-gray-700 mb-4">
+                        Valor total: R$ 60,00
+                    </div>
+                    <a id="btn-assinar" href="#" class="inline-block bg-gradient-to-r from-pink-600 to-purple-600 text-white px-10 py-4 rounded-full text-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
+                        Assinar este plano
+                    </a>
                 </div>
             </div>
 
-            <!-- Garantias -->
             <div class="text-center mt-12 space-y-4">
                 <div class="flex flex-col md:flex-row justify-center items-center gap-6 text-white/90">
                     <div class="flex items-center gap-2">
@@ -427,4 +372,86 @@
             </div>
         </div>
     </footer>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const valorBase = 60.00;
+        const acrescimoFuncionario = 0.20;
+        const descontos = {
+            'mensal': 0,
+            'trimestral': 0.20,
+            'semestral': 0.30,
+            'anual': 0.40
+        };
+        const meses = {
+            'mensal': 1,
+            'trimestral': 3,
+            'semestral': 6,
+            'anual': 12
+        };
+
+        function calcularPlano(numFuncionarios, periodicidade) {
+            let valor = valorBase * Math.pow(1 + acrescimoFuncionario, numFuncionarios - 1);
+            let desconto = descontos[periodicidade] || 0;
+            let valorFinal = valor * (1 - desconto);
+            let total = valorFinal * (meses[periodicidade] || 1);
+            let equivalenteMensal = total / (meses[periodicidade] || 1);
+            return {
+                total: Number(total.toFixed(2)),
+                mensal: Number(equivalenteMensal.toFixed(2))
+            };
+        }
+
+
+        function atualizarValores() {
+            const periodicidade = document.getElementById('periodicidade').value;
+            const numFuncionariosInput = document.getElementById('numFuncionarios');
+            let numFuncionarios = parseInt(numFuncionariosInput.value) || 1;
+            const aviso = document.getElementById('avisoFuncionarios');
+            const equivalenteMensalLabel = document.getElementById('equivalenteMensalLabel');
+            const valorPlano = document.getElementById('valorPlano');
+            const valorTotalPlano = document.getElementById('valorTotalPlano');
+
+            if (numFuncionarios > 7) {
+                aviso.classList.remove('hidden');
+                equivalenteMensalLabel.style.display = 'none';
+                valorPlano.style.display = 'none';
+                valorTotalPlano.style.display = 'none';
+                // Limita o valor do input a 7
+                numFuncionariosInput.value = 7;
+            } else {
+                aviso.classList.add('hidden');
+                valorPlano.style.display = '';
+                if (periodicidade === 'mensal') {
+                    equivalenteMensalLabel.style.display = 'none';
+                    valorTotalPlano.style.display = 'none';
+                    valorPlano.textContent = `R$ ${calcularPlano(numFuncionarios, periodicidade).mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/mês`;
+                } else {
+                    equivalenteMensalLabel.style.display = '';
+                    valorTotalPlano.style.display = '';
+                    const valores = calcularPlano(numFuncionarios, periodicidade);
+                    valorPlano.textContent = `R$ ${valores.mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/mês`;
+                    valorTotalPlano.textContent = `Valor total: R$ ${valores.total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                }
+            }
+        }
+
+        // Garante que o aviso apareça ao colar ou digitar manualmente
+        document.getElementById('numFuncionarios').addEventListener('change', atualizarValores);
+
+        document.getElementById('periodicidade').addEventListener('change', atualizarValores);
+        document.getElementById('numFuncionarios').addEventListener('input', atualizarValores);
+        atualizarValores();
+
+        // Ativa o botão Assinar este plano
+        document.getElementById('btn-assinar').addEventListener('click', function(e) {
+            e.preventDefault();
+            const periodicidade = document.getElementById('periodicidade').value;
+            const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value) || 1;
+            // Só permite se até 7 funcionários
+            if (numFuncionarios > 7) return;
+            const url = `{{ route('register-tenant') }}?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
+            window.location.href = url;
+        });
+    });
+</script>
 </x-pagby-layout>

@@ -61,14 +61,13 @@ class ListContacts extends Component
     {
         $this->contacts = Contact::all()->toArray();
         
+        
     }
 
 
     public function render()
     {
-        
-        
-        return view('livewire.list-contacts', ['contacts'=>$this->contacts]);
+        return view('livewire.list-contacts');
     }
     public function editContact($contactIndex)
     {

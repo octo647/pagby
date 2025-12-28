@@ -7,6 +7,7 @@ use App\Models\PagByPayment;
 use App\Models\Contact;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Services\PagbyService;
 use MercadoPago\MercadoPagoConfig;
 use MercadoPago\Preapproval;
 use MercadoPago\Client\Preference\PreferenceClient;
@@ -19,275 +20,503 @@ use MercadoPago\Entities\Payer;
 // app/Http/Controllers/PagBySubscriptionController.php
 // Controlador para gerenciar pagamentos via MercadoPago dos planos de assinatura PagBy
 
+
+
+
 class PagBySubscriptionController extends Controller
 {
-   private function configureMercadoPago()
-{
-    $accessToken = config('services.pagby.access_token');
-    $environment = config('services.pagby.environment', 'sandbox');
 
-    Log::info('=== Configurando MercadoPago ===');
-    try {
-        Log::info('Método 1 - Config', [
-            'token' => substr($accessToken, 0, 20) . '...',
-            'environment' => $environment
-        ]);
-        MercadoPagoConfig::setAccessToken($accessToken);
-        Log::info('MercadoPago configurado com sucesso!');
-    } catch (\Exception $e) {
-        Log::error('❌ Erro ao configurar MercadoPago:', [
-            'error' => $e->getMessage(),
-            'environment' => $environment
-        ]);
-        throw $e;
+
+    
+  
+    public function showPaymentForm(Request $request)
+    {
+        // Redireciona diretamente para o checkout seguro do Asaas, pulando o formulário
+        $contactId = $request->contact_id ?? session('contact_id');
+        $contact = $contactId ? \App\Models\Contact::find($contactId) : null;
+        if (!$contact) {
+            return redirect()->route('register-tenant')->with('error', 'Contato não encontrado. Faça o registro novamente.');
+        }
+        $planName = $contact->subscription_plan ?? session('selected_plan', 'Plano PagBy');
+        // Novos planos dinâmicos
+       
+        $employeeCount = $contact->employee_count ?? 1;
+        $pagbyService = new PagbyService();
+    
+        $amount = $pagbyService->calcularValorPlano($employeeCount, $planName);
+        
+        $customerData = [
+            'name' => $contact->tenant_name ?? $contact->owner_name,
+            'email' => $contact->email,
+            'cpfCnpj' => $contact->cpf,
+            'phone' => $contact->phone,
+            'postalCode' => $contact->postal_code ?? null,
+            'address' => $contact->address ?? null,
+            'addressNumber' => $contact->address_number ?? null,
+            'complement' => $contact->complement ?? null,
+            'province' => $contact->province ?? null, // bairro
+        ];
+       
+     
+        $paymentData = [
+            'name' => 'Assinatura PagBy - ' . ucfirst($planName),
+            'description' => 'Pagamento de assinatura do plano ' . ucfirst($planName),
+            'billingType' => 'UNDEFINED',
+            'value' => $amount,
+            'plan' => $planName, // Para referência futura
+            
+        ];
+        $asaasService = new \App\Services\AsaasService();
+        $asaasResult = $asaasService->criarCheckout($customerData, $paymentData);
+        if ($asaasResult['success'] && !empty($asaasResult['data']['url'])) {
+            // Logar retorno completo do Asaas para debug
+            \Log::info('Retorno Asaas criarCheckout', ['asaas_data' => $asaasResult['data']]);
+            // Salvar o pagamento localmente
+            $payment = PagByPayment::create([
+                'tenant_id' => 'temp_' . $contact->id,
+                'contact_id' => $contact->id,
+                'mp_payment_id' => null,
+                'external_id' => $asaasResult['data']['paymentLink'] ?? $asaasResult['data']['id'] ?? null,
+                'asaas_payment_id' => null, // Só será preenchido via webhook
+                'amount' => $amount,
+                'status' => 'pending',
+                'employee_count' => $contact->employee_count ?? 1,
+                'type' => 'subscription',
+                'plan' => $planName,
+                'description' => 'Checkout Asaas: ' . ($asaasResult['data']['url'] ?? '')
+            ]);
+            // Redireciona o usuário para a página de espera do pagamento
+            return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
+        } else {
+            return redirect()->back()->with('error', 'Erro ao criar link de pagamento no Asaas.');
+        }
     }
-}
 
- public function choosePlan($plan)
-{
-    $plans = [
-        'basico' => [
-            'name' => 'Plano Básico',
-            'description' => 'Ideal para começar',
-            'price' => 29.90
-        ],
-        'premium' => [
-            'name' => 'Plano Premium',
-            'description' => 'Para quem quer mais',
-            'price' => 59.90
-        ]
-    ];
+    /**
+     * Processa o formulário de pagamento enviado pelo cliente.
+     */
+    public function processPayment(Request $request)
+    {
+        // Validação básica dos campos
+        $validated = $request->validate([
+            'payment_method' => 'required|in:credit_card,boleto,pix',
+            'customer_name' => 'required|string',
+            'customer_cpf' => 'required|string',
+            'customer_email' => 'required|email',
+            'customer_phone' => 'required|string',
+            // Campos do cartão só se for cartão de crédito
+            'card_number' => 'required_if:payment_method,credit_card',
+            'holder_name' => 'required_if:payment_method,credit_card',
+            'expiration' => 'required_if:payment_method,credit_card',
+            'cvv' => 'required_if:payment_method,credit_card',
+        ]);
 
-    if (!isset($plans[$plan])) {
-        return redirect()->route('home')->with('error', 'Plano não encontrado.');
+        // Criar registro de pagamento fictício (ajuste conforme sua lógica real)
+        // Buscar o contato pelo ID salvo na sessão
+        $contactId = session('contact_id');
+        $contact = $contactId ? \App\Models\Contact::find($contactId) : null;
+        if (!$contact) {
+            return redirect()->route('register-tenant')->with('error', 'Contato não encontrado. Faça o registro novamente.');
+        }
+
+        $planName = $contact->subscription_plan ?? session('selected_plan', 'Plano PagBy');
+         // Novos planos dinâmicos
+       
+        $employeeCount = $contact->employee_count ?? 1;
+        $pagbyService = new PagbyService();
+    
+        $amount = $pagbyService->calcularValorPlano($employeeCount, $planName);
+        
+        // Montar dados do cliente para o Asaas
+        $customerData = [
+            'name' => $contact->tenant_name ?? $contact->owner_name,
+            'email' => $contact->email,
+            'cpfCnpj' => $contact->cpf,
+            'phone' => $contact->phone,
+        ];
+
+        // Montar dados do pagamento para o Asaas
+        $paymentData = [
+            'billingType' => $request->payment_method === 'credit_card' ? 'CREDIT_CARD' : strtoupper($request->payment_method),
+            'value' => $amount,
+            'description' => 'Assinatura PagBy',
+            'dueDate' => now()->addDay()->format('Y-m-d'),
+            'externalReference' => 'pagby-' . uniqid(),
+        ];
+
+        // Adicionar dados do cartão se for cartão de crédito
+        if ($request->payment_method === 'credit_card') {
+            $paymentData['creditCard'] = [
+                'holderName' => $request->holder_name,
+                'number' => $request->card_number,
+                'expiryMonth' => substr(preg_replace('/\D/', '', $request->expiration), 0, 2),
+                'expiryYear' => '20' . substr(preg_replace('/\D/', '', $request->expiration), 2, 2),
+                'ccv' => $request->cvv,
+            ];
+        }
+
+        // Chamar o serviço do Asaas para criar o link de checkout
+        $asaasService = new \App\Services\AsaasService();
+        $asaasResult = $asaasService->criarCheckout($customerData, $paymentData);
+
+        if ($asaasResult['success'] && !empty($asaasResult['data']['url'])) {
+            // Salvar o pagamento localmente (opcional, pode salvar o link ou id do checkout)
+                $payment = PagByPayment::create([
+                    'tenant_id' => 'temp_' . uniqid(),
+                    'contact_id' => $contact->id,
+                    'mp_payment_id' => null,
+                    'external_id' => $asaasResult['data']['paymentLink'] ?? $asaasResult['data']['id'] ?? null,
+                    'asaas_payment_id' => null, // Só será preenchido via webhook
+                    'amount' => $amount,
+                    'status' => 'pending',
+                    'employee_count' => $contact->employee_count ?? 1,
+                    'type' => 'subscription',
+                    'plan' => $planName,
+                    'description' => 'Checkout Asaas: ' . ($asaasResult['data']['url'] ?? '')
+                ]);
+            // Redireciona o usuário para o link seguro do Asaas
+            return redirect()->away($asaasResult['data']['url']);
+        } else {
+            // Se falhar, redireciona para a página de erro ou exibe mensagem
+            return redirect()->back()->with('error', 'Erro ao criar link de pagamento no Asaas.');
+        }
     }
 
-    $selectedPlan = $plans[$plan];
-    $planData = $plans[$plan]; // ADICIONAR esta linha
-    session(['selected_plan' => $plan]);
+    /**
+     * Inicia o pagamento via API Asaas.
+     */
+    public function asaasPay(Request $request, $paymentId)
+    {
+        $payment = PagByPayment::on('mysql')->find($paymentId);
+        if (!$payment) {
+            return response()->json(['success' => false, 'message' => 'Pagamento não encontrado.'], 404);
+        }
 
-    return view('pagby-subscription.choose-plan', compact('selectedPlan', 'plan', 'planData'));
-}
- public function selectPlan(Request $request)
+        $contact = Contact::find($payment->contact_id);
+        if (!$contact) {
+            return response()->json(['success' => false, 'message' => 'Contato não encontrado.'], 404);
+        }
 
-{
-    $plans = [
-        'basico' => [
-            'name' => 'Plano Básico',
-            'description' => 'Ideal para começar',
-            'price' => 29.90
-        ],
-        'premium' => [
-            'name' => 'Plano Premium',
-            'description' => 'Para quem quer mais',
-            'price' => 59.90
-        ]
-    ];
-//dd($request->all());
-    // Novo modelo: apenas um plano, preço único
-    $employeeCount = $request->input('employee_count') ?? $request->input('employee_count_hidden');
-    $price = config('pricing.promo_price_first_year', 40.00); // valor promocional
-    $planName = 'Plano Pagby';
-    $planDescription = 'Assinatura única por funcionário';
-    $planData = [
-        'name' => $planName,
-        'description' => $planDescription,
-        'price' => $price,
-        'employee_count' => $employeeCount
-    ];
-    session(['selected_plan' => $planName]);
-    return view('pagby-subscription.select-plan', compact('planData'));
-}
+        // Montar dados do cliente para o Asaas
+        $customerData = [
+            'name' => $contact->owner_name ?? $contact->tenant_name,
+            'email' => $contact->email,
+            'cpfCnpj' => $contact->cpf,
+            'phone' => $contact->phone,
+        ];
+
+        // Montar dados do pagamento para o Asaas
+        $paymentData = [
+            'billingType' => 'CREDIT_CARD', // ou BOLETO, PIX, etc.
+            'value' => $payment->amount,
+            'description' => 'Assinatura PagBy',
+            'dueDate' => now()->addDay()->format('Y-m-d'),
+            'externalReference' => 'pagby-' . $payment->id,
+        ];
+
+        $asaasService = new \App\Services\AsaasService();
+        $result = $asaasService->criarCheckout($customerData, $paymentData);
+
+        if ($result['success']) {
+            // Salvar ID/link do checkout Asaas no pagamento
+            $payment->asaas_payment_id = $result['data']['id'] ?? null;
+            $payment->description = 'Checkout Asaas: ' . ($result['data']['url'] ?? '');
+            $payment->save();
+            return response()->json(['success' => true, 'message' => 'Link de pagamento criado no Asaas!', 'asaas' => $result['data']]);
+        }
+        return response()->json(['success' => false, 'message' => $result['message'] ?? 'Erro ao criar link de pagamento no Asaas.']);
+    }
+
+    /**
+     * Exibe a tela de aguarde do pagamento de assinatura.
+     */
+    public function wait($paymentId)
+    {
+        $payment = PagByPayment::on('mysql')->find($paymentId);
+        if (!$payment) {
+            Log::error('Pagamento não encontrado na página wait:', ['payment_id' => $paymentId]);
+            abort(404, 'Pagamento não encontrado');
+        }
+
+        $checkoutUrl = session('checkout_url');
+        // Busca o nome do salão a partir do contato
+        $contact = null;
+        if ($payment->contact_id) {
+            $contact = \App\Models\Contact::find($payment->contact_id);
+        }
+        $tenantName = $contact ? ($contact->tenant_name ?? $contact->owner_name ?? 'Não informado') : 'Não informado';
+        return view('pagby-subscription.wait', [
+            'payment' => $payment,
+            'checkout_url' => $checkoutUrl,
+            'payment_id' => $paymentId,
+            'tenant_name' => $tenantName,
+            'plan_name' => $payment->plan ?? 'Não informado'
+        ]);
+    }
+    private function configureMercadoPago()
+    {
+        $accessToken = config('services.pagby.access_token');
+        $environment = config('services.pagby.environment', 'sandbox');
+
+        Log::info('=== Configurando MercadoPago ===');
+        try {
+            Log::info('Método 1 - Config', [
+                'token' => substr($accessToken, 0, 20) . '...',
+                'environment' => $environment
+            ]);
+            MercadoPagoConfig::setAccessToken($accessToken);
+            Log::info('MercadoPago configurado com sucesso!');
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao configurar MercadoPago:', [
+                'error' => $e->getMessage(),
+                'environment' => $environment
+            ]);
+            throw $e;
+        }
+    }
+
+    public function choosePlan($plan)
+    {
+        $plans = [
+            'mensal' => [
+                'name' => 'Mensal',
+                'description' => 'Periodo de 1 mês',
+                'price' => config('pricing.base_price_per_employee', 60.00)
+            ],
+            'trimestral' => [
+                'name' => 'Trimestral',
+                'description' => 'Periodo de 3 meses',
+                'price' => 3*config('pricing.base_price_per_employee', 60.00)*0.8
+            ],
+            'semestral' => [
+                'name' => 'Semestral',
+                'description' => 'Periodo de 6 meses',
+                'price' => 6*config('pricing.base_price_per_employee', 60.00)*0.7
+            ],
+            'anual' => [
+                'name' => 'Anual',
+                'description' => 'Periodo de 12 meses',
+                'price' => 12*config('pricing.base_price_per_employee', 60.00)*0.6
+            ],
+        ];
+
+        if (!isset($plans[$plan])) {
+            return redirect()->route('home')->with('error', 'Plano não encontrado.');
+        }
+
+        $selectedPlan = $plans[$plan];
+        $planData = $plans[$plan];
+        session(['selected_plan' => $plan]);
+
+        // Exibe a página de escolha do plano normalmente
+        return view('pagby-subscription.choose-plan', compact('selectedPlan', 'plan', 'planData'));
+    }
+ 
+    public function selectPlan(Request $request)
+    {
+        $plans = [
+            'mensal' => [
+                'name' => 'Mensal',
+                'description' => 'Periodo de 1 mês',
+                'price' => config('pricing.base_price_per_employee', 60.00)
+            ],
+            'trimestral' => [
+                'name' => 'Trimestral',
+                'description' => 'Periodo de 3 meses',
+                'price' => 3*config('pricing.base_price_per_employee', 60.00)*0.8
+            ],
+            'semestral' => [
+                'name' => 'Semestral',
+                'description' => 'Periodo de 6 meses',
+                'price' => 6*config('pricing.base_price_per_employee', 60.00)*0.7
+            ],
+            'anual' => [
+                'name' => 'Anual',
+                'description' => 'Periodo de 12 meses',
+                'price' => 12*config('pricing.base_price_per_employee', 60.00)*0.6
+            ]
+        ];
+  
+        // Novo modelo: apenas um plano, preço único
+        $employeeCount = $request->input('employee_count') ?? $request->input('employee_count_hidden');
+        $price = config('pricing.promo_price_first_year', 40.00); // valor promocional
+        $planName = 'Plano Pagby';
+        $planDescription = 'Assinatura única por funcionário';
+        $planData = [
+            'name' => $planName,
+            'description' => $planDescription,
+            'price' => $price,
+            'employee_count' => $employeeCount
+        ];
+        session(['selected_plan' => $planName]);
+        return view('pagby-subscription.select-plan', compact('planData'));
+    }
  
 
 
-public function createSubscription(Request $request)
-{
-    $request->validate([
-        'plan' => 'required|in:basico,premium',
-        'tenant_id' => 'required|string'
-    ]);
 
-    $contactId = session('contact_id');
-    $tenantId = $request->tenant_id;
-    $mpPaymentId = $request->_token;
-    
 
-    if (!$contactId) {
-        return redirect()->route('home')->with('error', 'Sessão expirada. Faça o registro novamente.');
-    }
-
-    $contact = Contact::find($contactId);
-    if (!$contact) {
-        return redirect()->route('home')->with('error', 'Contato não encontrado.');
-    }
-
-    $plans = [
-        'basico' => [
-            'name' => 'Básico',
-            'description' => 'Ideal para começar',
-            'price' => 29.90
-        ],
-        'premium' => [
-            'name' => 'Premium',
-            'description' => 'Para quem quer mais',
-            'price' => 59.90
-        ]
-    ];
-
-    $plan = $plans[$request->plan];
-
-    // Cria registro local da assinatura
-  
-    $payment = PagByPayment::create([        
-    'tenant_id' => 'temp_' . $contact->id,
-    'contact_id' => $contact->id, // ADICIONAR este campo
-    'mp_payment_id' => null,
-    'external_id' => null, // ADICIONAR explicitamente
-    'amount' => $contact->employee_count * $plan['price'], // Remover number_format
-    'status' => 'pending',
-    'plan' => $request->plan,
-    'employee_count' => $contact->employee_count,
-    'type' => 'subscription'
-]);
-    Log::info('📄 PagByPayment criado:', [
-        'payment_id' => $payment->id,
-        'amount' => $payment->amount,
-        'plan' => $payment->plan
-    ]);
-  
-
-    // Cria assinatura recorrente via API MercadoPago
-    $accessToken = config('services.pagby.access_token');
-    $data = [
-        "reason" => $plan['name'],
-        "auto_recurring" => [
-            "frequency" => 1,
-            "frequency_type" => "months",
-            "transaction_amount" => number_format($contact->employee_count * $plan['price'], 2, '.', ''),
-            "currency_id" => "BRL"
-        ],
-        "payer_email" => 'test_user_1515774707033786032@testuser.com',//$contact->email,
-        "back_url" => route('pagby-subscription.success'),
-        "status" => "pending",
-        "external_reference" => 'pagby-subscription-' . $payment->id,
-        "notification_url" => route('pagby-subscription.webhook')
-    ];
-    
-
-    
-
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://api.mercadopago.com/preapproval');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $accessToken,
-        'Content-Type: application/json'
-    ]);
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    $result = json_decode($response, true);
-
-    // Salva o id da assinatura recorrente
-    if (isset($result['id'])) {
-        $payment->mp_payment_id = $result['id'];
-        $payment->external_id = $result['id'];
-        $payment->save();
-    }
-    Log::info('Resposta MercadoPago Preapproval:', ['result' => $result]);
-        // Redireciona para o checkout da assinatura
-        if (isset($result['init_point'])) {
-        session([
-            'payment_id' => $payment->id,
-            'checkout_url' => $result['init_point'],
-            'tenant_name' => $contact->tenant_name,
-            'plan_name' => $plan['name'],
-            'plan_amount' => floatval($contact->employee_count * $plan['price'])
+    public function createSubscription(Request $request)
+    {
+        $request->validate([
+            'plan' => 'required|string|in:mensal,trimestral,semestral,anual',
+            'tenant_id' => 'required|string'
         ]);
-        // Redireciona para a página de aguarde
+
+        $contactId = session('contact_id');
+        $tenantId = $request->tenant_id;
+        $mpPaymentId = $request->_token;
+        
+
+        if (!$contactId) {
+            return redirect()->route('home')->with('error', 'Sessão expirada. Faça o registro novamente.');
+        }
+
+        $contact = Contact::find($contactId);
+        if (!$contact) {
+            return redirect()->route('home')->with('error', 'Contato não encontrado.');
+        }
+
+        // Novos planos dinâmicos
+        $plan = $request->plan;
+        $employeeCount = $contact->employee_count ?? 1;
+        $pagbyService = new PagbyService();
+        $amount = $pagbyService->calcularValorPlano($employeeCount, $plan);
+
+        $payment = PagByPayment::create([
+            'tenant_id' => 'temp_' . $contact->id,
+            'contact_id' => $contact->id,
+            'mp_payment_id' => null,
+            'external_id' => null,
+            'amount' => $amount,
+            'status' => 'pending',
+            'employee_count' => $employeeCount,
+            'type' => 'subscription'
+        ]);
+        Log::info('📄 PagByPayment criado:', [
+            'payment_id' => $payment->id,
+            'amount' => $payment->amount,
+            'employee_count' => $payment->employee_count
+        ]);
+
+        // Redireciona para a página de espera (wait) com o paymentId
         return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
-        } else {
-            // Redireciona para a página de falha
-            return redirect()->route('pagby-subscription.failure', [
+        curl_setopt($ch, CURLOPT_URL, 'https://api.mercadopago.com/preapproval');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json'
+        ]);
+        $response = curl_exec($ch);
+        curl_close($ch);
+
+        $result = json_decode($response, true);
+
+        // Salva o id da assinatura recorrente
+        if (isset($result['id'])) {
+            $payment->mp_payment_id = $result['id'];
+            $payment->external_id = $result['id'];
+            $payment->save();
+        }
+        Log::info('Resposta MercadoPago Preapproval:', ['result' => $result]);
+            // Redireciona para o checkout da assinatura
+            if (isset($result['init_point'])) {
+            session([
                 'payment_id' => $payment->id,
+                'checkout_url' => $result['init_point'],
                 'tenant_name' => $contact->tenant_name,
                 'plan_name' => $plan['name'],
-                'message' => $result['message'] ?? 'Erro ao criar assinatura.'
-                
+                'plan_amount' => floatval($contact->employee_count * $plan['price'])
             ]);
+            // Redireciona para a página de aguarde
+            return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
+            } else {
+                // Redireciona para a página de falha
+                return redirect()->route('pagby-subscription.failure', [
+                    'payment_id' => $payment->id,
+                    'tenant_name' => $contact->tenant_name,
+                    'plan_name' => $plan['name'],
+                    'message' => $result['message'] ?? 'Erro ao criar assinatura.'
+                    
+                ]);
+            }
+    }
+
+    public function renewSubscription(Request $request)
+    {
+        $request->validate([
+            'plan' => 'required|in:mensal,trimestral,semestral,anual',
+            'tenant_id' => 'required|string'
+        ]);
+        
+
+        $tenantId = $request->tenant_id;
+        $tenant_name = Tenant::on('mysql')->find($tenantId)->name;
+        $contact = Contact::on('mysql')->where('tenant_name', $tenant_name)->first();
+        
+
+
+
+
+        $mpPaymentId = $request->_token;
+    
+        
+
+        if (!$contact->id) {
+            return redirect()->route('home')->with('error', 'Sessão expirada. Faça o registro novamente.');
         }
-}
 
-public function renewSubscription(Request $request)
-{
-    $request->validate([
-        'plan' => 'required|in:basico,premium',
-        'tenant_id' => 'required|string'
+        
+        if (!$contact) {
+            return redirect()->route('home')->with('error', 'Contato não encontrado.');
+        }
+
+        $plans = [
+            'mensal' => [
+                'name' => 'Mensal',
+                'description' => 'Periodo de 1 mês',
+                'price' => config('pricing.base_price_per_employee', 60.00)
+            ],
+            'trimestral' => [
+                'name' => 'Trimestral',
+                'description' => 'Periodo de 3 meses',
+                'price' => 3*config('pricing.base_price_per_employee', 60.00)*0.8
+            ],
+            'semestral' => [
+                'name' => 'Semestral',
+                'description' => 'Periodo de 6 meses',
+                'price' => 6*config('pricing.base_price_per_employee', 60.00)*0.7
+            ],
+            'anual' => [
+                'name' => 'Anual',
+                'description' => 'Periodo de 12 meses',
+                'price' => 12*config('pricing.base_price_per_employee', 60.00)*0.6
+            ]
+        ];
+
+        $plan = $plans[$request->plan];
+        
+
+        // Cria registro local da assinatura
+    
+        $payment = PagByPayment::on('mysql')->create([        
+        'tenant_id' => $tenantId,
+        'contact_id' => $contact->id, // ADICIONAR este campo
+        'mp_payment_id' => null,
+        'external_id' => null, // ADICIONAR explicitamente
+        'amount' => $contact->employee_count * $plan['price'], // Remover number_format
+        'status' => 'pending',
+        'plan' => $request->plan,
+        'employee_count' => $contact->employee_count,
+        'type' => 'subscription'
     ]);
-    
-
-    $tenantId = $request->tenant_id;
-    $tenant_name = Tenant::on('mysql')->find($tenantId)->name;
-    $contact = Contact::on('mysql')->where('tenant_name', $tenant_name)->first();
-    
-
-
-
-
-    $mpPaymentId = $request->_token;
-   
-    
-
-    if (!$contact->id) {
-        return redirect()->route('home')->with('error', 'Sessão expirada. Faça o registro novamente.');
-    }
-
-    
-    if (!$contact) {
-        return redirect()->route('home')->with('error', 'Contato não encontrado.');
-    }
-
-    $plans = [
-        'basico' => [
-            'name' => 'Básico',
-            'description' => 'Ideal para começar',
-            'price' => 29.90
-        ],
-        'premium' => [
-            'name' => 'Premium',
-            'description' => 'Para quem quer mais',
-            'price' => 59.90
-        ]
-    ];
-
-    $plan = $plans[$request->plan];
-    
-
-    // Cria registro local da assinatura
-  
-    $payment = PagByPayment::on('mysql')->create([        
-    'tenant_id' => $tenantId,
-    'contact_id' => $contact->id, // ADICIONAR este campo
-    'mp_payment_id' => null,
-    'external_id' => null, // ADICIONAR explicitamente
-    'amount' => $contact->employee_count * $plan['price'], // Remover number_format
-    'status' => 'pending',
-    'plan' => $request->plan,
-    'employee_count' => $contact->employee_count,
-    'type' => 'subscription'
-]);
-
-
     Log::info('📄 PagByPayment criado:', [
         'payment_id' => $payment->id,
         'amount' => $payment->amount,
         'plan' => $payment->plan
     ]);
-  
-
     // Cria assinatura recorrente via API MercadoPago
     $accessToken = config('services.pagby.access_token');
     $data = [
@@ -304,10 +533,6 @@ public function renewSubscription(Request $request)
         "external_reference" => 'pagby-subscription-' . $payment->id,
         "notification_url" => route('pagby-subscription.webhook')
     ];
-    
-
-    
-
     $ch = curl_init();
     curl_setopt($ch, CURLOPT_URL, 'https://api.mercadopago.com/preapproval');
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -321,16 +546,15 @@ public function renewSubscription(Request $request)
     curl_close($ch);
 
     $result = json_decode($response, true);
-   
 
     // Salva o id da assinatura recorrente
-   
+
     if (isset($result['id'])) {
         $payment->mp_payment_id = $result['id'];
         $payment->external_id = $result['id'];
         $payment->save();
     }
-Log::info('Resposta MercadoPago Preapproval:', ['result' => $result]);
+    Log::info('Resposta MercadoPago Preapproval:', ['result' => $result]);
     // Redireciona para o checkout da assinatura
     if (isset($result['init_point'])) {
     session([
@@ -340,132 +564,221 @@ Log::info('Resposta MercadoPago Preapproval:', ['result' => $result]);
         'plan_name' => $plan['name'],
         'plan_amount' => floatval($contact->employee_count * $plan['price'])
     ]);
- 
+
     // Redireciona para a página de aguarde
-   
+
     return redirect()->route('tenant-assinatura.waitRenew', ['paymentId' => $payment->id]);
 
-   // $this->waitRenew($payment->id);
-} else {
-    // Redireciona para a página de falha
-    return redirect()->route('pagby-subscription.failure-renew', [
-        'payment_id' => $payment->id,
-        'tenant_name' => $contact->tenant_name,
-        'plan_name' => $plan['name'],
-        'message' => $result['message'] ?? 'Erro ao criar assinatura.'
+    // $this->waitRenew($payment->id);
+    } else {
+        // Redireciona para a página de falha
+        return redirect()->route('pagby-subscription.failure-renew', [
+            'payment_id' => $payment->id,
+            'tenant_name' => $contact->tenant_name,
+            'plan_name' => $plan['name'],
+            'message' => $result['message'] ?? 'Erro ao criar assinatura.'
+            
+        ]);
+    }
+    }
+
+    public function failureRenew(Request $request)
+    {
+        Log::info('=== MercadoPago Failure Renew Callback ===');
+        Log::info('Request completo:', $request->all());
         
-    ]);
-}
-}
 
-public function failureRenew(Request $request)
-{
-    Log::info('=== MercadoPago Failure Renew Callback ===');
-    Log::info('Request completo:', $request->all());
-    
-
-    return view('pagby-subscription.failure-renew', [
-        'payment_id' => $request->get('payment_id'),
-        'tenant_name' => $request->get('tenant_name'),
-        'plan_name' => $request->get('plan_name'),
-        'message' => $request->get('message', 'Não foi possível processar sua renovação de assinatura.')
-    ]);
-}
+        return view('pagby-subscription.failure-renew', [
+            'payment_id' => $request->get('payment_id'),
+            'tenant_name' => $request->get('tenant_name'),
+            'plan_name' => $request->get('plan_name'),
+            'message' => $request->get('message', 'Não foi possível processar sua renovação de assinatura.')
+        ]);
+    }
 
 // Adapte o webhook para assinaturas
 
-public function webhook(Request $request)
-{
-    Log::info('=== MercadoPago Webhook RECEBIDO11 ===');
+    public function webhook(Request $request)
+    {
+    Log::info('=== Webhook RECEBIDO ===');
     Log::info('Webhook Headers:', $request->headers->all());
     Log::info('Webhook Body:', $request->all());
 
+    // Webhook Asaas
+    if ($request->has('event') && $request->has('payment')) {
+        $asaasPaymentId = $request->input('payment.id');
+        $asaasStatus = $request->input('payment.status');
+        $event = $request->input('event');
+        
+        Log::info('Webhook Asaas:', [
+            'asaas_payment_id' => $asaasPaymentId, 
+            'asaas_status' => $asaasStatus,
+            'event' => $event
+        ]);
+        
+        if ($asaasPaymentId) {
+            // Buscar por asaas_payment_id
+            $payment = PagByPayment::where('asaas_payment_id', $asaasPaymentId)->first();
+            // Se não encontrar, buscar por external_id = paymentLink
+            if (!$payment && $request->input('payment.paymentLink')) {
+                $payment = PagByPayment::where('external_id', $request->input('payment.paymentLink'))->first();
+                // Se encontrar, atualizar o asaas_payment_id
+                if ($payment) {
+                    $payment->asaas_payment_id = $asaasPaymentId;
+                }
+            }
+            if ($payment) {
+                $oldStatus = $payment->status;
+                $payment->status = $asaasStatus;
+                $payment->save();
+                Log::info('Pagamento atualizado via webhook Asaas', [
+                    'payment_id' => $payment->id,
+                    'old_status' => $oldStatus,
+                    'new_status' => $asaasStatus
+                ]);
+                // Enviar e-mail apenas se mudou de não-aprovado para aprovado
+                if (in_array($asaasStatus, ['RECEIVED', 'PAID', 'CONFIRMED']) && !in_array(strtoupper($oldStatus), ['RECEIVED', 'PAID', 'CONFIRMED'])) {
+                    $contact = \App\Models\Contact::find($payment->contact_id);
+                    if ($contact && $contact->email) {
+                        try {
+                            // Se é o primeiro pagamento aprovado, enviar boas-vindas
+                            if ($payment->created_at->eq($payment->updated_at) || in_array(strtolower($oldStatus), ['pending', 'aguardando', ''])) {
+                                \Mail::to($contact->email)->send(new \App\Mail\WelcomeSubscriptionMail($contact, $payment->plan));
+                                Log::info('E-mail de boas-vindas enviado para ' . $contact->email);
+                            } else {
+                                // Renovação
+                                \Mail::to($contact->email)->send(new \App\Mail\SubscriptionRenewedMail($contact, $payment->plan));
+                                Log::info('E-mail de renovação enviado para ' . $contact->email);
+                            }
+                        } catch (\Exception $e) {
+                            Log::error('Erro ao enviar e-mail de assinatura: ' . $e->getMessage());
+                        }
+                    }
+                }
+                if (in_array($asaasStatus, ['RECEIVED', 'CONFIRMED']) && str_starts_with($payment->tenant_id, 'temp_')) {
+                    Log::info('💰 Pagamento APROVADO! Tenant NÃO será criado automaticamente. Aguardando onboarding manual.', [
+                        'payment_id' => $payment->id,
+                        'contact_id' => $payment->contact_id,
+                        'tenant_id_atual' => $payment->tenant_id
+                    ]);
+                    Log::notice('⚠️ Atenção: Realize o onboarding manual do tenant após aprovação do pagamento.', [
+                        'payment_id' => $payment->id,
+                        'contact_id' => $payment->contact_id,
+                        'tenant_id_atual' => $payment->tenant_id
+                    ]);
+                    // $this->criarTenantAposAprovacao($payment); // Automação desativada para onboarding manual
+                }
+            } else {
+                Log::warning('Pagamento não encontrado para asaas_payment_id nem paymentLink', [
+                    'asaas_payment_id' => $asaasPaymentId,
+                    'paymentLink' => $request->input('payment.paymentLink')
+                ]);
+            }
+        }
+        return response('OK', 200);
+    }
+
+    // Webhook MercadoPago (legado)
     $type = $request->input('type');
     $dataId = $request->input('data.id');
 
     if ($type === 'preapproval' && $dataId) {
-        try {
-            $accessToken = config('services.pagby.access_token');
-            $url = 'https://api.mercadopago.com/v1/preapproval/' . $dataId;
-
-            $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $url);
-            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Authorization: Bearer ' . $accessToken,
-                'Content-Type: application/json'
-            ]);
-
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            Log::info('📦 Resposta webhook assinatura:', [
-                'http_code' => $httpCode,
-                'preapproval_id' => $dataId
-            ]);
-
-            if ($httpCode === 200) {
-                $mpSubscription = json_decode($response, true);
-
-                Log::info('💰 Assinatura recebida via webhook:', [
-                    'mp_id' => $mpSubscription['id'],
-                    'status' => $mpSubscription['status'],
-                    'external_reference' => $mpSubscription['external_reference'] ?? 'não definido'
-                ]);
-
-                // Buscar assinatura local pelo external_reference
-                if (isset($mpSubscription['external_reference']) &&
-                    strpos($mpSubscription['external_reference'], 'pagby-subscription-') === 0) {
-
-                    $paymentId = str_replace('pagby-subscription-', '', $mpSubscription['external_reference']);
-                    $payment = PagByPayment::find($paymentId);
-
-                    if ($payment) {
-                        $payment->status = $mpSubscription['status'];
-                        $payment->mp_payment_id = $mpSubscription['id'];
-                        $externalReference = 'pagby-subscription-' . $payment->id;
-                        $payment->external_reference = $externalReference;
-                        $payment->save();
-
-                        // Atualiza o status do tenant se pagamento aprovado/authorized
-                        if (in_array($payment->status, ['authorized', 'approved'])) {
-                            $tenant = Tenant::on('mysql')->find($payment->tenant_id);
-                            if ($tenant) {
-                                $tenant->subscription_status = 'active';
-                                $tenant->save();
-                                Log::info('Tenant ativado via webhook:', [
-                                    'tenant_id' => $tenant->id,
-                                    'tenant_name' => $tenant->name
-                                ]);
-                            }
-                        }
-
-                        Log::info('✅ Assinatura atualizada via webhook:', [
-                            'local_id' => $payment->id,
-                            'new_status' => $payment->status,
-                            'mp_id' => $mpSubscription['id']
-                        ]);
-                    } else {
-                        Log::warning('⚠️ Assinatura local não encontrada:', ['payment_id' => $paymentId]);
-                    }
-                }
-            }
-
-        } catch (\Exception $e) {
-            Log::error('❌ Erro no webhook assinatura:', [
-                'error' => $e->getMessage(),
-                'data_id' => $dataId
-            ]);
-        }
+        // ...existing code for MercadoPago webhook...
     }
 
     return response('OK', 200);
-}
- 
+    }
+    
 
 
 
+    /**
+     * Cria o tenant automaticamente após aprovação do pagamento
+     */
+    private function criarTenantAposAprovacao(PagByPayment $payment)
+    {
+        // Buscar o contato associado
+        $contact = Contact::find($payment->contact_id);
+        if (!$contact) {
+            Log::error('❌ Contato não encontrado para criar tenant', [
+                'payment_id' => $payment->id,
+                'contact_id' => $payment->contact_id
+            ]);
+            return;
+        }
+        
+        // Verificar se o tenant já foi criado
+        if (!str_starts_with($payment->tenant_id, 'temp_')) {
+            Log::info('✅ Tenant já foi criado anteriormente', [
+                'tenant_id' => $payment->tenant_id
+            ]);
+            return;
+        }
+        
+        Log::info('🏗️ Criando tenant para:', [
+            'tenant_name' => $contact->tenant_name,
+            'owner_name' => $contact->owner_name,
+            'email' => $contact->email
+        ]);
+        
+        try {
+            // Criar slug único para o tenant
+            $baseSlug = \Illuminate\Support\Str::slug($contact->tenant_name);
+            $slug = $baseSlug;
+            $counter = 1;
+            
+            while (\App\Models\Tenant::where('id', $slug)->exists()) {
+                $slug = $baseSlug . $counter;
+                $counter++;
+            }
+            
+            // Criar o tenant
+            $tenant = \App\Models\Tenant::create([
+                'id' => $slug,
+                'name' => $contact->tenant_name,
+                'email' => $contact->email,
+                'phone' => $contact->phone,
+                'fantasy_name' => $contact->tenant_name,
+                'cnpj' => $contact->cpf, // Usando CPF como CNPJ temporário
+                'type' => $this->mapContactTypeToTenantType($contact->tipo ?? 'Barbearia'),
+                'subscription_status' => 'active', // Ativo após pagamento
+                'subscription_plan' => $payment->plan ?? 'basico',
+                'trial_ends_at' => null, // Sem trial, já pagou
+                'subscription_start' => now(),
+                'subscription_end' => now()->addMonth(), // 1 mês de assinatura
+                'employee_count' => $payment->employee_count ?? 1,
+                'is_blocked' => false,
+            ]);
+            
+            // Criar domínio para o tenant
+            $domain = $slug . '.' . config('app.domain', 'localhost');
+            $tenant->domains()->create([
+                'domain' => $domain
+            ]);
+            
+            // Atualizar o pagamento com o tenant_id real
+            $payment->tenant_id = $tenant->id;
+            $payment->save();
+            
+            Log::info('✅ Tenant criado com sucesso!', [
+                'tenant_id' => $tenant->id,
+                'domain' => $domain,
+                'payment_id' => $payment->id
+            ]);
+            
+            // Enviar email de boas-vindas (opcional)
+            // Mail::to($contact->email)->send(new TenantCreated($tenant, $contact));
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao criar tenant:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payment_id' => $payment->id
+            ]);
+            throw $e;
+        }
+    }
+    
     private function updatePaymentFromMercadoPagoObject(PagByPayment $payment, $mpPayment)
     {
         $payment->status = $mpPayment->status;
@@ -496,11 +809,21 @@ public function webhook(Request $request)
         Log::info('Request completo:', $request->all());
 
         $paymentId = $request->get('external_reference');
-        
-
+        $payment = null;
+        $planName = null;
+        $clientName = null;
+        if ($paymentId) {
+            $payment = \App\Models\PagByPayment::find($paymentId);
+            $planName = $payment ? $payment->plan : null;
+            if ($payment && $payment->contact_id) {
+                $contact = \App\Models\Contact::find($payment->contact_id);
+                $clientName = $contact ? ($contact->tenant_name ?? $contact->owner_name ?? $contact->name ?? 'Cliente') : null;
+            }
+        }
         return view('pagby-subscription.success', [
             'payment_id' => $paymentId ?? session('payment_id'),
-            'tenant_name' => session('tenant_name')
+            'tenant_name' => $clientName ?? session('tenant_name'),
+            'plan_name' => $planName
         ]);
     }
 
@@ -543,236 +866,125 @@ public function webhook(Request $request)
         ]);
     }
 
-public function checkStatus($paymentId)
-{
-    $payment = PagByPayment::on('mysql')->find($paymentId); // Corrigir nome da classe
+    public function checkStatus($paymentId)
+    {
+        $payment = PagByPayment::on('mysql')->find($paymentId);
+        if (!$payment) {
+            Log::error('Pagamento não encontrado para checkStatus:', ['payment_id' => $paymentId]);
+            return response()->json(['error' => 'Payment not found'], 404);
+        }
 
-    if (!$payment) {
-        Log::error('Pagamento não encontrado para checkStatus:', ['payment_id' => $paymentId]);
-        return response()->json(['error' => 'Payment not found'], 404);
-    }
+        // Se for cobrança Asaas
+        if ($payment->asaas_payment_id) {
+            $asaasService = new \App\Services\AsaasService();
+            $asaas = $asaasService->consultarCobranca($payment->asaas_payment_id);
+            if ($asaas) {
+                $payment->status = $asaas['status'] ?? $payment->status;
+                $payment->save();
+                return response()->json([
+                    'status' => $payment->status,
+                    'asaas_payment_id' => $payment->asaas_payment_id,
+                    'payment_id' => $payment->id,
+                    'updated_at' => $payment->updated_at->toISOString(),
+                    'asaas_status' => $asaas['status'] ?? null,
+                    'asaas' => $asaas
+                ]);
+            } else {
+                return response()->json([
+                    'status' => $payment->status,
+                    'asaas_payment_id' => $payment->asaas_payment_id,
+                    'payment_id' => $payment->id,
+                    'updated_at' => $payment->updated_at->toISOString(),
+                    'asaas_status' => null,
+                    'asaas' => null
+                ]);
+            }
+        }
 
-    Log::info('🔍 Verificando status da assinatura:', [
-        'payment_id' => $paymentId,
-        'current_status' => $payment->status,
-        'external_id' => $payment->external_id,
-        'mp_payment_id' => $payment->mp_payment_id
-    ]);
-
-    // Tentar primeiro com external_id, depois com mp_payment_id
-    $preapprovalId = $payment->external_id ?? $payment->mp_payment_id;
-
-    if (!$preapprovalId || strpos($preapprovalId, 'temp_') !== false) {
-        Log::warning('ID da assinatura não disponível ou temporário:', ['preapproval_id' => $preapprovalId]);
+        // Fallback: MercadoPago (antigo)
+        Log::info('🔍 Verificando status da assinatura:', [
+            'payment_id' => $paymentId,
+            'current_status' => $payment->status,
+            'external_id' => $payment->external_id,
+            'mp_payment_id' => $payment->mp_payment_id
+        ]);
         return response()->json([
             'status' => $payment->status,
             'external_id' => $payment->external_id,
             'mp_payment_id' => $payment->mp_payment_id,
-            'message' => 'Aguardando ID da assinatura'
+            'payment_id' => $payment->id,
+            'updated_at' => $payment->updated_at->toISOString()
         ]);
     }
 
-    try {
-        $accessToken = config('services.pagby.access_token');
-        $url = 'https://api.mercadopago.com/preapproval/' . $preapprovalId;
-
-        Log::info('Consultando MercadoPago:', ['url' => $url]);
-
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $url,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                'Authorization: Bearer ' . $accessToken,
-                'Content-Type: application/json',
-                'User-Agent: PagBy/1.0'
-            ],
-            CURLOPT_TIMEOUT => 30,
-            CURLOPT_SSL_VERIFYPEER => true
-        ]);
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlError = curl_error($ch);
-        curl_close($ch);
-
-        Log::info('📊 Resposta MercadoPago:', [
-            'http_code' => $httpCode,
-            'preapproval_id' => $preapprovalId,
-            'curl_error' => $curlError
-        ]);
-
-        if ($httpCode === 200 && $response) {
-            $mpSubscription = json_decode($response, true);
-
-            if (isset($mpSubscription['id']) && isset($mpSubscription['status'])) {
-                $oldStatus = $payment->status;
-                $payment->status = $mpSubscription['status'];
-                $payment->mp_payment_id = $mpSubscription['id'];
-                
-                // Atualizar external_id se estiver vazio
-                if (!$payment->external_id) {
-                    $payment->external_id = $mpSubscription['id'];
-                }
-                
-                $payment->save();
-
-                // Desbloqueia o tenant se status for authorized ou approved
-                if ($payment->status === 'authorized' || $payment->status === 'approved') {
-                    $tenant = Tenant::on('mysql')->find($payment->tenant_id);
-                    if ($tenant && $tenant->is_blocked) {
-                        $tenant->is_blocked = false;
-                        $tenant->save();
-                        Log::info('Tenant desbloqueado via checkStatus:', [
-                            'tenant_id' => $tenant->id,
-                            'tenant_name' => $tenant->name
-                        ]);
-                    }
-                }
-
-                Log::info('✅ Status atualizado com sucesso:', [
-                    'payment_id' => $payment->id,
-                    'old_status' => $oldStatus,
-                    'new_status' => $payment->status,
-                    'mp_payment_id' => $payment->mp_payment_id
-                ]);
-            } else {
-                Log::warning('Resposta incompleta do MercadoPago:', $mpSubscription);
-            }
-        } else {
-            Log::error('Erro na consulta ao MercadoPago:', [
-                'http_code' => $httpCode,
-                'response' => $response,
-                'curl_error' => $curlError
-            ]);
+    public function debugPayment($paymentId)
+    {
+        $payment = PagByPayment::find($paymentId);
+        
+        if (!$payment) {
+            return response()->json(['error' => 'Payment not found'], 404);
         }
 
-    } catch (\Exception $e) {
-        Log::error('❌ Exceção ao consultar MercadoPago:', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ]);
+        $debugInfo = [
+            'payment' => [
+                'id' => $payment->id,
+                'tenant_id' => $payment->tenant_id,
+                'contact_id' => $payment->contact_id,
+                'external_id' => $payment->external_id,
+                'mp_payment_id' => $payment->mp_payment_id,
+                'status' => $payment->status,
+                'plan' => $payment->plan,
+                'amount' => $payment->amount,
+                'created_at' => $payment->created_at,
+                'updated_at' => $payment->updated_at
+            ],
+            'session' => [
+                'payment_id' => session('payment_id'),
+                'checkout_url' => session('checkout_url'),
+                'tenant_name' => session('tenant_name')
+            ]
+        ];
+                Log::info('📄 PagByPayment criado:', [
+                    'payment_id' => $payment->id,
+                    'amount' => $payment->amount,
+                    'plan' => $payment->plan
+                ]);
+
+                // Redireciona para a página de espera (wait) com o paymentId
+                return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
     }
 
-    return response()->json([
-        'status' => $payment->status,
-        'external_id' => $payment->external_id,
-        'mp_payment_id' => $payment->mp_payment_id,
-        'payment_id' => $payment->id,
-        'updated_at' => $payment->updated_at->toISOString()
-    ]);
-}
-
-public function debugPayment($paymentId)
-{
-    $payment = PagByPayment::find($paymentId);
-    
-    if (!$payment) {
-        return response()->json(['error' => 'Payment not found'], 404);
-    }
-
-    $debugInfo = [
-        'payment' => [
-            'id' => $payment->id,
-            'tenant_id' => $payment->tenant_id,
-            'contact_id' => $payment->contact_id,
-            'external_id' => $payment->external_id,
-            'mp_payment_id' => $payment->mp_payment_id,
-            'status' => $payment->status,
-            'plan' => $payment->plan,
-            'amount' => $payment->amount,
-            'created_at' => $payment->created_at,
-            'updated_at' => $payment->updated_at
-        ],
-        'session' => [
-            'payment_id' => session('payment_id'),
-            'checkout_url' => session('checkout_url'),
-            'tenant_name' => session('tenant_name')
-        ]
-    ];
-
-    Log::info('🔧 Debug Payment Info:', $debugInfo);
-
-    return response()->json($debugInfo);
-}
-
-public function wait($paymentId)
-{
+    public function waitRenew($paymentId)
+    {
     $payment = PagByPayment::on('mysql')->find($paymentId); // Corrigir nome da classe
-    
-    
-    if (!$payment) {
 
-        Log::error('Pagamento não encontrado na página wait:', ['payment_id' => $paymentId]);
-        abort(404, 'Pagamento não encontrado');
-    }
-    
-    $checkoutUrl = session('checkout_url');
-    
-    // Buscar dados do contato usando o contact_id do pagamento
-    $contact = Contact::find(str_replace('temp_', '', $payment->tenant_id));
 
-   
-    if (!$contact) {
-        $contact = Contact::on('mysql')->find($payment->contact_id);
-        Log::warning('Contato não encontrado para o pagamento:', ['payment_id' => $paymentId, 'contact_id' => $payment->contact_id]);
-    }
-    
-    $plans = [
-        'basico' => ['name' => 'Plano Básico', 'price' => 29.90], // Corrigir chaves
-        'premium' => ['name' => 'Plano Premium', 'price' => 59.90]
-    ];
-    
-    $plan = $plans[$payment->plan] ?? ['name' => 'Plano ' . $payment->plan, 'price' => 0];
-    
-    Log::info('Página de aguarde acessada:', [
-        'payment_id' => $paymentId,
-        'checkout_url' => $checkoutUrl ? 'presente' : 'ausente',
-        'contact_name' => $contact ? $contact->tenant_name : 'N/A',
-        'plan_name' => $plan['name'],
-        'payment_status' => $payment->status
-    ]);
-    
-    return view('pagby-subscription.wait', [
-        'payment' => $payment,
-        'checkout_url' => $checkoutUrl,
-        'payment_id' => $paymentId,
-        'tenant_name' => $contact ? $contact->tenant_name : 'Não informado',
-        'plan_name' => $plan['name']
-    ]);
-}
 
-public function waitRenew($paymentId)
-{
-    $payment = PagByPayment::on('mysql')->find($paymentId); // Corrigir nome da classe
-    
-    
-    
     if (!$payment) {
 
         Log::error('Pagamento não encontrado na página waitRenew:', ['payment_id' => $paymentId]);
         abort(404, 'Pagamento não encontrado');
     }
-    
+
     $checkoutUrl = session('checkout_url');
- 
-    
+
+
     // Buscar dados do contato usando o contact_id do pagamento
     $contact = Contact::on('mysql')->find($payment->contact_id);
-   
+
     if (!$contact) {
         
         Log::warning('Contato não encontrado para o pagamento:', ['payment_id' => $paymentId, 'contact_id' => $payment->contact_id]);
     }
-    
-    
+
+
     $plans = [
         'basico' => ['name' => 'Plano Básico', 'price' => 29.90], // Corrigir chaves
         'premium' => ['name' => 'Plano Premium', 'price' => 59.90]
     ];
-    
+
     $plan = $plans[$payment->plan] ?? ['name' => 'Plano ' . $payment->plan, 'price' => 0];
-    
+
     Log::info('Página de aguarde acessada:', [
         'payment_id' => $paymentId,
         'checkout_url' => $checkoutUrl ? 'presente' : 'ausente',
@@ -780,7 +992,7 @@ public function waitRenew($paymentId)
         'plan_name' => $plan['name'],
         'payment_status' => $payment->status
     ]);
-    
+
     return view('tenant-assinatura.waitRenew', [
         'payment' => $payment,
         'checkout_url' => $checkoutUrl,
@@ -789,4 +1001,73 @@ public function waitRenew($paymentId)
         'plan_name' => $plan['name']
     ]);
 }
+
+    /**
+     * Endpoint para simular webhook do Asaas em ambiente de desenvolvimento
+     * USO: GET /pagby-subscription/simulate-webhook/{payment_id}
+     */
+    public function simulateAsaasWebhook($paymentId)
+    {
+        if (!app()->environment(['local', 'development'])) {
+            abort(403, 'Disponível apenas em ambiente de desenvolvimento');
+        }
+        
+        $payment = PagByPayment::on('mysql')->find($paymentId);
+        if (!$payment) {
+            return response()->json(['error' => 'Pagamento não encontrado'], 404);
+        }
+        
+        // Simular payload do webhook do Asaas
+        $webhookPayload = [
+            'event' => 'PAYMENT_RECEIVED',
+            'payment' => [
+                'id' => $payment->external_id ?? 'pay_' . uniqid(),
+                'status' => 'RECEIVED', // Status de pagamento aprovado
+                'customer' => $payment->contact_id,
+                'value' => $payment->amount,
+                'netValue' => $payment->amount * 0.95,
+                'billingType' => 'CREDIT_CARD',
+                'confirmedDate' => now()->toISOString(),
+            ]
+        ];
+        
+        Log::info('🧪 Simulando webhook Asaas para teste', [
+            'payment_id' => $paymentId,
+            'payload' => $webhookPayload
+        ]);
+        
+        // Chamar o webhook internamente
+        $request = Request::create(
+            route('pagby-subscription.webhook'),
+            'POST',
+            $webhookPayload
+        );
+        
+        $response = $this->webhook($request);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Webhook simulado com sucesso',
+            'payment_id' => $paymentId,
+            'new_status' => $payment->fresh()->status,
+            'tenant_created' => !str_starts_with($payment->fresh()->tenant_id, 'temp_'),
+            'tenant_id' => $payment->fresh()->tenant_id,
+            'payload' => $webhookPayload,
+            'webhook_response' => $response->getStatusCode()
+        ]);
+    }
+    
+    /**
+     * Mapeia o tipo do Contact para o tipo do Tenant
+     */
+    private function mapContactTypeToTenantType(?string $contactType): string
+    {
+        $map = [
+            'Barbearia' => 'barbearia',
+            'Salão de Beleza' => 'salao_beleza',
+            'Outro' => 'barbearia', // Default
+        ];
+        
+        return $map[$contactType] ?? 'barbearia';
+    }
 }

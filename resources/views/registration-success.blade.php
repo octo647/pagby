@@ -16,30 +16,12 @@
                 
                 <!-- Mostrar plano selecionado se existir -->
                
-                <div class="bg-gradient-to-r from-pink-500 to-indigo-500 text-white rounded-lg p-4 mb-6 shadow">
-                    <h3 class="text-lg font-semibold mb-2">
-                        🎉 Bem-vindo ao seu <span class="underline">período de teste grátis de 30 dias</span>!
-                    </h3>
-                    <p class="text-white/90 text-sm">
-                        Aproveite todas as funcionalidades do PagBy sem compromisso. 
-                </div>
-                
+                               
 
                 <div class="text-gray-600 mb-8">
-                    <p class="mb-4">✅ Seu negócio foi registrado com sucesso em nossa plataforma!</p>
-                    <p class="mb-4">📧 Você receberá um email/whatsapp de confirmação em breve.</p>
+                    <p class="mb-4">✅ Seu negócio foi registrado com sucesso em nossa plataforma!</p>       
                     
-                    @if(isset($selected_plan) && $selected_plan === 'trial')
-                        <p class="text-sm font-medium text-gray-700">
-                            ⏳ Em breve você receberá instruções para aproveitar ao máximo seu período de teste.
-                        </p>
-                    @elseif(isset($selected_plan))
-                        <p class="text-sm font-medium text-gray-700">
-                            🚀 Próximo passo: Finalizar assinatura do plano {{ ucfirst($selected_plan) }}
-                        </p>
-                    @else
-                        <p class="text-sm">🏢 Nossa equipe entrará em contato para configurar seu sistema.</p>
-                    @endif
+                    
                 </div>
 
                 <!-- Próximos passos -->
@@ -47,7 +29,7 @@
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                     <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
                     <ol class="text-blue-700 text-sm text-left space-y-1">
-                        <li><strong>1.</strong> Ativação do sistema após aceitação dos termos</li>
+                        <li><strong>1.</strong> Assinar o plano PagBy</li>
 
                         <li><strong>2.</strong> Configuração do sistema</li>
                         <li><strong>3.</strong> Aproveitar 30 dias grátis de todas as funcionalidades</li>
@@ -59,7 +41,7 @@
                     <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
                     <ol class="text-blue-700 text-sm text-left space-y-1">
                         <li><strong>1.</strong> Finalizar pagamento da assinatura</li>
-                        <li><strong>2.</strong> Ativação automática do sistema</li>
+                        <li><strong>2.</strong> Ativação do sistema </li>
                         <li><strong>3.</strong> Receber dados de acesso por email</li>
                         <li><strong>4.</strong> Começar a usar o PagBy!</li>
                     </ol>
@@ -75,20 +57,11 @@
                             Ir para o Início
                         </a>
                     @elseif(isset($selected_plan))
-                        <!-- Botão para finalizar assinatura -->
-                        <form action="{{ route('pagby-subscription.create') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="plan" value="{{ $selected_plan }}">
-                            <input type="hidden" name="tenant_id" value="temp-{{ $contact_id ?? time() }}">
-                            <button type="submit" 
-                                    class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200">
-                                <i class="fas fa-credit-card mr-2"></i>
-                                Finalizar Assinatura {{ ucfirst($selected_plan) }}
-                            </button>
-                        </form>
-                        <a href="{{ route('home') }}" 
-                           class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 block text-center transition-colors">
-                            ← Voltar ao Início
+                        <!-- Botão para ir para pagamento -->
+                        <a href="{{ route('registration-finalize') }}"
+                           class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200">
+                            <i class="fas fa-credit-card mr-2"></i>
+                            Finalizar Assinatura {{ ucfirst($selected_plan) }}
                         </a>
                     @else
                         <!-- Se não tem plano, mostrar opções -->
@@ -96,10 +69,6 @@
                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 block text-center transition-all">
                             <i class="fas fa-star mr-2"></i>
                             Escolher Plano de Assinatura
-                        </a>
-                        <a href="{{ route('home') }}" 
-                           class="w-full bg-gray-200 text-gray-800 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50 block text-center transition-colors">
-                            Voltar ao Início
                         </a>
                     @endif
                 </div>
@@ -123,7 +92,7 @@
                     <p class="text-sm text-gray-500 mb-2">❓ Precisa de ajuda?</p>
                     <div class="text-sm text-gray-600">
                         <p><a href="mailto:suportepagby@gmail.com" class="text-blue-500">📧 Email: suportepagby@gmail.com</a></p>
-                        <p><a href="https://wa.me/5532987007302" class="text-blue-500">📱 WhatsApp: (32) 98700-7302</a></p>
+                        <p><a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="text-blue-500">📱 WhatsApp: {{ config('pagby.whatsapp_display') }}</a></p>
                     </div>
                 </div>
 

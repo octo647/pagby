@@ -126,14 +126,7 @@ class ControlePagamento extends Component
 
     public function render()
     {
-        return view('livewire.proprietario.controle-pagamento', [
-            'branches' => $this->branches,
-            'funcionarios' => $this->funcionarios,
-            'pagamentos' => $this->pagamentos,
-            'periodoSelecionado' => $this->periodoSelecionado,
-            'dataInicio' => $this->dataInicio,
-            'dataFim' => $this->dataFim,
-        ]);
+        return view('livewire.proprietario.controle-pagamento');
     }
 }
 
