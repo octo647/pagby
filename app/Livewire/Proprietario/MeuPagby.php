@@ -16,6 +16,7 @@ class MeuPagby extends Component {
     public $proximoVencimento;
     public $isBlocked;
     public $criado_em;
+    public $employeeCount;
 
     public function mount()
     {
@@ -27,23 +28,38 @@ class MeuPagby extends Component {
         
         $tenant = null;
         if ($domain && $domain->tenant_id) {
-            $tenant = PagByPayment::on('mysql')->where('tenant_id', $domain->tenant_id)->first();  
+            $tenant = PagByPayment::on('mysql')->where('tenant_id', $domain->tenant_id)->latest()->first();  
            
                 
         }
+        
+        
 
         if ($tenant) {
             $this->planoAtual = $tenant->plan;
+            $this->employeeCount = $tenant->employee_count;
             $this->statusPagamento = $tenant->status;
             $this->criado_em = $tenant->created_at;
+            if($this->planoAtual === 'mensal'){
             $this->proximoVencimento = $this->criado_em ->addMonth();
+            } elseif ($this->planoAtual === 'trimestral'){
+                $this->proximoVencimento = $this->criado_em ->addMonths(3);
+            } elseif ($this->planoAtual === 'semestral'){
+                $this->proximoVencimento = $this->criado_em ->addMonths(6);
+            } elseif ($this->planoAtual === 'anual'){
+                $this->proximoVencimento = $this->criado_em ->addYear();
+            } else {
+                $this->proximoVencimento = null;
+            }
             $this->isBlocked = null;
         } else {
             $this->planoAtual = null;
+            $this->employeeCount = null;
             $this->statusPagamento = null;
             $this->proximoVencimento = null;
             $this->isBlocked = null;
         }
+        
     }
     public function cancelarAssinatura()
     {
@@ -62,10 +78,9 @@ class MeuPagby extends Component {
             // Buscar pagamento ativo do tenant
             $pagamento = PagByPayment::on('mysql')
                 ->where('tenant_id', $tenant->id)
-                ->whereIn('status', ['authorized', 'approved', 'pending'])
+                ->whereIn('status', ['RECEIVED', 'approved', 'pending'])
                 ->orderByDesc('id')
                 ->first();
-               
 
             if ($pagamento && $pagamento->external_id) {
                 // Cancelar assinatura no MercadoPago
@@ -128,6 +143,10 @@ class MeuPagby extends Component {
             $this->proximoVencimento = null;
             $this->isBlocked = null;
         }
+    }
+     public function verOutrosPlanos()
+    {
+        return redirect()->route('pagby-subscription.escolher-plano', ['plan' => 'trimestral']);
     }
 
     public function render()

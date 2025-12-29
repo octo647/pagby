@@ -32,7 +32,7 @@ foreach (config('tenancy.central_domains') as $domain) {
         // CORRIGIR: Escolher plano (nome correto da rota)
         Route::get('/escolher-plano/{plan}', [PagBySubscriptionController::class, 'choosePlan'])
              ->name('pagby-subscription.choose-plan')
-             ->where('plan', 'basico|premium');
+             ->where('plan', 'mensal|trimestral|semestral|anual');
         
         Route::get('/funcionalidades', function () {
             return view('funcionalidades');
@@ -40,7 +40,7 @@ foreach (config('tenancy.central_domains') as $domain) {
         
         
         // CORRIGIR: ASSINATURAS PAGBY (nomes corretos)
-        Route::prefix('pagby-subscription')->name('pagby-subscription.')->group(function () {
+        Route::prefix('pagby-subscription')->name('pagby-subscription.')->group(function () {   
             Route::get('/payment', [PagBySubscriptionController::class, 'showPaymentForm'])->name('payment');
             Route::post('/payment', [PagBySubscriptionController::class, 'processPayment'])->name('payment.process');
             Route::post('/asaas-pay/{paymentId}', [PagBySubscriptionController::class, 'asaasPay'])->name('asaas-pay');

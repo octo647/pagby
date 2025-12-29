@@ -30,62 +30,47 @@
         
 
 
-        <!-- NOVO PLANO ÚNICO -->
+        <!-- NOVO SISTEMA DE PLANOS PAGBY -->
         <div class="fade-in mt-16 max-w-3xl w-full mx-auto">
             <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-8 mb-8 text-center">
-                <div class="text-6xl font-bold text-gray-900 mb-2">
-                    <span class="text-6xl font-bold text-gray-900 mb-2">R$ {{ number_format($tenant->getCurrentPricePerEmployee(), 2, ',', '.') }}<span class="text-2xl text-gray-600">/mês</span></span>
-                    @if($tenant->getCurrentPricePerEmployee() < config('pricing.base_price_per_employee'))
-                        <div class="text-lg text-green-600 font-bold mt-2">Promoção: R$ {{ number_format(config('pricing.promo_price_first_year'), 2, ',', '.') }} por funcionário/mês no 1º ano!</div>
-                    @endif
-                </div>
-                <p class="text-xl text-gray-700">por funcionário</p>
-                <p class="text-sm text-gray-600 mt-2">Simples assim. Sem taxas ocultas.</p>
+                <h2 class="text-3xl font-bold text-gray-900 mb-2">Escolha seu plano Pagby</h2>
+                <p class="text-lg text-gray-700 mb-4">Selecione a periodicidade e o número de funcionários para ver o valor do plano.</p>
             </div>
             <div class="bg-white rounded-lg shadow-xl p-8 mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Escolha o número de funcionários</h2>
-            
-                <form action="{{ route('pagby-subscription.select-plan') }}" method="POST" class="space-y-6" id="subscription-form">
+                <form id="form-plano" class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end" method="POST" action="{{ route('tenant.renew') }}">
                     @csrf
+                    <input type="hidden" name="plan" id="plan" value="mensal">
+                    <input type="hidden" name="tenant_id" value="{{ $tenant->id }}">
                     <div>
-                        <label for="employee_count" class="block text-sm font-medium text-gray-700 mb-2">
-                            Quantos funcionários você tem?
-                        </label>
-                        <select id="employee_count" name="employee_count" 
-                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                                onchange="updatePrice(this.value)">
-                            @for($i = 1; $i <= 20; $i++)
-                                <option value="{{ $i }}" {{ $tenant->employee_count == $i ? 'selected' : '' }}>
-                                    {{ $i }} funcionário{{ $i > 1 ? 's' : '' }}
-                                </option>
-                            @endfor
-                            <option value="20">Mais de 20 funcionários (entre em contato)</option>
+                        <label for="periodicidade" class="block font-bold mb-2 text-gray-800">Periodicidade</label>
+                        <select id="periodicidade" name="periodicidade" class="w-40 px-2 py-2 rounded-md border border-gray-300 text-gray-800 bg-white focus:ring-pink-500 focus:border-pink-500 text-base">
+                            <option value="mensal">Mensal</option>
+                            <option value="trimestral">Trimestral</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
                         </select>
-                        <input type="hidden" id="employee_count_hidden" name="employee_count_hidden" value="{{ $tenant->employee_count }}">
                     </div>
-                    <div class="bg-blue-50 rounded-lg p-6 border-2 border-blue-200">
-                        <div class="flex justify-between items-center mb-4">
-                            <span class="text-lg text-gray-700">Valor mensal:</span>
-                            <span id="monthly-price" class="text-3xl font-bold text-blue-600">
-                                <span id="monthly-price">
-                                    R$ {{ number_format($tenant->employee_count * $tenant->getCurrentPricePerEmployee(), 2, ',', '.') }}
-                                    @if($tenant->getCurrentPricePerEmployee() < config('pricing.base_price_per_employee'))
-                                        <span class="text-base text-green-600">(promoção 1º ano)</span>
-                                    @endif
-                                </span>
-                            </span>
-                        </div>
-                        <div class="text-sm text-gray-600 space-y-1">
-                            <p>✓ <span id="employee-text">{{ $tenant->employee_count }} funcionário{{ $tenant->employee_count > 1 ? 's' : '' }}</span></p>
-                            <p>✓ Todos os recursos inclusos</p>
-                            <p>✓ Sem limite de agendamentos</p>
-                            <p>✓ Suporte prioritário</p>
-                        </div>
+                    <div>
+                        <label for="numFuncionarios" class="block font-bold mb-2 text-gray-800">Nº de Funcionários</label>
+                        <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="7" value="1" class="w-32 px-2 py-2 rounded-md border border-gray-300 text-gray-800 bg-white focus:ring-pink-500 focus:border-pink-500 text-base" />
                     </div>
-                    <button type="submit" 
-                            class="w-full py-4 px-6 rounded-lg font-semibold text-white bg-blue-600 hover:bg-blue-700 transition duration-200 text-lg">
-                        Reativar Assinatura
-                    </button>
+                    <div class="mt-8 text-center">
+                        <div id="avisoFuncionarios" class="hidden text-red-600 text-lg font-semibold mb-4">
+                            Para mais de 7 funcionários, consulte valores pelo WhatsApp <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-700" target="_blank">{{ config('pagby.whatsapp_display') }}</a>.
+                        </div>
+                        <div id="equivalenteMensalLabel" class="text-3xl font-extrabold text-blue-600 mb-2">
+                            Equivalente mensal:
+                        </div>
+                        <div id="valorPlano" class="text-5xl font-bold text-purple-700 mb-2">
+                            R$ 60,00/mês
+                        </div>
+                        <div id="valorTotalPlano" class="text-lg text-gray-700 mb-4">
+                            Valor total: R$ 60,00
+                        </div>
+                        <button type="submit" class="w-full py-4 px-6 rounded-lg font-semibold text-white bg-gradient-to-r from-pink-600 to-purple-600 hover:from-pink-700 hover:to-purple-700 transition duration-200 text-xl font-bold shadow-lg">
+                            Renovar assinatura
+                        </button>
+                    </div>
                 </form>
             </div>
             <div class="bg-white rounded-lg shadow-lg p-8">
@@ -115,33 +100,85 @@
         </div>
 
     <script>
-    function updatePrice(employeeCount) {
-        const pricePerEmployee = @json($tenant->getCurrentPricePerEmployee());
-        const basePrice = @json(config('pricing.base_price_per_employee'));
-        const promoPrice = @json(config('pricing.promo_price_first_year'));
-        let totalPrice = 0;
-        let promoText = '';
-        employeeCount = parseInt(employeeCount);
-        if (employeeCount > 0) {
-            totalPrice = employeeCount * pricePerEmployee;
-            if (pricePerEmployee < basePrice) {
-                promoText = ' (promoção 1º ano)';
-            } else {
-                promoText = '';
-            }
-        } else {
-            totalPrice = 0;
-            promoText = '';
+    document.addEventListener('DOMContentLoaded', function() {
+        const valorBase = {{ config('pricing.base_price_per_employee') }};
+        const acrescimoFuncionario = 0.30;
+        const descontos = {
+            'mensal': 0,
+            'trimestral': 0.20,
+            'semestral': 0.30,
+            'anual': 0.40
+        };
+        const meses = {
+            'mensal': 1,
+            'trimestral': 3,
+            'semestral': 6,
+            'anual': 12
+        };
+
+        function calcularPlano(numFuncionarios, periodicidade) {
+            let valor = valorBase *(1+(numFuncionarios-1)*acrescimoFuncionario);
+            let desconto = descontos[periodicidade] || 0;
+            let valorFinal = valor * (1 - desconto);
+            let total = valorFinal * (meses[periodicidade] || 1);
+            let equivalenteMensal = total / (meses[periodicidade] || 1);
+            return {
+                total: Number(total.toFixed(2)),
+                mensal: Number(equivalenteMensal.toFixed(2))
+            };
         }
-        document.getElementById('monthly-price').innerHTML =
-            'R$ ' + totalPrice.toFixed(2).replace('.', ',') + '<span class="text-base text-green-600">' + promoText + '</span>';
-        document.getElementById('employee-text').textContent =
-            employeeCount + ' funcionário' + (employeeCount > 1 ? 's' : '');
-        document.getElementById('employee_count_hidden').value = employeeCount;
-    }
-    // Garante que o valor selecionado seja enviado corretamente
-    document.getElementById('subscription-form').addEventListener('submit', function(e) {
-        document.getElementById('employee_count_hidden').value = document.getElementById('employee_count').value;
+
+        function atualizarValores() {
+            const periodicidade = document.getElementById('periodicidade').value;
+            const numFuncionariosInput = document.getElementById('numFuncionarios');
+            let numFuncionarios = parseInt(numFuncionariosInput.value) || 1;
+            const aviso = document.getElementById('avisoFuncionarios');
+            const equivalenteMensalLabel = document.getElementById('equivalenteMensalLabel');
+            const valorPlano = document.getElementById('valorPlano');
+            const valorTotalPlano = document.getElementById('valorTotalPlano');
+
+            if (numFuncionarios > 7) {
+                aviso.classList.remove('hidden');
+                equivalenteMensalLabel.style.display = 'none';
+                valorPlano.style.display = 'none';
+                valorTotalPlano.style.display = 'none';
+                numFuncionariosInput.value = 7;
+            } else {
+                aviso.classList.add('hidden');
+                valorPlano.style.display = '';
+                if (periodicidade === 'mensal') {
+                    equivalenteMensalLabel.style.display = 'none';
+                    valorTotalPlano.style.display = 'none';
+                    valorPlano.textContent = `R$ ${calcularPlano(numFuncionarios, periodicidade).mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/mês`;
+                } else {
+                    equivalenteMensalLabel.style.display = '';
+                    valorTotalPlano.style.display = '';
+                    const valores = calcularPlano(numFuncionarios, periodicidade);
+                    valorPlano.textContent = `R$ ${valores.mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/mês`;
+                    valorTotalPlano.textContent = `Valor total: R$ ${valores.total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
+                }
+            }
+        }
+
+        document.getElementById('numFuncionarios').addEventListener('change', atualizarValores);
+        document.getElementById('periodicidade').addEventListener('change', atualizarValores);
+        document.getElementById('numFuncionarios').addEventListener('input', atualizarValores);
+        
+        // Sincroniza o campo periodicidade com o input hidden plan
+        document.getElementById('periodicidade').addEventListener('change', function() {
+            document.getElementById('plan').value = this.value;
+        });
+        
+        atualizarValores();
+
+        // Ao submeter, bloqueia para mais de 7 funcionários
+        document.getElementById('form-plano').addEventListener('submit', function(e) {
+            const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value) || 1;
+            if (numFuncionarios > 7) {
+                e.preventDefault();
+                return false;
+            }
+        });
     });
     </script>
 </x-app-layout>

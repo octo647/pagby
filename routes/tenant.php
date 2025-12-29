@@ -28,55 +28,36 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
-    
-
-    //  ROTAS PÚBLICAS (SEM MIDDLEWARE)
-
-    // Rotas Google OAuth para tenants
+    // ROTAS PÚBLICAS (SEM MIDDLEWARE)
     Route::get('/auth/google', [\App\Http\Controllers\Auth\SocialController::class, 'redirectToGoogle'])->name('login.google');
     Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\SocialController::class, 'handleGoogleCallback'])->name('login.google.callback');
-
-    // Rotas de recuperação de senha (password reset)
     Route::get('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create']);
     Route::post('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store']);
     Route::get('reset-password/{token}', [\App\Http\Controllers\Auth\NewPasswordController::class, 'create']);
     Route::post('reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store']);
-    
-
     Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
-    
-    
     Route::post('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
-// Subscription routes (sempre disponíveis)
-    Route::get('/subscription/plans', [\App\Http\Controllers\TenantSubscriptionController::class, 'showPlans'])
-        ->name('tenant.subscription.plans');
-    Route::post('/subscription/select', [\App\Http\Controllers\TenantSubscriptionController::class, 'selectPlan'])
-        ->name('tenant.subscription.select');
-    Route::get('/subscription/success', [\App\Http\Controllers\TenantSubscriptionController::class, 'success'])
-        ->name('tenant.subscription.success');
-    Route::get('/subscription/blocked', [\App\Http\Controllers\TenantSubscriptionController::class, 'blocked'])
-        ->name('tenant.subscription.blocked');
-    Route::post('/trial/start', [\App\Http\Controllers\TenantSubscriptionController::class, 'startTrial'])
-        ->name('tenant.trial.start');
-    
+    // Subscription routes (sempre disponíveis)
+    Route::get('/subscription/plans', [\App\Http\Controllers\TenantSubscriptionController::class, 'showPlans'])->name('tenant.subscription.plans');
+    Route::post('/subscription/select', [\App\Http\Controllers\TenantSubscriptionController::class, 'selectPlan'])->name('tenant.subscription.select');
+    Route::get('/subscription/success', [\App\Http\Controllers\TenantSubscriptionController::class, 'success'])->name('tenant.subscription.success');
+    Route::get('/subscription/blocked', [\App\Http\Controllers\TenantSubscriptionController::class, 'blocked'])->name('tenant.subscription.blocked');
+    Route::post('/trial/start', [\App\Http\Controllers\TenantSubscriptionController::class, 'startTrial'])->name('tenant.trial.start');
 
-    //  ROTA HOME PÚBLICA
+    // ROTAS PROTEGIDAS (com bloqueio de assinatura)
     Route::middleware(['checkTenantSubscription'])->group(function () {
+        // Todas as rotas protegidas do tenant devem ser declaradas aqui!
         Route::get('/', function () {
             $tenant = tenant();
             $services = Service::all();
             if (!$tenant) {
                 abort(404, 'Tenant not found');
             }
-
             return view('tenants/' . ($tenant ? $tenant->id : 'default') . '/home', ['tenant' => $tenant, 'services' => $services]);
         })->name('tenant.home');
-    Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('login');
-    
-    Route::post('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
-        
-
-
+        Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('login');
+        Route::post('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
+        // ... todas as outras rotas protegidas já existentes ...
     });
     
     //Escolher o plano quando vem do link de bloqueio

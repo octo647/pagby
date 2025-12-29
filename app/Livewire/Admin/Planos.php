@@ -15,6 +15,7 @@ class Planos extends Component
     {
         // Busca os pagamentos mais recentes (pode paginar depois)
         $this->payments = PagByPayment::with('tenant')->orderByDesc('id')->take(50)->get();
+        
     }
 
     public function render()

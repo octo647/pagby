@@ -26,22 +26,22 @@
                     <div class="card-body text-center">
                         <div class="mb-4">
                             <h6>Quase lá! 🎉</h6>
-                            <p><strong>{{ $tenant_name }}</strong> </p>
-                            <p><strong>Plano:</strong> {{ $plan_name }}</p>
-                            <p><strong>Valor:</strong> R$ {{ number_format($payment->amount, 2, ',', '.') }}</p>
+                            <p><strong>{{ $tenant_name }}</strong> </p>      <p><strong>Plano:</strong> {{ $plan_name }}<br>
+                            <strong>Funcionários:</strong> {{ $employee_count }}<br>
+                            <strong>Valor:</strong> R$ {{ number_format($payment->amount, 2, ',', '.') }}</p>
                         </div>
                         
                         <div class="alert alert-info">
                             <strong>📋 Instruções:</strong><br>
                             1. Clique no botão verde abaixo<br>
-                            2. Complete o pagamento no MercadoPago<br>
+                            2. Complete o pagamento no Asaas<br>
                             3. Volte para esta página<br>
                             4. Clique "Verificar Status"
                         </div>
                         
                         <div class="mt-4 mb-4">
                             <a href="{{ $checkout_url }}" target="_blank" class="btn btn-success btn-lg">
-                                <i class="fas fa-credit-card"></i> Pagar no MercadoPago
+                                <i class="fas fa-credit-card"></i> Pagar no Asaas
                             </a>
                         </div>
                         
@@ -124,9 +124,9 @@
                     // Atualizar badge de status
                     const statusBadge = document.getElementById('current-status');
                     statusBadge.textContent = data.status.charAt(0).toUpperCase() + data.status.slice(1);
-                    statusBadge.className = 'badge ' + (data.status === 'approved' ? 'bg-success' : data.status === 'rejected' ? 'bg-danger' : 'bg-info');
+                    statusBadge.className = 'badge ' + (data.status === 'RECEIVED' ? 'bg-success' : data.status === 'PENDING' ? 'bg-danger' : 'bg-info');
                     
-                    if (data.status === 'approved' || data.status === 'authorized') {
+                    if (data.status === 'RECEIVED' || data.status === 'CONFIRMED') {
                         clearInterval(checkInterval);
                         document.getElementById('status-check').style.display = 'none';
                         document.getElementById('success-message').style.display = 'block';

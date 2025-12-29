@@ -6,9 +6,10 @@
             
         </div>
         <nav class="hidden md:flex space-x-6">
-            <a href="#funcionalidades" class="hover:text-pink-300 transition">Funcionalidades</a>            
+            <a href="#funcionalidades" class="hover:text-pink-300 transition">Funcionalidades</a>
+            <a href="#depoimentos" class="hover:text-pink-300 transition">Depoimentos</a>
             <a href="#planos" class="hover:text-pink-300 transition">Planos</a>
-            <a href="#contato" class="hover:text-pink-300 transition">Contato</a>
+            
         </nav>
         <button id="mobile-menu-btn" class="md:hidden text-white">      
             <i class="fas fa-bars text-xl"></i>
@@ -17,9 +18,9 @@
         <div class="ml-8 mb-11 flex items-center">
         <img src="{{ asset('images/logo.png') }}" alt="Logo PagBy" class="w-32 h-20 mr-3">
         </div>
-        <a href="#funcionalidades" class="hover:text-pink-300 transition">Funcionalidades</a>        
-        <a href="#planos" class="hover:text-pink-300 transition">Planos</a>        
-        <a href="#contato" class="hover:text-pink-300 transition">Contato</a>
+        <a href="#funcionalidades" class="hover:text-pink-300 transition">Funcionalidades</a>
+        <a href="#depoimentos" class="hover:text-pink-300 transition">Depoimentos</a>
+        <a href="#planos" class="hover:text-pink-300 transition">Planos</a>
         <button id="close-mobile-menu" class="mt-8 text-pink-400 text-2xl"><i class="fas fa-times"></i></button>
         </div>
     </header>
@@ -243,159 +244,51 @@
         -->
 
         <!-- SEÇÃO DE PLANOS PAGBY -->
-        <div id="planos" class="fade-in mt-16 max-w-7xl w-full px-4">
+        <div id="planos" class="fade-in mt-16 max-w-6xl w-full">
             <div class="text-center mb-12">
                 <h2 class="text-4xl font-bold mb-4 text-white">
                     Escolha seu plano Pagby
                 </h2>
-                <p class="text-xl text-white/80 max-w-2xl mx-auto mb-6">
-                    Selecione o número de funcionários e escolha o plano ideal para seu negócio.
+                <p class="text-xl text-white/80 max-w-2xl mx-auto">
+                    Selecione a periodicidade e o número de funcionários para ver o valor do plano.
                 </p>
-                
-                <!-- Selector de Funcionários -->
-                <div class="inline-flex flex-col items-center bg-white/10 backdrop-blur rounded-2xl p-6 mb-8">
-                    <label for="numFuncionarios" class="block font-bold mb-3 text-white text-lg">
-                        Quantos funcionários?
-                    </label>
-                    <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="7" value="1" 
-                           class="w-24 px-4 py-3 rounded-xl border-2 border-pink-500 text-gray-800 bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent text-xl font-bold text-center" />
-                    <p class="text-sm text-white/70 mt-2">De 1 a 7 funcionários</p>
-                </div>
-                
-                <div id="avisoFuncionarios" class="hidden text-yellow-300 text-lg font-semibold mb-4 bg-yellow-900/30 rounded-xl p-4 max-w-2xl mx-auto">
-                    <i class="fas fa-info-circle mr-2"></i>
-                    Para mais de 7 funcionários, consulte valores pelo WhatsApp 
-                    <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-300 hover:text-green-200" target="_blank">
-                        {{ config('pagby.whatsapp_display') }}
+            </div>
+
+            <div class="max-w-3xl mx-auto bg-white rounded-3xl shadow-2xl p-8">
+                <form id="form-plano" class="grid grid-cols-1 md:grid-cols-2 gap-8 items-end">
+                    <div>
+                        <label for="periodicidade" class="block font-bold mb-2 text-gray-800">Periodicidade</label>
+                        <select id="periodicidade" name="periodicidade" class="w-40 px-2 py-2 rounded-md border border-gray-300 text-gray-800 bg-white focus:ring-pink-500 focus:border-pink-500 text-base">
+                            <option value="mensal">Mensal</option>
+                            <option value="trimestral">Trimestral</option>
+                            <option value="semestral">Semestral</option>
+                            <option value="anual">Anual</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="numFuncionarios" class="block font-bold mb-2 text-gray-800">Nº de Funcionários</label>
+                        <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="7" value="1" class="w-32 px-2 py-2 rounded-md border border-gray-300 text-gray-800 bg-white focus:ring-pink-500 focus:border-pink-500 text-base" />
+                    </div>
+                </form>
+                <div class="mt-8 text-center">
+                                        <div id="avisoFuncionarios" class="hidden text-red-600 text-lg font-semibold mb-4">
+                                            Para mais de 7 funcionários, consulte valores pelo WhatsApp <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-700" target="_blank">{{ config('pagby.whatsapp_display') }}</a>.
+                                        </div>
+                    <div id="equivalenteMensalLabel" class="text-3xl font-extrabold text-pink-600 mb-2">
+                        Equivalente mensal:
+                    </div>
+                    <div id="valorPlano" class="text-5xl font-bold text-purple-700 mb-2">
+                        R$ 60,00/mês
+                    </div>
+                    <div id="valorTotalPlano" class="text-lg text-gray-700 mb-4">
+                        Valor total: R$ 60,00
+                    </div>
+                    <a id="btn-assinar" href="#" class="inline-block bg-gradient-to-r from-pink-600 to-purple-600 text-white px-10 py-4 rounded-full text-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
+                        Assinar este plano
                     </a>
                 </div>
             </div>
 
-            <!-- Grid de Planos -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <!-- Plano Mensal -->
-                <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
-                    <div class="text-center">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Mensal</h3>
-                        <p class="text-gray-600 text-sm mb-6">Pagamento mensal</p>
-                        
-                        <div class="mb-6">
-                            <div class="text-gray-500 text-sm mb-1">A partir de</div>
-                            <div class="text-5xl font-bold text-pink-600" data-plan="mensal">
-                                R$ <span class="valor-mensal">60</span>
-                            </div>
-                            <div class="text-gray-600 text-sm mt-1">/mês</div>
-                        </div>
-                        
-                        <button onclick="selecionarPlano('mensal')" 
-                                class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
-                            Escolher plano
-                        </button>
-                        
-                        <div class="mt-4 text-gray-700 text-sm">
-                            <div class="font-semibold mb-2">Pagamento:</div>
-                            <div class="valor-total" data-plan="mensal">R$ 60,00 no total</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Plano Trimestral -->
-                <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
-                    <div class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        20% OFF
-                    </div>
-                    <div class="text-center">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Trimestral</h3>
-                        <p class="text-gray-600 text-sm mb-6">3 meses</p>
-                        
-                        <div class="mb-6">
-                            <div class="text-gray-500 text-sm mb-1">Equivalente a</div>
-                            <div class="text-5xl font-bold text-pink-600" data-plan="trimestral">
-                                R$ <span class="valor-mensal">48</span>
-                            </div>
-                            <div class="text-gray-600 text-sm mt-1">/mês</div>
-                        </div>
-                        
-                        <button onclick="selecionarPlano('trimestral')" 
-                                class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
-                            Escolher plano
-                        </button>
-                        
-                        <div class="mt-4 text-gray-700 text-sm">
-                            <div class="font-semibold mb-2">Pagamento trimestral:</div>
-                            <div class="valor-total" data-plan="trimestral">R$ 144,00 no total</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Plano Semestral -->
-                <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
-                    <div class="absolute top-4 right-4 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        30% OFF
-                    </div>
-                    <div class="text-center">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Semestral</h3>
-                        <p class="text-gray-600 text-sm mb-6">6 meses</p>
-                        
-                        <div class="mb-6">
-                            <div class="text-gray-500 text-sm mb-1">Equivalente a</div>
-                            <div class="text-5xl font-bold text-pink-600" data-plan="semestral">
-                                R$ <span class="valor-mensal">42</span>
-                            </div>
-                            <div class="text-gray-600 text-sm mt-1">/mês</div>
-                        </div>
-                        
-                        <button onclick="selecionarPlano('semestral')" 
-                                class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
-                            Escolher plano
-                        </button>
-                        
-                        <div class="mt-4 text-gray-700 text-sm">
-                            <div class="font-semibold mb-2">Pagamento semestral:</div>
-                            <div class="valor-total" data-plan="semestral">R$ 252,00 no total</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Plano Anual - DESTAQUE -->
-                <div class="plan-card bg-gradient-to-br from-pink-600 to-purple-700 rounded-2xl shadow-2xl p-6 transition-all duration-300 hover:scale-105 relative overflow-hidden border-4 border-yellow-400">
-                    <div class="absolute top-0 left-0 right-0 bg-yellow-400 text-gray-900 text-center text-sm font-bold py-2 flex items-center justify-center gap-2">
-                        <i class="fas fa-crown text-gray-900"></i>
-                        MELHOR OFERTA
-                        <i class="fas fa-crown text-gray-900"></i>
-                    </div>
-                    <div class="absolute top-12 right-4 bg-yellow-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full">
-                        40% OFF
-                    </div>
-                    <div class="text-center mt-8">
-                        <h3 class="text-2xl font-bold text-white mb-2">Anual</h3>
-                        <p class="text-white/90 text-sm mb-6">12 meses</p>
-                        
-                        <div class="mb-6">
-                            <div class="text-white/80 text-sm mb-1">Equivalente a</div>
-                            <div class="text-5xl font-bold text-white" data-plan="anual">
-                                R$ <span class="valor-mensal">36</span>
-                            </div>
-                            <div class="text-white/90 text-sm mt-1">/mês</div>
-                        </div>
-                        
-                        <button onclick="selecionarPlano('anual')" 
-                                class="w-full bg-yellow-400 text-gray-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-yellow-300 transition-all">
-                            Escolher plano
-                        </button>
-                        
-                        <div class="mt-4 text-white text-sm">
-                            <div class="font-semibold mb-2">Pagamento anual:</div>
-                            <div class="valor-total" data-plan="anual">R$ 432,00 no total</div>
-                            <div class="text-xs text-yellow-200 mt-2">
-                                💰 Economize R$ 288,00 no ano!
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Benefícios -->
             <div class="text-center mt-12 space-y-4">
                 <div class="flex flex-col md:flex-row justify-center items-center gap-6 text-white/90">
                     <div class="flex items-center gap-2">
@@ -417,9 +310,6 @@
                         <span>Atualizações constantes</span>
                     </div>
                 </div>
-                <p class="text-white/70 text-sm mt-4">
-                    Cancele quando quiser • Suporte via WhatsApp • Garantia de 7 dias
-                </p>
             </div>
         </div>
             </div>
@@ -471,22 +361,9 @@
 
     <!-- Footer -->
     <footer class="mt-16 py-8 px-6 border-t border-gray-700">
-        <div id="contato" class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">
+        <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center">
             <div class="flex items-center mb-4 md:mb-0">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo PagBy" class="w-24 h-18 mr-3">
-                
-            </div>
-            <div class="flex items-center mb-4 md:mb-0">
-                <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" target="_blank" 
-                   class="flex items-center text-white/80 hover:text-white transition mr-6">
-                    <i class="fab fa-whatsapp text-2xl mr-2"></i>
-                    <span>{{ config('pagby.whatsapp_display') }}</span>
-                </a>
-                <a href="mailto:{{ config('pagby.contact_email') }}" 
-                   class="flex items-center text-white/80 hover:text-white transition">
-                    <i class="fas fa-envelope text-2xl mr-2"></i>
-                    <span>{{ config('pagby.contact_email') }}</span>
-                </a>
                 
             </div>
             <div class="text-center md:text-right text-white/70">
@@ -513,7 +390,7 @@
         };
 
         function calcularPlano(numFuncionarios, periodicidade) {
-            let valor = valorBase * (1 + (numFuncionarios - 1) * acrescimoFuncionario);
+            let valor = valorBase *(1+(numFuncionarios-1)*acrescimoFuncionario) ;//* Math.pow(1 + acrescimoFuncionario, numFuncionarios - 1);
             let desconto = descontos[periodicidade] || 0;
             let valorFinal = valor * (1 - desconto);
             let total = valorFinal * (meses[periodicidade] || 1);
@@ -524,78 +401,57 @@
             };
         }
 
-        function atualizarValoresPlanos() {
+
+        function atualizarValores() {
+            const periodicidade = document.getElementById('periodicidade').value;
             const numFuncionariosInput = document.getElementById('numFuncionarios');
             let numFuncionarios = parseInt(numFuncionariosInput.value) || 1;
             const aviso = document.getElementById('avisoFuncionarios');
+            const equivalenteMensalLabel = document.getElementById('equivalenteMensalLabel');
+            const valorPlano = document.getElementById('valorPlano');
+            const valorTotalPlano = document.getElementById('valorTotalPlano');
 
-            // Limita o máximo a 7 funcionários
             if (numFuncionarios > 7) {
-                numFuncionariosInput.value = 7;
-                numFuncionarios = 7;
                 aviso.classList.remove('hidden');
+                equivalenteMensalLabel.style.display = 'none';
+                valorPlano.style.display = 'none';
+                valorTotalPlano.style.display = 'none';
+                // Limita o valor do input a 7
+                numFuncionariosInput.value = 7;
             } else {
                 aviso.classList.add('hidden');
-            }
-
-            // Atualiza valores para cada plano
-            ['mensal', 'trimestral', 'semestral', 'anual'].forEach(periodicidade => {
-                const valores = calcularPlano(numFuncionarios, periodicidade);
-                
-                // Atualiza valor mensal
-                const valorMensalElement = document.querySelector(`[data-plan="${periodicidade}"] .valor-mensal`);
-                if (valorMensalElement) {
-                    valorMensalElement.textContent = valores.mensal.toLocaleString('pt-BR', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
-                    });
+                valorPlano.style.display = '';
+                if (periodicidade === 'mensal') {
+                    equivalenteMensalLabel.style.display = 'none';
+                    valorTotalPlano.style.display = 'none';
+                    valorPlano.textContent = `R$ ${calcularPlano(numFuncionarios, periodicidade).mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/mês`;
+                } else {
+                    equivalenteMensalLabel.style.display = '';
+                    valorTotalPlano.style.display = '';
+                    const valores = calcularPlano(numFuncionarios, periodicidade);
+                    valorPlano.textContent = `R$ ${valores.mensal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}/mês`;
+                    valorTotalPlano.textContent = `Valor total: R$ ${valores.total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                 }
-                
-                // Atualiza valor total
-                const valorTotalElement = document.querySelector(`.valor-total[data-plan="${periodicidade}"]`);
-                if (valorTotalElement) {
-                    valorTotalElement.textContent = `R$ ${valores.total.toLocaleString('pt-BR', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                    })} no total`;
-                }
-            });
-
-            // Calcula economia do plano anual vs mensal
-            const valorMensal = calcularPlano(numFuncionarios, 'mensal');
-            const valorAnual = calcularPlano(numFuncionarios, 'anual');
-            const economia = (valorMensal.mensal * 12) - valorAnual.total;
-            
-            const economiaElement = document.querySelector('[data-plan="anual"]').parentElement.querySelector('.text-yellow-200');
-            if (economiaElement) {
-                economiaElement.textContent = `💰 Economize R$ ${economia.toLocaleString('pt-BR', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                })} no ano!`;
             }
         }
 
-        // Event listeners
-        document.getElementById('numFuncionarios').addEventListener('input', atualizarValoresPlanos);
-        document.getElementById('numFuncionarios').addEventListener('change', atualizarValoresPlanos);
+        // Garante que o aviso apareça ao colar ou digitar manualmente
+        document.getElementById('numFuncionarios').addEventListener('change', atualizarValores);
 
-        // Inicializa valores
-        atualizarValoresPlanos();
+        document.getElementById('periodicidade').addEventListener('change', atualizarValores);
+        document.getElementById('numFuncionarios').addEventListener('input', atualizarValores);
+        atualizarValores();
+
+        // Ativa o botão Assinar este plano
+        document.getElementById('btn-assinar').addEventListener('click', function(e) {
+            e.preventDefault();
+            const periodicidade = document.getElementById('periodicidade').value;
+            const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value) || 1;
+            // Só permite se até 7 funcionários
+            if (numFuncionarios > 7) return;
+            const url = `{{ route('register-tenant') }}?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
+            window.location.href = url;
+        });
     });
-
-    // Função para selecionar plano
-    function selecionarPlano(periodicidade) {
-        const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value) || 1;
-        
-        // Só permite se até 7 funcionários
-        if (numFuncionarios > 7) {
-            document.getElementById('avisoFuncionarios').classList.remove('hidden');
-            document.getElementById('avisoFuncionarios').scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-        }
-        
-        const url = `{{ route('register-tenant') }}?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
-        window.location.href = url;
-    }
 </script>
 </x-pagby-layout>

@@ -25,50 +25,50 @@ class Saloes extends Component
         $this->loadSaloes();
         $this->loadTemplateList();
     }
-        /**
-         * Carrega todos os templates disponíveis em resources/Templates
-         * e monta a lista para o modal, incluindo o caminho da miniatura.
-         */
-        public function loadTemplateList()
-        {
-            $templateDir = resource_path('Templates');
-            $publicImagesDir = public_path('images');
-            $this->templateList = [];
-            if (is_dir($templateDir)) {
-                foreach (scandir($templateDir) as $entry) {
-                    if ($entry === '.' || $entry === '..') continue;
-                    $templatePath = $templateDir . DIRECTORY_SEPARATOR . $entry;
-                    if (is_dir($templatePath)) {
-                        // Tenta encontrar uma miniatura padrão ou alternativa
-                        // Busca arquivos photo.*, ambiente.*, hero.*
-                        $thumbnail = null;
-                        $patterns = ['photo.', 'ambiente.', 'hero.'];
-                        if (is_dir("$publicImagesDir/$entry")) {
-                            $files = scandir("$publicImagesDir/$entry");
-                            foreach ($patterns as $pattern) {
-                                foreach ($files as $file) {
-                                    if (strpos($file, $pattern) === 0) {
-                                        $thumbPath = "/images/$entry/$file";
-                                        if (file_exists(public_path($thumbPath))) {
-                                            $thumbnail = $thumbPath;
-                                            break 2;
-                                        }
+    /**
+     * Carrega todos os templates disponíveis em resources/Templates
+     * e monta a lista para o modal, incluindo o caminho da miniatura.
+     */
+    public function loadTemplateList()
+    {
+        $templateDir = resource_path('Templates');
+        $publicImagesDir = public_path('images');
+        $this->templateList = [];
+        if (is_dir($templateDir)) {
+            foreach (scandir($templateDir) as $entry) {
+                if ($entry === '.' || $entry === '..') continue;
+                $templatePath = $templateDir . DIRECTORY_SEPARATOR . $entry;
+                if (is_dir($templatePath)) {
+                    // Tenta encontrar uma miniatura padrão ou alternativa
+                    // Busca arquivos photo.*, ambiente.*, hero.*
+                    $thumbnail = null;
+                    $patterns = ['photo.', 'ambiente.', 'hero.'];
+                    if (is_dir("$publicImagesDir/$entry")) {
+                        $files = scandir("$publicImagesDir/$entry");
+                        foreach ($patterns as $pattern) {
+                            foreach ($files as $file) {
+                                if (strpos($file, $pattern) === 0) {
+                                    $thumbPath = "/images/$entry/$file";
+                                    if (file_exists(public_path($thumbPath))) {
+                                        $thumbnail = $thumbPath;
+                                        break 2;
                                     }
                                 }
                             }
                         }
-                        // Se não encontrar, usa uma imagem placeholder
-                        if (!$thumbnail) {
-                            $thumbnail = '/images/placeholder-template.png';
-                        }
-                        $this->templateList[] = [
-                            'name' => $entry,
-                            'thumbnail' => $thumbnail,
-                        ];
                     }
+                    // Se não encontrar, usa uma imagem placeholder
+                    if (!$thumbnail) {
+                        $thumbnail = '/images/placeholder-template.png';
+                    }
+                    $this->templateList[] = [
+                        'name' => $entry,
+                        'thumbnail' => $thumbnail,
+                    ];
                 }
             }
         }
+    }
     public function loadSaloes()
     {
         $this->saloes = Tenant::all()->map(function($salon) {

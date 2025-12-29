@@ -450,19 +450,13 @@ class PagBySubscriptionController extends Controller
             'plan' => 'required|in:mensal,trimestral,semestral,anual',
             'tenant_id' => 'required|string'
         ]);
+       
         
 
         $tenantId = $request->tenant_id;
         $tenant_name = Tenant::on('mysql')->find($tenantId)->name;
         $contact = Contact::on('mysql')->where('tenant_name', $tenant_name)->first();
-        
-
-
-
-
-        $mpPaymentId = $request->_token;
-    
-        
+        $mpPaymentId = $request->_token;       
 
         if (!$contact->id) {
             return redirect()->route('home')->with('error', 'Sessão expirada. Faça o registro novamente.');
@@ -500,16 +494,16 @@ class PagBySubscriptionController extends Controller
         
 
         // Cria registro local da assinatura
-    
+        $pagbyService = new PagbyService();    
         $payment = PagByPayment::on('mysql')->create([        
         'tenant_id' => $tenantId,
         'contact_id' => $contact->id, // ADICIONAR este campo
         'mp_payment_id' => null,
         'external_id' => null, // ADICIONAR explicitamente
-        'amount' => $contact->employee_count * $plan['price'], // Remover number_format
+        'amount' => $pagbyService->calcularValorPlano($request->numFuncionarios, $request->plan),
         'status' => 'pending',
         'plan' => $request->plan,
-        'employee_count' => $contact->employee_count,
+        'employee_count' => $request->numFuncionarios,
         'type' => 'subscription'
     ]);
     Log::info('📄 PagByPayment criado:', [
@@ -517,68 +511,57 @@ class PagBySubscriptionController extends Controller
         'amount' => $payment->amount,
         'plan' => $payment->plan
     ]);
-    // Cria assinatura recorrente via API MercadoPago
-    $accessToken = config('services.pagby.access_token');
-    $data = [
-        "reason" => $plan['name'],
-        "auto_recurring" => [
-            "frequency" => 1,
-            "frequency_type" => "months",
-            "transaction_amount" => number_format($contact->employee_count * $plan['price'], 2, '.', ''),
-            "currency_id" => "BRL"
-        ],
-        "payer_email" => 'test_user_1515774707033786032@testuser.com', //$contact->email,
-        "back_url" => route('pagby-subscription.success'),
-        "status" => "pending",
-        "external_reference" => 'pagby-subscription-' . $payment->id,
-        "notification_url" => route('pagby-subscription.webhook')
+    
+    // Cria checkout de pagamento via Asaas
+    $asaasService = new \App\Services\AsaasService();
+    
+    $customerData = [
+        'name' => $contact->name,
+        'email' => $contact->email,
+        'cpfCnpj' => $contact->cpf_cnpj ?? '',
+        'phone' => $contact->phone ?? ''
     ];
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://api.mercadopago.com/preapproval');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Authorization: Bearer ' . $accessToken,
-        'Content-Type: application/json'
-    ]);
-    $response = curl_exec($ch);
-    curl_close($ch);
-
-    $result = json_decode($response, true);
-
-    // Salva o id da assinatura recorrente
-
-    if (isset($result['id'])) {
-        $payment->mp_payment_id = $result['id'];
-        $payment->external_id = $result['id'];
+    
+    $paymentData = [
+        'name' => 'Renovação ' . $plan['name'] . ' - ' . $tenant_name,
+        'description' => $plan['description'] . ' - ' . $request->numFuncionarios . ' funcionário(s)',
+        'billingType' => 'UNDEFINED',
+        'value' => $payment->amount
+    ];
+    
+    $asaasResult = $asaasService->criarCheckout($customerData, $paymentData);
+    
+    if ($asaasResult['success'] && !empty($asaasResult['data']['url'])) {
+        // Salva o ID do checkout do Asaas
+        $payment->external_id = $asaasResult['data']['id'];
         $payment->save();
-    }
-    Log::info('Resposta MercadoPago Preapproval:', ['result' => $result]);
-    // Redireciona para o checkout da assinatura
-    if (isset($result['init_point'])) {
-    session([
-        'payment_id' => $payment->id,
-        'checkout_url' => $result['init_point'],
-        'tenant_name' => $contact->tenant_name,
-        'plan_name' => $plan['name'],
-        'plan_amount' => floatval($contact->employee_count * $plan['price'])
-    ]);
-
-    // Redireciona para a página de aguarde
-
-    return redirect()->route('tenant-assinatura.waitRenew', ['paymentId' => $payment->id]);
-
-    // $this->waitRenew($payment->id);
-    } else {
-        // Redireciona para a página de falha
-        return redirect()->route('pagby-subscription.failure-renew', [
+        
+        Log::info('✅ Checkout Asaas criado para renovação:', [
             'payment_id' => $payment->id,
+            'checkout_id' => $asaasResult['data']['id'],
+            'checkout_url' => $asaasResult['data']['url']
+        ]);
+        
+        // Salva dados na sessão para a página de espera
+        session([
+            'payment_id' => $payment->id,
+            'checkout_url' => $asaasResult['data']['url'],
             'tenant_name' => $contact->tenant_name,
             'plan_name' => $plan['name'],
-            'message' => $result['message'] ?? 'Erro ao criar assinatura.'
-            
+            'employee_count' => $request->numFuncionarios,
+            'plan_amount' => floatval($payment->amount)
         ]);
+
+        // Redireciona para a página de aguarde
+        return redirect()->route('tenant-assinatura.waitRenew', ['paymentId' => $payment->id]);
+    } else {
+        Log::error('❌ Erro ao criar checkout Asaas para renovação:', [
+            'payment_id' => $payment->id,
+            'error' => $asaasResult['message'] ?? 'Erro desconhecido'
+        ]);
+        
+        // Redireciona para a página de bloqueio com mensagem de erro
+        return redirect()->route('tenant.subscription.blocked')->with('error', 'Erro ao criar link de pagamento. Tente novamente.');
     }
     }
 
@@ -654,19 +637,25 @@ class PagBySubscriptionController extends Controller
                             Log::error('Erro ao enviar e-mail de assinatura: ' . $e->getMessage());
                         }
                     }
-                }
-                if (in_array($asaasStatus, ['RECEIVED', 'CONFIRMED']) && str_starts_with($payment->tenant_id, 'temp_')) {
-                    Log::info('💰 Pagamento APROVADO! Tenant NÃO será criado automaticamente. Aguardando onboarding manual.', [
-                        'payment_id' => $payment->id,
-                        'contact_id' => $payment->contact_id,
-                        'tenant_id_atual' => $payment->tenant_id
-                    ]);
-                    Log::notice('⚠️ Atenção: Realize o onboarding manual do tenant após aprovação do pagamento.', [
-                        'payment_id' => $payment->id,
-                        'contact_id' => $payment->contact_id,
-                        'tenant_id_atual' => $payment->tenant_id
-                    ]);
-                    // $this->criarTenantAposAprovacao($payment); // Automação desativada para onboarding manual
+                    
+                    // Processar renovação ou novo tenant
+                    if (str_starts_with($payment->tenant_id, 'temp_')) {
+                        // Novo tenant
+                        Log::info('💰 Pagamento APROVADO! Tenant NÃO será criado automaticamente. Aguardando onboarding manual.', [
+                            'payment_id' => $payment->id,
+                            'contact_id' => $payment->contact_id,
+                            'tenant_id_atual' => $payment->tenant_id
+                        ]);
+                        Log::notice('⚠️ Atenção: Realize o onboarding manual do tenant após aprovação do pagamento.', [
+                            'payment_id' => $payment->id,
+                            'contact_id' => $payment->contact_id,
+                            'tenant_id_atual' => $payment->tenant_id
+                        ]);
+                        // $this->criarTenantAposAprovacao($payment); // Automação desativada para onboarding manual
+                    } else {
+                        // Renovação de tenant existente
+                        $this->renovarAssinaturaTenant($payment);
+                    }
                 }
             } else {
                 Log::warning('Pagamento não encontrado para asaas_payment_id nem paymentLink', [
@@ -691,6 +680,66 @@ class PagBySubscriptionController extends Controller
     
 
 
+
+    /**
+     * Renova a assinatura de um tenant existente após aprovação do pagamento
+     */
+    private function renovarAssinaturaTenant(PagByPayment $payment)
+    {
+        try {
+            // Buscar o tenant
+            $tenant = \App\Models\Tenant::on('mysql')->find($payment->tenant_id);
+            if (!$tenant) {
+                Log::error('❌ Tenant não encontrado para renovação', [
+                    'payment_id' => $payment->id,
+                    'tenant_id' => $payment->tenant_id
+                ]);
+                return;
+            }
+            
+            // Calcular duração baseada no plano
+            $durationDays = match($payment->plan) {
+                'mensal' => 30,
+                'trimestral' => 90,
+                'semestral' => 180,
+                'anual' => 365,
+                default => 30
+            };
+            
+            // Atualizar dados da assinatura
+            $tenant->subscription_status = 'active';
+            $tenant->is_blocked = false;
+            $tenant->employee_count = $payment->employee_count ?? $tenant->employee_count;
+            $tenant->current_plan = $payment->plan;
+            
+            // Se a assinatura ainda está válida, extender a partir da data de fim
+            // Se já expirou, começar a partir de agora
+            if ($tenant->subscription_ends_at && $tenant->subscription_ends_at->isFuture()) {
+                $tenant->subscription_ends_at = $tenant->subscription_ends_at->addDays($durationDays);
+            } else {
+                $tenant->subscription_started_at = now();
+                $tenant->subscription_ends_at = now()->addDays($durationDays);
+            }
+            
+            $tenant->save();
+            
+            Log::info('✅ Assinatura renovada com sucesso!', [
+                'tenant_id' => $tenant->id,
+                'payment_id' => $payment->id,
+                'plan' => $payment->plan,
+                'duration_days' => $durationDays,
+                'subscription_ends_at' => $tenant->subscription_ends_at->format('Y-m-d H:i:s')
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao renovar assinatura do tenant:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payment_id' => $payment->id,
+                'tenant_id' => $payment->tenant_id
+            ]);
+        }
+    }
 
     /**
      * Cria o tenant automaticamente após aprovação do pagamento
@@ -879,8 +928,24 @@ class PagBySubscriptionController extends Controller
             $asaasService = new \App\Services\AsaasService();
             $asaas = $asaasService->consultarCobranca($payment->asaas_payment_id);
             if ($asaas) {
+                $oldStatus = $payment->status;
                 $payment->status = $asaas['status'] ?? $payment->status;
                 $payment->save();
+                
+                // Se o status mudou para aprovado, processar renovação
+                if (in_array($payment->status, ['RECEIVED', 'PAID', 'CONFIRMED']) && 
+                    !in_array(strtoupper($oldStatus), ['RECEIVED', 'PAID', 'CONFIRMED'])) {
+                    
+                    if (!str_starts_with($payment->tenant_id, 'temp_')) {
+                        // É uma renovação de tenant existente
+                        $this->renovarAssinaturaTenant($payment);
+                        Log::info('✅ Renovação processada via checkStatus', [
+                            'payment_id' => $payment->id,
+                            'tenant_id' => $payment->tenant_id
+                        ]);
+                    }
+                }
+                
                 return response()->json([
                     'status' => $payment->status,
                     'asaas_payment_id' => $payment->asaas_payment_id,
@@ -979,8 +1044,10 @@ class PagBySubscriptionController extends Controller
 
 
     $plans = [
-        'basico' => ['name' => 'Plano Básico', 'price' => 29.90], // Corrigir chaves
-        'premium' => ['name' => 'Plano Premium', 'price' => 59.90]
+        'mensal' => ['name' => 'Mensal', 'price' => config('pricing.base_price_per_employee')], // Corrigir chaves
+        'trimestral' => ['name' => 'Trimestral', 'price' => 3 * config('pricing.base_price_per_employee') * 0.8],
+        'semestral' => ['name' => 'Semestral', 'price' => 6 * config('pricing.base_price_per_employee') * 0.7],
+        'anual' => ['name' => 'Anual', 'price' => 12 * config('pricing.base_price_per_employee') * 0.6],
     ];
 
     $plan = $plans[$payment->plan] ?? ['name' => 'Plano ' . $payment->plan, 'price' => 0];
@@ -998,7 +1065,8 @@ class PagBySubscriptionController extends Controller
         'checkout_url' => $checkoutUrl,
         'payment_id' => $paymentId,
         'tenant_name' => $contact ? $contact->tenant_name : 'Não informado',
-        'plan_name' => $plan['name']
+        'plan_name' => $plan['name'],
+        'employee_count' => $payment->employee_count,
     ]);
 }
 

@@ -17,10 +17,18 @@ class CheckTenantSubscription
     {
         // Verifica se estamos em contexto de tenant
         if (!tenant()) {
+            \Log::info('[CheckTenantSubscription] Sem contexto de tenant');
             return $next($request);
         }
 
         $tenant = tenant();
+        \Log::info('[CheckTenantSubscription] Tenant carregado', [
+            'id' => $tenant->id,
+            'subscription_status' => $tenant->subscription_status,
+            'trial_ends_at' => $tenant->trial_ends_at,
+            'subscription_ends_at' => $tenant->subscription_ends_at,
+            'is_blocked' => $tenant->is_blocked,
+        ]);
 
         // Páginas que não devem ser bloqueadas (seleção de plano, pagamento, etc.)
         $allowedRoutes = [
@@ -29,6 +37,10 @@ class CheckTenantSubscription
             'tenant.subscription.payment',
             'tenant.subscription.success',
             'tenant.subscription.blocked',
+            'tenant.renew',
+            'tenant-assinatura.waitRenew',
+            'tenant-assinatura.wait',
+            'pagby-subscription.wait',
             'logout',
         ];
 

@@ -44,6 +44,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'neighborhood',
             'contract_accpted_at',
             'logo', // agora será salvo na coluna correta
+            // Campos críticos para assinatura/bloqueio:
+            'subscription_status',
+            'trial_ends_at',
+            'subscription_ends_at',
+            'is_blocked',
         ];
 
     }
@@ -101,22 +106,34 @@ class Tenant extends BaseTenant implements TenantWithDatabase
      */
     public function shouldBeBlocked(): bool
     {
+        \Log::info('[shouldBeBlocked] Tenant', [
+            'id' => $this->id,
+            'subscription_status' => $this->subscription_status,
+            'trial_ends_at' => $this->trial_ends_at,
+            'subscription_ends_at' => $this->subscription_ends_at,
+            'is_blocked' => $this->is_blocked,
+        ]);
         // Bloqueia se estiver bloqueado manualmente
         if ($this->is_blocked) {
+            \Log::info('[shouldBeBlocked] Bloqueado manualmente');
             return true;
         }
         // Bloqueia se trial expirou e não tem assinatura ativa
         if ($this->isTrialExpired() && !$this->hasActiveSubscription()) {
+            \Log::info('[shouldBeBlocked] Trial expirado e sem assinatura ativa');
             return true;
         }
         // Bloqueia se a assinatura paga expirou
         if ($this->isSubscriptionExpired()) {
+            \Log::info('[shouldBeBlocked] Assinatura paga expirada');
             return true;
         }
         // Bloqueia se o status está suspenso
         if ($this->subscription_status === 'suspended') {
+            \Log::info('[shouldBeBlocked] Status suspenso');
             return true;
         }
+        \Log::info('[shouldBeBlocked] NÃO bloqueado');
         return false;
     }
 

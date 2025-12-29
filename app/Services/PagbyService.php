@@ -13,8 +13,8 @@ class PagbyService
      */
     public function calcularValorPlano(int $numFuncionarios, string $periodicidade): float
     {
-        $valorBase = 60.00;
-        $acrescimoFuncionario = 0.20; // 20% por funcionário adicional
+        $valorBase = config('pricing.base_price_per_employee');
+        $acrescimoFuncionario = 0.30; // 30% por funcionário adicional
         $descontos = [
             'mensal' => 0,
             'trimestral' => 0.20,
@@ -29,7 +29,7 @@ class PagbyService
         ];
 
         // Calcula valor base com acréscimo de funcionários
-        $valor = $valorBase * pow(1 + $acrescimoFuncionario, $numFuncionarios - 1);
+        $valor = $valorBase * (1 + $acrescimoFuncionario * ($numFuncionarios - 1));
 
         // Aplica desconto da periodicidade
         $desconto = $descontos[$periodicidade] ?? 0;
