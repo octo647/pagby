@@ -35,3 +35,30 @@
 ## Configuração
 
 - git config: Define configurações (usuário, e-mail, etc.). 
+
+
+## Suponha que está no ramo melhorias
+
+# 1. Verificar o status das mudanças
+git status
+
+# 2. Adicionar todas as mudanças
+git add .
+
+# 3. Fazer commit com uma mensagem descritiva
+git commit -m "Atualiza exibição de planos com layout estilo Alura"
+
+# 4. Enviar para o GitHub (branch melhorias)
+git push origin melhorias
+
+# Mudar para a branch principal
+git checkout main
+
+# Fazer merge da branch melhorias
+git merge melhorias
+
+# Enviar para o GitHub
+git push origin main
+
+# Voltar para a branch melhorias
+git checkout melhorias
