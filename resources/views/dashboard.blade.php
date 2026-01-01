@@ -5,7 +5,8 @@
         @if(auth()->user()->hasrole('Admin'))
             {{ __($tabelaAtiva === 'contatos' ? 'Contatos' : 
             ($tabelaAtiva === 'saloes' ? 'Salões' : 
-            ($tabelaAtiva === 'planos' ? 'Planos' : '')))}}
+            ($tabelaAtiva === 'planos' ? 'Planos' :
+            ($tabelaAtiva === 'ajustes-planos' ? 'Ajustes de Planos' : ''))))}}
         @elseif(auth()->user()->hasrole('Proprietário'))
             @php
                 $titles = [
@@ -77,6 +78,8 @@
                     @livewire('admin.saloes')
                 @elseif($tabelaAtiva === 'planos')
                     @livewire('admin.planos')
+                @elseif($tabelaAtiva === 'ajustes-planos')
+                    @livewire('admin.plan-adjustments')
                 @endif
 
                 @endcan
@@ -99,23 +102,7 @@
                         @if(request()->input('funcionario_id'))
                             @livewire('proprietario.employee-service')
                         @else
-                            <div class="p-6">
-                                <h3 class="text-lg font-semibold mb-4">Funcionários x Serviços</h3>
-                                <p class="text-gray-600 mb-4">Selecione um funcionário para gerenciar seus serviços:</p>
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    @if(isset($employees) && $employees->count() > 0)
-                                        @foreach($employees as $employee)
-                                            <a href="{{ route('tenant.dashboard', ['tabelaAtiva' => 'func_serv', 'funcionario_id' => $employee->id]) }}" 
-                                               class="block p-4 bg-white border border-gray-200 rounded-lg shadow hover:bg-gray-50">
-                                                <h4 class="font-semibold text-gray-900">{{ $employee->name }}</h4>
-                                                <p class="text-gray-600 text-sm">Clique para gerenciar serviços</p>
-                                            </a>
-                                        @endforeach
-                                    @else
-                                        <p class="text-gray-500">Nenhum funcionário encontrado.</p>
-                                    @endif
-                                </div>
-                            </div>
+                            @livewire('proprietario.employee-selector')
                         @endif
                     @elseif($tabelaAtiva === 'servicos-realizados')
                         @livewire('proprietario.servicos-realizados')

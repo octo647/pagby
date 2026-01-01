@@ -17,6 +17,7 @@ class SalonTimes extends Component
     public $editOfficehour = [];
     public $editIndex = null;
     public $tabelaAtiva = 'usuarios';
+    public $showOnlyActive = true;
 
     public function abrirPainelEdicao($index)
     {
@@ -36,53 +37,7 @@ class SalonTimes extends Component
 
     public function mount()
     {
-        $schedules = Schedule::all()->groupBy('user_id');
-        $funcionarios = User::whereHas('roles', function ($query) {
-            $query->where('role', 'Funcionário');
-        })->get();
-       
-        $officehours = [];
-        foreach ($funcionarios as $func) {
-               $linha = [
-        'id' => $func->id,
-        'funcionario' => $func->name,
-        'branch_id' => BranchUser::where('user_id',$func->id)->first()->branch_id ?? null,
-        'seg_ini' => '', 'seg_fim' => '',
-        'ter_ini' => '', 'ter_fim' => '',
-        'qua_ini' => '', 'qua_fim' => '',
-        'qui_ini' => '', 'qui_fim' => '',
-        'sex_ini' => '', 'sex_fim' => '',
-        'sab_ini' => '', 'sab_fim' => '',
-        'dom_ini' => '', 'dom_fim' => '',
-    ];
-        
-
-        if (isset($schedules[$func->id])) {
-        foreach ($schedules[$func->id] as $sch) {
-            $dia = $sch->day_of_week; 
-            // Map English day names to Portuguese abbreviations
-            $diasMap = [
-                'monday' => 'seg',
-                'tuesday' => 'ter',
-                'wednesday' => 'qua',
-                'thursday' => 'qui',
-                'friday' => 'sex',
-                'saturday' => 'sab',
-                'sunday' => 'dom',
-            ];
-            $dia = $diasMap[strtolower($sch->day_of_week)] ?? $sch->day_of_week;
-            $linha[$dia . '_ini'] = date('H:i', strtotime($sch->start_time));
-            $linha[$dia . '_fim'] = date('H:i', strtotime($sch->end_time));
-            $linha[$dia . '_lunch_ini'] = date('H:i', strtotime($sch->lunch_start ?? '12:00'));
-            $linha[$dia . '_lunch_fim'] = date('H:i', strtotime($sch->lunch_end ?? '13:00'));
-        }
-    }
-
-    $officehours[] = $linha;
-        }
-
-        $this->officehours = $officehours;    
-        
+        // Método mount simplificado - dados carregados dinamicamente no render
     }
 
  
@@ -137,7 +92,7 @@ class SalonTimes extends Component
 
     $this->editedIndex = null;
     $this->editedField = null;
-    $this->mount(); // Recarrega os dados
+    // Dados serão recarregados automaticamente no próximo render
     }
     public function deleteMT($mtIndex)
     {
@@ -147,6 +102,60 @@ class SalonTimes extends Component
         redirect('/dashboard');
 
     }
+    private function getOfficeHours()
+    {
+        $schedules = Schedule::all()->groupBy('user_id');
+        $funcionarios = User::whereHas('roles', function ($query) {
+            $query->where('role', 'Funcionário');
+        });
+        
+        if ($this->showOnlyActive) {
+            $funcionarios->where('status', 'Ativo');
+        }
+        
+        $funcionarios = $funcionarios->get();
+       
+        $officehours = [];
+        foreach ($funcionarios as $func) {
+            $linha = [
+                'id' => $func->id,
+                'funcionario' => $func->name,
+                'photo' => $func->photo,
+                'branch_id' => BranchUser::where('user_id',$func->id)->first()->branch_id ?? null,
+                'seg_ini' => '', 'seg_fim' => '',
+                'ter_ini' => '', 'ter_fim' => '',
+                'qua_ini' => '', 'qua_fim' => '',
+                'qui_ini' => '', 'qui_fim' => '',
+                'sex_ini' => '', 'sex_fim' => '',
+                'sab_ini' => '', 'sab_fim' => '',
+                'dom_ini' => '', 'dom_fim' => '',
+            ];
+
+            if (isset($schedules[$func->id])) {
+                foreach ($schedules[$func->id] as $sch) {
+                    $diasMap = [
+                        'monday' => 'seg',
+                        'tuesday' => 'ter',
+                        'wednesday' => 'qua',
+                        'thursday' => 'qui',
+                        'friday' => 'sex',
+                        'saturday' => 'sab',
+                        'sunday' => 'dom',
+                    ];
+                    $dia = $diasMap[strtolower($sch->day_of_week)] ?? $sch->day_of_week;
+                    $linha[$dia . '_ini'] = date('H:i', strtotime($sch->start_time));
+                    $linha[$dia . '_fim'] = date('H:i', strtotime($sch->end_time));
+                    $linha[$dia . '_lunch_ini'] = date('H:i', strtotime($sch->lunch_start ?? '12:00'));
+                    $linha[$dia . '_lunch_fim'] = date('H:i', strtotime($sch->lunch_end ?? '13:00'));
+                }
+            }
+
+            $officehours[] = $linha;
+        }
+
+        return $officehours;
+    }
+
     public function repetirSegunda()
     {
         $dias = ['ter', 'qua', 'qui', 'sex', 'sab', 'dom'];
@@ -160,6 +169,7 @@ class SalonTimes extends Component
     }
     public function render()
     {
+        $this->officehours = $this->getOfficeHours();
         return view('livewire.proprietario.salon-times');
     }
  

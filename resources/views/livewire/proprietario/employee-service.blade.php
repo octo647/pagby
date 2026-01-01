@@ -62,9 +62,20 @@
                                                  onerror="this.src='https://ui-avatars.com/api/?name={{ urlencode($employee['name']) }}&background=6366f1&color=ffffff'">
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <p class="text-sm font-medium {{ $selectedEmployeeId == $employee['id'] ? 'text-indigo-800' : 'text-gray-900' }} truncate">
-                                                {{ $employee['name'] }}
-                                            </p>
+                                            <div class="flex items-center gap-2">
+                                                <p class="text-sm font-medium {{ $selectedEmployeeId == $employee['id'] ? 'text-indigo-800' : 'text-gray-900' }} truncate">
+                                                    {{ $employee['name'] }}
+                                                </p>
+                                                @if($employee['status'] === 'Ativo')
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                                        Ativo
+                                                    </span>
+                                                @else
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                        Inativo
+                                                    </span>
+                                                @endif
+                                            </div>
                                             <p class="text-xs {{ $selectedEmployeeId == $employee['id'] ? 'text-indigo-600' : 'text-gray-500' }}">
                                                 {{ count($employee['services']) }} serviços configurados
                                             </p>
@@ -139,9 +150,11 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
                             </svg>
                             <h3 class="text-xl font-medium text-gray-900 mb-2">Selecione um Funcionário</h3>
-                            <p class="text-gray-500 max-w-md mx-auto">
+                            <p class="text-gray-500 max-w-md mx-auto mb-4">
                                 Escolha um funcionário no painel à esquerda para configurar os serviços que ele pode executar e personalizar os tempos de atendimento.
                             </p>
+                            
+                            
                         </div>
                     </div>
                 @endif
@@ -184,20 +197,21 @@
                                             $customDuration = null;
                                             $isActive = in_array($service['id'], $employee['services']);
                                             
+                                            
                                             if ($isActive) {
                                                 $employeeModel = App\Models\User::find($employee['id']);
                                                 $userService = $employeeModel->services()->where('service_id', $service['id'])->first();
                                                 $customDuration = $userService?->pivot?->custom_duration_minutes;
                                             }
                                         @endphp
-                                        <tr class="hover:bg-gray-50 transition-colors {{ $isActive ? 'bg-blue-50' : '' }}">
+                                        <tr class="hover:bg-gray-200 transition-colors {{ $isActive ? 'bg-blue-50' : '' }}">
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
                                                     <div class="flex-shrink-0 w-2 h-2 rounded-full mr-3 {{ $isActive ? 'bg-green-400' : 'bg-gray-300' }}"></div>
                                                     <div>
                                                         <div class="text-sm font-medium text-gray-900">{{ $service['service'] }}</div>
                                                         @if($customDuration)
-                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 mt-1">
+                                                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-200 text-blue-800 mt-1">
                                                                 <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                                                 </svg>
@@ -213,7 +227,7 @@
                                                            wire:click="changeService({{ $service['id'] }}, {{ $employee['id'] }})"
                                                            {{ $isActive ? 'checked' : '' }}
                                                            class="sr-only peer">
-                                                    <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                                    <div class="relative w-11 h-6 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                                 </label>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
@@ -234,11 +248,12 @@
                                                                 placeholder="{{ $serviceModel?->time ?? 30 }}"
                                                                 value="{{ $customDuration }}"
                                                                 wire:blur="updateCustomDuration({{ $service['id'] }}, {{ $employee['id'] }}, $event.target.value)"
-                                                                class="w-24 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center bg-white">
-                                                            <span class="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">min</span>
+                                                                class="w-20 px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center bg-white"
+                                                                style="-webkit-appearance: auto; -moz-appearance: textfield;">
+                                                            <span class="absolute right-1 top-1/2 transform -translate-y-1/2 text-sm text-gray-400">min</span>
                                                         </div>
                                                         @if($customDuration)
-                                                            <span class="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
+                                                            <span class="text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded">
                                                                 {{ $customDuration }} min configurado
                                                             </span>
                                                         @else
@@ -272,7 +287,7 @@
                                 <div class="border border-gray-200 rounded-lg p-4 {{ $isActive ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200' : 'bg-white' }}">
                                     <div class="flex items-center justify-between mb-3">
                                         <div class="flex items-center space-x-3">
-                                            <div class="w-3 h-3 rounded-full {{ $isActive ? 'bg-green-400' : 'bg-gray-300' }}"></div>
+                                            <div class="w-3 h-3 rounded-full {{ $isActive ? 'bg-green-400' : 'bg-gray-200' }}"></div>
                                             <h4 class="font-medium text-gray-900">{{ $service['service'] }}</h4>
                                         </div>
                                         <label class="relative inline-flex items-center cursor-pointer">
@@ -280,7 +295,7 @@
                                                    wire:click="changeService({{ $service['id'] }}, {{ $employee['id'] }})"
                                                    {{ $isActive ? 'checked' : '' }}
                                                    class="sr-only peer">
-                                            <div class="relative w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                            <div class="relative w-11 h-6 bg-gray-400 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                         </label>
                                     </div>
                                     
@@ -300,7 +315,8 @@
                                                     placeholder="{{ $serviceModel?->time ?? 30 }}"
                                                     value="{{ $customDuration }}"
                                                     wire:blur="updateCustomDuration({{ $service['id'] }}, {{ $employee['id'] }}, $event.target.value)"
-                                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center">
+                                                    class="w-20 px-4 py-3 text-base border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-center"
+                                                    style="-webkit-appearance: auto; -moz-appearance: textfield;">
                                             </div>
                                             @if($customDuration)
                                                 <p class="text-xs text-blue-600 font-medium mt-1">{{ $customDuration }} min</p>

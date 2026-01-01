@@ -13,6 +13,7 @@ class EmployeeService extends Component
     public $services = [];
     public $employees = [];
     public $selectedEmployeeId = null;
+    public $showOnlyActive = true;
     
     protected $listeners = ['selectEmployeeFromMenu' => 'selectEmployee'];
     public function mount()
@@ -31,12 +32,18 @@ class EmployeeService extends Component
             $this->employees = [];
             foreach($users as $user) {
                 if($user->hasRole('Funcionário')) {
+                    // Aplica filtro de status se ativo
+                    if ($this->showOnlyActive && $user->status !== 'Ativo') {
+                        continue;
+                    }
+                    
                     $employeeServices = $user->services()->pluck('service_id')->toArray();
                     
                     $this->employees[] = [
                         'id' => $user->id,
                         'name' => $user->name,
                         'photo' => $user->photo ?? 'default.jpg',
+                        'status' => $user->status ?? 'Ativo',
                         'services' => $employeeServices
                     ];
                 }

@@ -23,25 +23,9 @@
     {{-- Cabeçalho da Página --}}
     <div class="bg-white border-b border-gray-200 mb-8">
         <div class="container mx-auto px-4 py-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
-                    <p class="text-gray-600 mt-1">Gerencie usuários, funções e status do salão</p>
-                </div>
-                {{-- Indicador de Limite de Funcionários --}}
-                <div class="mt-4 sm:mt-0">
-                    <div class="inline-flex items-center px-4 py-2 rounded-lg {{ $currentEmployeeCount >= $employeeLimit ? 'bg-red-100 border border-red-300' : 'bg-blue-100 border border-blue-300' }}">
-                        <svg class="w-5 h-5 mr-2 {{ $currentEmployeeCount >= $employeeLimit ? 'text-red-600' : 'text-blue-600' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
-                        </svg>
-                        <span class="text-sm font-semibold {{ $currentEmployeeCount >= $employeeLimit ? 'text-red-700' : 'text-blue-700' }}">
-                            Funcionários: {{ $currentEmployeeCount }}/{{ $employeeLimit }}
-                        </span>
-                    </div>
-                    @if($currentEmployeeCount >= $employeeLimit)
-                        <p class="text-xs text-red-600 mt-1 text-right">Limite atingido</p>
-                    @endif
-                </div>
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
+                <p class="text-gray-600 mt-1">Gerencie status dos usuários do salão</p>
             </div>
         </div>
     </div>
@@ -68,9 +52,8 @@
             
             {{-- Cabeçalho da Tabela --}}
             <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-6 py-4 border-b border-gray-200 hidden md:block">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</div>
-                    <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Função</div>
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</div>
                     <div class="text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</div>
                 </div>
@@ -79,43 +62,33 @@
             {{-- Lista de Usuários --}}
             <div class="divide-y divide-gray-200">
                 @forelse($salon_users as $user)
-                    <div class="p-6 hover:bg-gray-50 transition-colors">
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
+                    <div wire:click="showUserDetails({{ $user->id }})" 
+                         class="p-6 hover:bg-gray-50 transition-colors cursor-pointer">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                             
                             {{-- Nome do Usuário --}}
                             <div class="flex items-center space-x-3">
                                 <div class="flex-shrink-0">
-                                    <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-white uppercase">
-                                            {{ substr($user->name, 0, 2) }}
-                                        </span>
-                                    </div>
+                                    @if($user->photo)
+                                        <img src="{{ tenant_asset($user->photo) }}" 
+                                             alt="{{ $user->name }}"
+                                             class="h-10 w-10 rounded-full object-cover border-2 border-gray-200">
+                                    @else
+                                        <div class="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                            <span class="text-sm font-medium text-white uppercase">
+                                                {{ substr($user->name, 0, 2) }}
+                                            </span>
+                                        </div>
+                                    @endif
                                 </div>
                                 <div class="flex-1 min-w-0">
-                                    <button wire:click.prevent="showUserDetails({{ $user->id }})" 
-                                            class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors text-left">
+                                    <div class="text-sm font-medium text-gray-900">
                                         {{ $user->name }}
-                                    </button>
+                                    </div>
                                     <p class="text-sm text-gray-500 truncate">
                                         {{ $user->email ?? 'Email não informado' }}
                                     </p>
                                 </div>
-                            </div>
-
-                            {{-- Função --}}
-                            <div>
-                                @if($editingUserId === $user->id)
-                                    <select wire:model='editingRole' 
-                                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                        @foreach($roles as $role)
-                                            <option value="{{ $role }}">{{ $role }}</option>
-                                        @endforeach
-                                    </select>
-                                @else
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {{ $user->roles->first()->role ?? 'Sem função' }}
-                                    </span>
-                                @endif
                             </div>
 
                             {{-- Status --}}
@@ -146,14 +119,14 @@
                             {{-- Ações --}}
                             <div class="flex items-center space-x-2">
                                 @if($editingUserId === $user->id)
-                                    <button wire:click="saveUser" 
+                                    <button wire:click.stop="saveUser" 
                                             class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors">
                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                         </svg>
                                         Salvar
                                     </button>
-                                    <button wire:click="cancelEdit" 
+                                    <button wire:click.stop="cancelEdit" 
                                             class="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors">
                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -161,7 +134,7 @@
                                         Cancelar
                                     </button>
                                 @else
-                                    <button wire:click="editUser({{ $user->id }})" 
+                                    <button wire:click.stop="editUser({{ $user->id }})" 
                                             class="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors">
                                         <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -223,13 +196,19 @@
                 <div class="flex items-center justify-between pb-4 border-b border-gray-200">
                     <div class="flex items-center space-x-3">
                         <div class="flex-shrink-0">
-                            <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                                <span class="text-lg font-medium text-white uppercase">
-                                    @if(isset($userDetails['nome']))
-                                        {{ substr($userDetails['nome'], 0, 2) }}
-                                    @endif
-                                </span>
-                            </div>
+                            @if(isset($userDetails['photo']) && $userDetails['photo'])
+                                <img src="{{ tenant_asset($userDetails['photo']) }}" 
+                                     alt="{{ $userDetails['nome'] ?? 'Usuário' }}"
+                                     class="h-12 w-12 rounded-full object-cover border-2 border-gray-200">
+                            @else
+                                <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                    <span class="text-lg font-medium text-white uppercase">
+                                        @if(isset($userDetails['nome']))
+                                            {{ substr($userDetails['nome'], 0, 2) }}
+                                        @endif
+                                    </span>
+                                </div>
+                            @endif
                         </div>
                         <div>
                             <h3 class="text-lg font-medium text-gray-900">Detalhes do Usuário</h3>
@@ -318,20 +297,26 @@
                                 </svg>
                                 Plano de Assinatura
                             </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div class="text-center">
-                                    <span class="text-sm font-medium text-gray-600 block">Plano Atual</span>
-                                    <span class="text-sm text-gray-900 mt-1 block">{{ $userDetails['plano'] ?? 'Nenhum' }}</span>
+                            @if(isset($userDetails['plano']) && $userDetails['plano'] !== 'Nenhum plano ativo')
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div class="text-center">
+                                        <span class="text-sm font-medium text-gray-600 block">Plano Atual</span>
+                                        <span class="text-sm text-gray-900 mt-1 block">{{ $userDetails['plano'] }}</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="text-sm font-medium text-gray-600 block">Início</span>
+                                        <span class="text-sm text-gray-900 mt-1 block">{{ $userDetails['plano_inicio'] ?? 'N/A' }}</span>
+                                    </div>
+                                    <div class="text-center">
+                                        <span class="text-sm font-medium text-gray-600 block">Fim</span>
+                                        <span class="text-sm text-gray-900 mt-1 block">{{ $userDetails['plano_fim'] ?? 'N/A' }}</span>
+                                    </div>
                                 </div>
-                                <div class="text-center">
-                                    <span class="text-sm font-medium text-gray-600 block">Início</span>
-                                    <span class="text-sm text-gray-900 mt-1 block">{{ $userDetails['plano_inicio'] ?? 'N/A' }}</span>
+                            @else
+                                <div class="text-center py-4">
+                                    <span class="text-sm text-gray-500">{{ $userDetails['plano'] ?? 'Nenhum plano ativo' }}</span>
                                 </div>
-                                <div class="text-center">
-                                    <span class="text-sm font-medium text-gray-600 block">Fim</span>
-                                    <span class="text-sm text-gray-900 mt-1 block">{{ $userDetails['plano_fim'] ?? 'N/A' }}</span>
-                                </div>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>

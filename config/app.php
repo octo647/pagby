@@ -56,6 +56,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tenant Domain Suffix
+    |--------------------------------------------------------------------------
+    |
+    | This value determines the domain suffix for tenant subdomains.
+    | For example, if set to '.pagby.com.br', tenants will have domains like
+    | 'tenant-slug.pagby.com.br'. For local development, use '.localhost'.
+    |
+    */
+
+    'tenant_domain_suffix' => env('TENANT_DOMAIN_SUFFIX', '.localhost'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

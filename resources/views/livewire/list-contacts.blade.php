@@ -170,11 +170,17 @@
         <thead class="text-xs text-gray-700 uppercase bg-gray-50">
             <tr>
                 <th class="py-3 px-4 text-left">Nome</th>
-                <th class="py-3 px-4 text-left">Email</th>
-                <th class="py-3 px-4 text-left">Telefone</th>
+               <!-- <th class="py-3 px-4 text-left">Email</th>
+                <th class="py-3 px-4 text-left">Telefone</th> -->
                 <th class="py-3 px-4 text-left">Tipo</th>
                 <th class="py-3 px-4 text-left">Salão</th>
                 <th class="py-3 px-4 text-left">Cidade</th>
+                <th class="py-3 px-4 text-left">Plano</th>
+                <th class="py-3 px-4 text-left">Último Pagamento</th>
+                <th class="py-3 px-4 text-left">Data Vencimento</th>
+                <th class="py-3 px-4 text-left">Núm. Funcionários</th>
+                <th class="py-3 px-4 text-left">Valor</th>
+                <th class="py-3 px-4 text-left">Status Pgto</th>
                 <th class="py-3 px-4 text-left">Ações</th>
             </tr>
         </thead>
@@ -184,11 +190,41 @@
        
         <tr wire:key="{{$index}}" class="bg-white border-b hover:bg-gray-50">
             <td class="py-3 px-4">{{$contact['owner_name'] ?? $contact['name'] ?? ''}}</td>
-            <td class="py-3 px-4">{{$contact['email']}}</td>
-            <td class="py-3 px-4">{{$contact['phone']}}</td>
+           <!-- <td class="py-3 px-4">{{$contact['email']}}</td>
+            <td class="py-3 px-4">{{$contact['phone']}}</td> -->
             <td class="py-3 px-4">{{$contact['tipo']}}</td>
             <td class="py-3 px-4">{{$contact['tenant_name']}}</td>
             <td class="py-3 px-4">{{$contact['city']."/".$contact['state']}}</td>
+            <td class="py-3 px-4">{{$contact['last_payment_plan'] ?? 'N/A'}}</td>
+            <td class="py-3 px-4">{{$contact['last_payment_date'] ?? 'N/A'}}</td>
+            <td class="py-3 px-4">{{$contact['due_date'] ?? 'N/A'}}</td>
+            <td class="py-3 px-4">{{$contact['last_payment_employee_count'] ?? 'N/A'}}</td>
+            <td class="py-3 px-4">{{$contact['last_payment_amount'] ?? 'N/A'}}</td>
+
+            <td class="py-3 px-4">
+                @if($contact['has_paid'])
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                        </svg>
+                        Pago
+                    </span>
+                @elseif($contact['payment_count'] > 0)
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800" title="Status: {{$contact['last_payment_status'] ?? 'desconhecido'}}">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/>
+                        </svg>
+                        Pendente
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        Não pago
+                    </span>
+                @endif
+            </td>
             <td class="py-3 px-4">
                 <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded text-sm mr-2" wire:click="editContact({{$index}})">
                     Editar

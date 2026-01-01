@@ -104,6 +104,10 @@
                     <polygon points="12,2 22,8 12,14 2,8" fill="#A78BFA"/>
                     <rect x="6" y="16" width="12" height="4" rx="2" fill="#F472B6"/>
                     </svg>', 'tabelaAtiva' => 'planos'],
+                    [ 'label' => 'Ajustes de Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle">
+                    <rect x="3" y="8" width="18" height="8" rx="3" fill="#10B981"/>
+                    <path d="M8 12h8M12 8v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+                    </svg>', 'tabelaAtiva' => 'ajustes-planos'],
                 ];
                 
                 $menuProprietario = [

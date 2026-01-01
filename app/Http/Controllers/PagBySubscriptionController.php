@@ -493,14 +493,33 @@ class PagBySubscriptionController extends Controller
         $plan = $plans[$request->plan];
         
 
+        // Buscar créditos pendentes do tenant
+        $pendingCredits = \App\Models\PlanAdjustment::getPendingCredits($tenantId);
+        
+        Log::info('Créditos pendentes encontrados:', [
+            'tenant_id' => $tenantId,
+            'pending_credits' => $pendingCredits,
+        ]);
+
         // Cria registro local da assinatura
         $pagbyService = new PagbyService();    
+        $baseAmount = $pagbyService->calcularValorPlano($request->numFuncionarios, $request->plan);
+        
+        // Aplicar créditos pendentes ao valor
+        $finalAmount = max(0, $baseAmount - $pendingCredits); // Garante que não seja negativo
+        
+        Log::info('Cálculo de valor com créditos:', [
+            'base_amount' => $baseAmount,
+            'pending_credits' => $pendingCredits,
+            'final_amount' => $finalAmount,
+        ]);
+
         $payment = PagByPayment::on('mysql')->create([        
         'tenant_id' => $tenantId,
         'contact_id' => $contact->id, // ADICIONAR este campo
         'mp_payment_id' => null,
         'external_id' => null, // ADICIONAR explicitamente
-        'amount' => $pagbyService->calcularValorPlano($request->numFuncionarios, $request->plan),
+        'amount' => $finalAmount, // Usar valor com créditos aplicados
         'status' => 'pending',
         'plan' => $request->plan,
         'employee_count' => $request->numFuncionarios,
@@ -508,9 +527,20 @@ class PagBySubscriptionController extends Controller
     ]);
     Log::info('📄 PagByPayment criado:', [
         'payment_id' => $payment->id,
-        'amount' => $payment->amount,
+        'base_amount' => $baseAmount,
+        'credits_applied' => $pendingCredits,
+        'final_amount' => $finalAmount,
         'plan' => $payment->plan
     ]);
+    
+    // Se houver créditos aplicados, marcar como utilizados
+    if ($pendingCredits > 0) {
+        \App\Models\PlanAdjustment::applyPendingCredits($tenantId);
+        Log::info('Créditos aplicados e marcados como utilizados:', [
+            'tenant_id' => $tenantId,
+            'credits_applied' => $pendingCredits,
+        ]);
+    }
     
     // Cria checkout de pagamento via Asaas
     $asaasService = new \App\Services\AsaasService();
@@ -524,9 +554,10 @@ class PagBySubscriptionController extends Controller
     
     $paymentData = [
         'name' => 'Renovação ' . $plan['name'] . ' - ' . $tenant_name,
-        'description' => $plan['description'] . ' - ' . $request->numFuncionarios . ' funcionário(s)',
+        'description' => $plan['description'] . ' - ' . $request->numFuncionarios . ' funcionário(s)' . 
+                        ($pendingCredits > 0 ? ' (Crédito aplicado: R$ ' . number_format($pendingCredits, 2, ',', '.') . ')' : ''),
         'billingType' => 'UNDEFINED',
-        'value' => $payment->amount
+        'value' => $finalAmount
     ];
     
     $asaasResult = $asaasService->criarCheckout($customerData, $paymentData);
@@ -600,6 +631,21 @@ class PagBySubscriptionController extends Controller
         ]);
         
         if ($asaasPaymentId) {
+            // 1. Verificar se é um ajuste de plano (PlanAdjustment)
+            $adjustment = \App\Models\PlanAdjustment::where('asaas_payment_id', $asaasPaymentId)->first();
+            
+            if ($adjustment && in_array($asaasStatus, ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH'])) {
+                $adjustment->markAsPaid();
+                Log::info('Ajuste de plano marcado como pago', [
+                    'adjustment_id' => $adjustment->id,
+                    'tenant_id' => $adjustment->tenant_id,
+                    'amount' => $adjustment->amount,
+                    'asaas_status' => $asaasStatus,
+                ]);
+                return response('OK', 200);
+            }
+            
+            // 2. Processar pagamento normal (PagByPayment)
             // Buscar por asaas_payment_id
             $payment = PagByPayment::where('asaas_payment_id', $asaasPaymentId)->first();
             // Se não encontrar, buscar por external_id = paymentLink

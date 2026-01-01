@@ -122,4 +122,22 @@ class AsaasService {
         }
         return null;
     }
+
+    /**
+     * Cancela uma cobrança no Asaas.
+     * @param string $asaasPaymentId
+     * @return array
+     */
+    public function cancelarCobranca($asaasPaymentId)
+    {
+        $response = Http::withHeaders([
+            'access_token' => $this->apiKey,
+            'Content-Type' => 'application/json',
+        ])->delete($this->apiUrl . '/payments/' . $asaasPaymentId);
+
+        if ($response->successful()) {
+            return ['success' => true, 'data' => $response->json()];
+        }
+        return ['success' => false, 'message' => $response->body()];
+    }
 }

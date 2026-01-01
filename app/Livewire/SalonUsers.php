@@ -37,6 +37,7 @@ class SalonUsers extends Component
         'nome' => $user->name,
         'email' => $user->email,
         'phone' => $phone,
+        'photo' => $user->photo,
         'funcao' => $user->roles->first()->role ?? '',
         'agendamentos' => $agendamentos,
         'ultimo_agendamento' => $ultimoAgendamento ? $ultimoAgendamento->appointment_date->format('d/m/Y H:i') : 'Nunca',
@@ -123,14 +124,14 @@ class SalonUsers extends Component
     public function render()
     {
         $salon_users = User::query()
+            ->whereHas('roles', function($query) {
+                $query->where('role', 'Cliente');
+            })
             ->when($this->searchTerm, function($query) {
                 $query->where(function($q) {
                     $q->where('name', 'like', '%'.$this->searchTerm.'%')
                       ->orWhere('email', 'like', '%'.$this->searchTerm.'%')
-                      ->orWhere('status', 'like', '%'.$this->searchTerm.'%')
-                      ->orWhereHas('roles', function($roleQuery) {
-                          $roleQuery->where('role', 'like', '%'.$this->searchTerm.'%');
-                      });
+                      ->orWhere('status', 'like', '%'.$this->searchTerm.'%');
                 });
             })
             ->orderBy('name', 'asc')

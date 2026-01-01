@@ -35,7 +35,7 @@
             <tr wire:key="{{$index}}" class="bg-white border-b hover:bg-gray-50">
                 <td>
                     <div class="flex w-16 items-center">
-                    <a href="{{'https://'.$salon['slug'].'.'.env('APP_URL')}}" target="_blank">
+                    <a href="{{'https://'.$salon['slug'].'.'.config('app.url')}}" target="_blank">
                         <img src="{{asset($salon['logo'])}}" alt="Logo">
                     </div>
                 </td>

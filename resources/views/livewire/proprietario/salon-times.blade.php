@@ -30,7 +30,13 @@
                         </svg>
                         Horários dos Funcionários
                     </h2>
-                    <span class="text-sm text-gray-500">{{ count($officehours) }} funcionários</span>
+                    <div class="flex items-center gap-4">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" wire:model.live="showOnlyActive" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2">
+                            <span class="ml-2 text-sm font-medium text-gray-700">Apenas ativos</span>
+                        </label>
+                        <span class="text-sm text-gray-500">{{ count($officehours) }} funcionários</span>
+                    </div>
                 </div>
             </div>
 
@@ -43,11 +49,17 @@
                             {{-- Informações do Funcionário --}}
                             <div class="flex items-center space-x-4 mb-4 lg:mb-0">
                                 <div class="flex-shrink-0">
-                                    <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                                        <span class="text-lg font-medium text-white uppercase">
-                                            {{ substr($officehour['funcionario'], 0, 2) }}
-                                        </span>
-                                    </div>
+                                    @if(!empty($officehour['photo']))
+                                        <img src="{{ tenant_asset('profile-photos/' . basename($officehour['photo'])) }}" 
+                                             alt="{{ $officehour['funcionario'] }}" 
+                                             class="h-12 w-12 rounded-full object-cover border-2 border-blue-500">
+                                    @else
+                                        <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+                                            <span class="text-lg font-medium text-white uppercase">
+                                                {{ substr($officehour['funcionario'], 0, 2) }}
+                                            </span>
+                                        </div>
+                                    @endif
                                 </div>
                                 <div>
                                     <h3 class="text-lg font-medium text-gray-900">{{ $officehour['funcionario'] }}</h3>
@@ -143,9 +155,23 @@
                     {{-- Cabeçalho do Painel --}}
                     <div class="bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-4 text-white">
                         <div class="flex items-center justify-between">
-                            <div>
-                                <h2 class="text-xl font-semibold">Editar Horários</h2>
-                                <p class="text-blue-100 text-sm mt-1">{{ $editOfficehour['funcionario'] ?? '' }}</p>
+                            <div class="flex items-center space-x-3">
+                                {{-- Foto ou Iniciais do Funcionário --}}
+                                @if(!empty($editOfficehour['photo']))
+                                    <img src="{{ tenant_asset('profile-photos/' . basename($editOfficehour['photo'])) }}" 
+                                         alt="{{ $editOfficehour['funcionario'] ?? '' }}" 
+                                         class="h-12 w-12 rounded-full object-cover border-2 border-white">
+                                @else
+                                    <div class="h-12 w-12 rounded-full bg-white bg-opacity-20 flex items-center justify-center border-2 border-white">
+                                        <span class="text-lg font-medium text-white uppercase">
+                                            {{ isset($editOfficehour['funcionario']) ? substr($editOfficehour['funcionario'], 0, 2) : '' }}
+                                        </span>
+                                    </div>
+                                @endif
+                                <div>
+                                    <h2 class="text-xl font-semibold">Editar Horários</h2>
+                                    <p class="text-blue-100 text-sm mt-1">{{ $editOfficehour['funcionario'] ?? '' }}</p>
+                                </div>
                             </div>
                             <button wire:click="$set('showEditPanel', false)" 
                                     class="rounded-md text-blue-200 hover:text-white focus:outline-none focus:ring-2 focus:ring-white">

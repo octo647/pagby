@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\PagByPayment;
 
 class Contact extends Model
 {
@@ -25,4 +26,9 @@ class Contact extends Model
         'contract_accepted_at',
     ];
     use HasFactory;
+    public function pagbypayment()
+    {
+        return $this->hasMany(PagByPayment::class);
+    }
+    
 }

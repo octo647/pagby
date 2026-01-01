@@ -59,9 +59,55 @@ class ListContacts extends Component
     
     public function mount()
     {
-        $this->contacts = Contact::all()->toArray();
-        
-        
+        $this->loadContacts();
+    }
+
+    public function loadContacts()
+    {
+        $this->contacts = Contact::with('pagbypayment')->get()->map(function($contact) {
+            $contactArray = $contact->toArray();
+            $contactArray['has_paid'] = $contact->pagbypayment()->where('status', 'RECEIVED')->exists();
+            $contactArray['payment_count'] = $contact->pagbypayment()->count();
+            $contactArray['total_paid_amount'] = $contact->pagbypayment()->where('status', 'RECEIVED')->sum('amount');
+            $contactArray['last_payment_plan'] = $contact->pagbypayment()->latest()->first()?->plan;
+
+            $data = $contact->pagbypayment()->latest()->first()->created_at;
+                $timestamp = strtotime($data);
+                $data_pgto = date('d/m/Y', $timestamp);
+
+            if($contactArray['last_payment_plan'] == 'mensal'){
+                $contactArray['last_payment_plan'] = 'Mensal';
+                $data_vct = date('d/m/Y', strtotime($data . ' +1 month'));
+            } elseif($contactArray['last_payment_plan'] == 'trimestral'){
+                $contactArray['last_payment_plan'] = 'Trimestral';
+                $data_vct = date('d/m/Y', strtotime($data . ' +3 months'));
+            } elseif($contactArray['last_payment_plan'] == 'semestral'){
+                $contactArray['last_payment_plan'] = 'Semestral';
+                $data_vct = date('d/m/Y', strtotime($data . ' +6 months'));
+            } elseif($contactArray['last_payment_plan'] == 'anual'){
+                $contactArray['last_payment_plan'] = 'Anual';
+                $data_vct = date('d/m/Y', strtotime($data . ' +12 months'));
+            } else{
+                $data_vct = 'N/A';
+            }
+            $contactArray['due_date'] = $data_vct;   
+            
+            $contactArray['last_payment_date'] = $data_pgto;
+
+            $contactArray['last_payment_amount'] = $contact->pagbypayment()->latest()->first()?->amount;
+            $contactArray['last_payment_method'] = $contact->pagbypayment()->latest()->first()?->payment_method;
+            
+            $contactArray['last_payment_external_id'] = $contact->pagbypayment()->latest()->first()?->external_id;
+            $contactArray['last_payment_id'] = $contact->pagbypayment()->latest()->first()?->id;
+            
+            $contactArray['last_payment_employee_count'] = $contact->pagbypayment()->latest()->first()?->employee_count;
+            
+            $contactArray['last_payment_asaas_payment_id'] = $contact->pagbypayment()->latest()->first()?->asaas_payment_id;
+
+            $contactArray['last_payment_status'] = $contact->pagbypayment()->latest()->first()?->status;
+
+            return $contactArray;
+        })->toArray();
     }
 
 
@@ -94,7 +140,7 @@ class ListContacts extends Component
         $contact = $this->contacts[$contactIndex] ?? null;
         if ($contact) {
             Contact::destroy($contact['id']);
-            $this->contacts = Contact::all()->toArray();
+            $this->loadContacts();
             session()->flash('message', 'Contato excluído com sucesso!');
         }
     }
@@ -143,7 +189,7 @@ class ListContacts extends Component
 
         Contact::create($this->newContact);
         
-        $this->contacts = Contact::all()->toArray();
+        $this->loadContacts();
         $this->showAddForm = false;
         $this->resetNewContact();
         
@@ -179,7 +225,7 @@ class ListContacts extends Component
             'notas' => $this->editingContact['notas'],
         ]);
         
-        $this->contacts = Contact::all()->toArray();
+        $this->loadContacts();
         $this->showEditForm = false;
         $this->resetEditingContact();
         

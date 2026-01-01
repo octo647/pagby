@@ -214,34 +214,25 @@ class Saloes extends Component
                     Log::error('Slug está vazio, upload abortado');
                 } else {
                     $ext = $this->logoFile->getClientOriginalExtension();
-                    $path = "images/tenants/$slug/logo.$ext";
+                    // Usa public/tenants/{slug} ao invés de public/images/tenants/{slug} que é symlink
+                    $path = "tenants/$slug/logo.$ext";
                     // Garante que o diretório existe
-                    $storageDir = storage_path("app/public/images/tenants/$slug");
-                    if (!is_dir($storageDir)) {
-                        mkdir($storageDir, 0755, true);
+                    $logoDir = public_path("tenants/$slug");
+                    if (!is_dir($logoDir)) {
+                        mkdir($logoDir, 0775, true);
                     }
-                    // Tenta salvar no storage/app/public/images/{slug}/logo.{ext} com tratamento de erro
+                    // Salva diretamente em public/tenants/{slug}
+                    $logoPath = $logoDir . "/logo.$ext";
                     try {
-                        $result = $this->logoFile->storeAs("images/tenants/$slug", "logo.$ext", 'public');
-                        Log::info('Resultado do storeAs', ['result' => $result]);
+                        $this->logoFile->storeAs("tmp", "logo.$ext", 'local');
+                        $tmpPath = storage_path("app/tmp/logo.$ext");
+                        copy($tmpPath, $logoPath);
+                        unlink($tmpPath);
+                        Log::info('LogoFile salvo em ' . $logoPath);
                     } catch (\Exception $e) {
-                        Log::error('Erro ao salvar logoFile no storage', [
+                        Log::error('Erro ao salvar logoFile', [
                             'exception' => $e->getMessage(),
                             'trace' => $e->getTraceAsString(),
-                        ]);
-                    }
-                    Log::info('LogoFile salvo em storage', [
-                        'storagePath' => storage_path("app/public/images/tenants/$slug/logo.$ext"),
-                        'exists' => file_exists(storage_path("app/public/images/tenants/$slug/logo.$ext")),
-                    ]);
-                    // Copia para public/images/{slug}/logo.{ext}
-                    $storagePath = storage_path("app/public/images/tenants/$slug/logo.$ext");
-                    $publicPath = public_path("images/tenants/$slug/logo.$ext");
-                    if (file_exists($storagePath)) {
-                        copy($storagePath, $publicPath);
-                        Log::info('LogoFile copiado para public', [
-                            'publicPath' => $publicPath,
-                            'exists' => file_exists($publicPath),
                         ]);
                     }
                     $salon['logo'] = $path;
@@ -324,8 +315,8 @@ class Saloes extends Component
             'newSalon.slug' => 'required',
             'logoFile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        // Domínio baseado no ambiente
-        $domainSuffix = env('TENANT_DOMAIN_SUFFIX', '.localhost');
+        // Domínio baseado no ambiente (usa config() pois env() retorna null quando cached)
+        $domainSuffix = config('app.tenant_domain_suffix', '.localhost');
         // Garante que social_login_enabled seja inteiro
         $this->newSalon['social_login_enabled'] = (int) ($this->newSalon['social_login_enabled'] ?? 0);
         // Cria o novo tenant se não existir, removendo o campo logo para não sobrescrever depois
@@ -341,11 +332,11 @@ class Saloes extends Component
         // Inicia automaticamente o período de teste de 30 dias
         $tenant->startTrial();
 
+        // Executa seeders do tenant ANTES de criar o proprietário
+        $this->seedTenantDatabase($tenant);
+
         // Cria conta do proprietário no tenant
         $this->createOwnerAccount($tenant);
-
-        // Executa seeders do tenant
-        $this->seedTenantDatabase($tenant);
 
         //Criar a estrutura de diretórios
         $this->createTenantDirectoryStructure($this->newSalon['id'], $this->newSalon['type'] ?? 'barbearia');
@@ -360,9 +351,10 @@ class Saloes extends Component
                 'extension' => $ext,
                 'mime' => $this->logoFile->getMimeType(),
             ]);
-            $logoDir = public_path("images/tenants/$slug");
+            // Usa public/tenants/{slug} ao invés de public/images/tenants/{slug} que é symlink
+            $logoDir = public_path("tenants/$slug");
             if (!is_dir($logoDir)) {
-                mkdir($logoDir, 0755, true);
+                mkdir($logoDir, 0775, true);
             }
             $logoPath = $logoDir . "/logo.$ext";
             try {
@@ -377,8 +369,8 @@ class Saloes extends Component
                     'trace' => $e->getTraceAsString(),
                 ]);
             }
-            // Atualiza o campo logo no banco e no array
-            $logoRelPath = "images/tenants/$slug/logo.$ext";
+            // Atualiza o campo logo no banco e no array (caminho corrigido)
+            $logoRelPath = "tenants/$slug/logo.$ext";
             $tenant->logo = $logoRelPath;
             $tenant->save();
             Log::info('Logo salvo no banco', ['tenant_id' => $tenant->id, 'logo' => $tenant->logo]);
@@ -426,10 +418,10 @@ class Saloes extends Component
             $basePath . "/tenants/$tenantId",
             storage_path("app/public/images/$tenantId"),
             resource_path("views/tenants/$tenantId"),
-            $storagePath . "/app/public/profile-photos",
-            $storagePath . "/app/public/services",
-            $storagePath . "/app/public/gallery",
-            $storagePath . "/framework/cache",
+            $storagePath . "/tenant{$tenantId}/app/public/profile-photos",
+            $storagePath . "/tenant{$tenantId}/app/public/services",
+            $storagePath . "/tenant{$tenantId}/app/public/gallery",
+            $storagePath . "/tenant{$tenantId}/framework/cache",
         ];
 
         // Subdiretórios padrões para a home do tenant
@@ -439,10 +431,23 @@ class Saloes extends Component
         ];
         $directories = array_merge($directories, $viewSubdirs);
 
-        // Criar todos os diretórios
+        // Criar todos os diretórios com tratamento de erro
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
+                try {
+                    if (!mkdir($directory, 0775, true)) {
+                        Log::error("Falha ao criar diretório", ['directory' => $directory]);
+                        throw new \Exception("Não foi possível criar o diretório: $directory");
+                    }
+                    Log::info("Diretório criado com sucesso", ['directory' => $directory]);
+                } catch (\Exception $e) {
+                    Log::error("Erro ao criar diretório", [
+                        'directory' => $directory,
+                        'error' => $e->getMessage(),
+                        'permissions' => decoct(fileperms(dirname($directory)) & 0777)
+                    ]);
+                    throw new \Exception("Erro ao criar estrutura de diretórios: " . $e->getMessage());
+                }
             }
         }
 
@@ -520,11 +525,11 @@ class Saloes extends Component
  */
 private function createTenantStorageLink($tenantId)
 {
-    $storagePath = storage_path("{$tenantId}/app/public");
-    $publicPath = public_path("storage/{$tenantId}");
+    $storagePath = storage_path("tenant{$tenantId}/app/public");
+    $publicPath = public_path("storage/tenant{$tenantId}");
 
     // Log para diagnóstico
-    Log::info('Tentando criar symlink', [
+    Log::info('Tentando criar symlink de storage', [
         'storagePath' => $storagePath,
         'publicPath' => $publicPath,
         'storage_exists' => is_dir($storagePath),
@@ -533,22 +538,38 @@ private function createTenantStorageLink($tenantId)
 
     // Garante que o diretório de origem existe
     if (!is_dir($storagePath)) {
-        mkdir($storagePath, 0755, true);
+        mkdir($storagePath, 0775, true);
         Log::info('Diretório de origem criado', ['storagePath' => $storagePath]);
     }
 
     // Garante que o diretório pai do destino existe
     if (!is_dir(dirname($publicPath))) {
-        mkdir(dirname($publicPath), 0755, true);
+        mkdir(dirname($publicPath), 0775, true);
         Log::info('Diretório pai do symlink criado', ['publicPath' => dirname($publicPath)]);
     }
 
-    if (!is_link($publicPath) && is_dir($storagePath)) {
-        symlink($storagePath, $publicPath);
-        Log::info('Symlink criado', [
-            'from' => $storagePath,
-            'to' => $publicPath
-        ]);
+    // Remove symlink antigo se existir
+    if (is_link($publicPath)) {
+        @unlink($publicPath);
+    }
+
+    if (is_dir($storagePath)) {
+        try {
+            if (@symlink($storagePath, $publicPath)) {
+                Log::info('Symlink de storage criado', ['from' => $storagePath, 'to' => $publicPath]);
+            } else {
+                Log::warning('Não foi possível criar symlink de storage (permissão negada)', [
+                    'from' => $storagePath,
+                    'to' => $publicPath
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Erro ao criar symlink de storage', [
+                'error' => $e->getMessage(),
+                'from' => $storagePath,
+                'to' => $publicPath
+            ]);
+        }
     }
 }
 
@@ -579,8 +600,8 @@ private function createTenantStorageLink($tenantId)
                 'origin' => 'system',
             ]);
 
-            // Busca ou cria a role de proprietário
-            $ownerRole = \App\Models\Role::firstOrCreate(['role' => 'Proprietário']);
+            // Busca a role de proprietário (já criada pelo seeder)
+            $ownerRole = \App\Models\Role::where('role', 'Proprietário')->first();
 
             // Associa o usuário à role de proprietário
             $user->roles()->attach($ownerRole->id);
@@ -600,21 +621,27 @@ private function createTenantStorageLink($tenantId)
      */
     private function seedTenantDatabase($tenant)
     {
-        // Inicializa tenancy para o tenant específico
+        // Inicializa tenancy para o tenant
         tenancy()->initialize($tenant);
         
         try {
-            // Executa o seeder do tenant
-            \Illuminate\Support\Facades\Artisan::call('db:seed', [
-                '--class' => 'Database\\Seeders\\TenantDatabaseSeeder'
-            ]);
+            // Cria as roles diretamente (mais confiável que Artisan::call)
+            $roles = [
+                ['role' => 'Proprietário'],
+                ['role' => 'Funcionário'],
+                ['role' => 'Cliente'],
+            ];
+
+            foreach ($roles as $roleData) {
+                \App\Models\Role::firstOrCreate($roleData);
+            }
             
-            Log::info("Seeders executados para tenant {$tenant->id}");
+            Log::info("Roles criadas para tenant {$tenant->id}");
             
         } catch (\Exception $e) {
-            Log::error("Erro ao executar seeders para tenant {$tenant->id}: " . $e->getMessage());
+            Log::error("Erro ao criar roles para tenant {$tenant->id}: " . $e->getMessage());
         } finally {
-            // Finaliza tenancy para voltar ao contexto central
+            // Finaliza tenancy
             tenancy()->end();
         }
     }
