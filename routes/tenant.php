@@ -38,11 +38,12 @@ Route::middleware([
     Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
     Route::post('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
     // Subscription routes (sempre disponíveis)
+    
     Route::get('/subscription/plans', [\App\Http\Controllers\TenantSubscriptionController::class, 'showPlans'])->name('tenant.subscription.plans');
     Route::post('/subscription/select', [\App\Http\Controllers\TenantSubscriptionController::class, 'selectPlan'])->name('tenant.subscription.select');
     Route::get('/subscription/success', [\App\Http\Controllers\TenantSubscriptionController::class, 'success'])->name('tenant.subscription.success');
     Route::get('/subscription/blocked', [\App\Http\Controllers\TenantSubscriptionController::class, 'blocked'])->name('tenant.subscription.blocked');
-    Route::post('/trial/start', [\App\Http\Controllers\TenantSubscriptionController::class, 'startTrial'])->name('tenant.trial.start');
+    Route::post('/trial/start', [\App\Http\Controllers\TenantSubscriptionController::class, 'startTrial'])->name('tenant.trial.start'); 
 
     // ROTAS PROTEGIDAS (com bloqueio de assinatura)
     Route::middleware(['checkTenantSubscription'])->group(function () {
@@ -226,4 +227,182 @@ Route::get('/plans', function () {
 
     
 
+});
+
+// API interna para bot WhatsApp ativar usuários (fora dos middlewares)
+Route::middleware([
+    InitializeTenancyByDomain::class,
+])->group(function () {
+    Route::post('/api/whatsapp/activate', function(Request $request) {
+        $phone = $request->input('phone');
+        $jid = $request->input('jid'); // Novo: aceitar JID também
+        $tenantName = tenant('name') ?? tenant('subdomain') ?? 'unknown';
+        
+        \Log::info("🟣 API /whatsapp/activate chamada", [
+            'tenant' => $tenantName,
+            'phone_received' => $phone,
+            'jid_received' => $jid
+        ]);
+        
+        // Se recebeu JID, tenta buscar diretamente por ele primeiro
+        if ($jid) {
+            \Log::info("🔍 Buscando por JID: $jid");
+            $user = \App\Models\User::where('whatsapp_jid', $jid)->first();
+            
+            if ($user) {
+                $user->whatsapp_activated = true;
+                $user->save();
+                
+                \Log::info("✅ Usuário ativado por JID!", [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'jid' => $jid
+                ]);
+                
+                return response()->json([
+                    'success' => true,
+                    'message' => 'WhatsApp activated via JID',
+                    'user' => $user->name
+                ]);
+            }
+            
+            \Log::info("⚠️ Nenhum usuário encontrado com JID: $jid");
+        }
+        
+        if (!$phone) {
+            \Log::warning("⚠️  Telefone e JID não fornecidos");
+            return response()->json(['error' => 'Phone or JID required'], 400);
+        }
+        
+        // Normaliza: remove tudo que não é dígito
+        $normalizedPhone = preg_replace('/\D/', '', $phone);
+        
+        // Gera variações comuns de formato
+        $variations = [
+            $normalizedPhone,
+            '0' . $normalizedPhone,
+        ];
+        
+        // Se tem 10 dígitos (DDD + número sem 9), tenta adicionar o 9
+        if (strlen($normalizedPhone) == 10) {
+            $with9 = substr($normalizedPhone, 0, 2) . '9' . substr($normalizedPhone, 2);
+            $variations[] = $with9;
+            $variations[] = '0' . $with9;
+        }
+        
+        // Se tem 11 dígitos (DDD + 9 + número), tenta remover o 9
+        if (strlen($normalizedPhone) == 11) {
+            $without9 = substr($normalizedPhone, 0, 2) . substr($normalizedPhone, 3);
+            $variations[] = $without9;
+            $variations[] = '0' . $without9;
+        }
+        
+        // Remove variações duplicadas
+        $variations = array_unique($variations);
+        
+        \Log::info("🔄 Variações geradas", ['variations' => $variations]);
+        
+        // Lista usuários para debug
+        $allUsers = \App\Models\User::select('id', 'name', 'phone')->get()->map(function($u) {
+            return [
+                'id' => $u->id,
+                'name' => $u->name,
+                'phone' => $u->phone,
+                'normalized' => preg_replace('/\D/', '', $u->phone)
+            ];
+        });
+        \Log::info("👥 Usuários no banco", ['users' => $allUsers->toArray()]);
+        
+        // Busca no banco comparando telefones normalizados
+        $users = \App\Models\User::where(function($query) use ($variations) {
+            foreach ($variations as $variant) {
+                $query->orWhereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') = ?", [$variant]);
+            }
+        })->get();
+        
+        $updated = 0;
+        foreach ($users as $user) {
+            $user->whatsapp_activated = true;
+            // Auto-populate whatsapp_jid se foi fornecido e ainda não está salvo
+            if ($jid && empty($user->whatsapp_jid)) {
+                $user->whatsapp_jid = $jid;
+                \Log::info("📝 Auto-populando whatsapp_jid", [
+                    'user_id' => $user->id,
+                    'name' => $user->name,
+                    'jid' => $jid
+                ]);
+            }
+            $user->save();
+            $updated++;
+        }
+        
+        \Log::info("📊 Resultado da busca", [
+            'updated' => $updated,
+            'success' => $updated > 0
+        ]);
+        
+        return response()->json([
+            'success' => $updated > 0,
+            'updated' => $updated,
+            'phone' => $normalizedPhone,
+            'tried' => $variations
+        ]);
+    });
+    
+    // Endpoint para vincular telefone a JID (contas WhatsApp Business)
+    Route::post('/api/whatsapp/link-jid', function(Request $request) {
+        $phone = $request->input('phone');
+        $jid = $request->input('jid');
+        
+        if (!$phone || !$jid) {
+            return response()->json(['error' => 'Phone and JID required'], 400);
+        }
+        
+        $normalizedPhone = preg_replace('/\D/', '', $phone);
+        
+        $variations = [
+            $normalizedPhone,
+            '0' . $normalizedPhone,
+        ];
+        
+        if (strlen($normalizedPhone) == 10) {
+            $with9 = substr($normalizedPhone, 0, 2) . '9' . substr($normalizedPhone, 2);
+            $variations[] = $with9;
+            $variations[] = '0' . $with9;
+        }
+        
+        if (strlen($normalizedPhone) == 11) {
+            $without9 = substr($normalizedPhone, 0, 2) . substr($normalizedPhone, 3);
+            $variations[] = $without9;
+            $variations[] = '0' . $without9;
+        }
+        
+        $variations = array_unique($variations);
+        
+        $users = \App\Models\User::where(function($query) use ($variations) {
+            foreach ($variations as $variant) {
+                $query->orWhereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') = ?", [$variant]);
+            }
+        })->get();
+        
+        $linked = 0;
+        foreach ($users as $user) {
+            $user->whatsapp_jid = $jid;
+            $user->save();
+            $linked++;
+            
+            \Log::info("✅ JID vinculado ao usuário", [
+                'user_id' => $user->id,
+                'name' => $user->name,
+                'phone' => $user->phone,
+                'jid' => $jid
+            ]);
+        }
+        
+        return response()->json([
+            'success' => $linked > 0,
+            'linked' => $linked,
+            'user' => $linked > 0 ? $users->first()->name : null
+        ]);
+    });
 });

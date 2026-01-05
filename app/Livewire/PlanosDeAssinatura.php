@@ -31,7 +31,7 @@ class PlanosDeAssinatura extends Component
     public $features_values = [];
     public $modalNovoPlano = false;
     public $allowedDays = []; // Array para armazenar os dias permitidos
-    public $assinaturaAtiva = null; // Assinatura ativa do usuário
+    public $assinaturaAtivaId = null; // ID da assinatura ativa (não o objeto)
     
     // Listener para atualizar descontos quando serviços adicionais mudarem
     public function updatedServicosAdicionais()
@@ -61,17 +61,21 @@ class PlanosDeAssinatura extends Component
         $planos = Plan::with('services', 'additionalServices')->get();    
         $this->todosServicos = \App\Models\Service::all();
 
-        // Defina a assinatura ativa do usuário autenticado (FORA do map)
+        // Defina o ID da assinatura ativa do usuário autenticado (salva apenas o ID, não o objeto)
         $user = Auth::user();
         $tenantId = tenant() ? tenant()->id : null;
-        $this->assinaturaAtiva = null;
+        $this->assinaturaAtivaId = null;
         if ($user && $tenantId) {
-            $this->assinaturaAtiva = \App\Models\TenantsPlansPayment::on('mysql')
+            $assinatura = \App\Models\TenantsPlansPayment::on('mysql')
                 ->where('tenant_id', $tenantId)
                 ->where('payer_data', 'like', '%'.$user->email.'%')
-                ->whereIn('status', ['authorized', 'active', 'approved'])
+                ->whereIn('status', ['authorized', 'active', 'approved', 'RECEIVED'])
                 ->latest()
                 ->first();
+            
+            if ($assinatura) {
+                $this->assinaturaAtivaId = $assinatura->id;
+            }
         }
     
 
@@ -95,6 +99,17 @@ class PlanosDeAssinatura extends Component
             ];
         })->toArray();
 }
+
+    // Método helper para obter a assinatura ativa (quando necessário)
+    public function getAssinaturaAtivaProperty()
+    {
+        if (!$this->assinaturaAtivaId) {
+            return null;
+        }
+        
+        return \App\Models\TenantsPlansPayment::on('mysql')->find($this->assinaturaAtivaId);
+    }
+    
     public function allowedDays()
     {
         // Retorna os dias permitidos para o agendamento
@@ -111,16 +126,35 @@ class PlanosDeAssinatura extends Component
         $user = Auth::user();
         if ($plano) {
             \Log::debug('Plano encontrado', ['plano_id' => $plano->id, 'user_id' => $user->id]);
+            
             // Verifica se o usuário já tem um plano ativo
             if (is_object($user) && method_exists($user, 'hasRole') && $user->hasRole('Cliente') && $user->plano_atual) {
                 \Log::debug('Usuário já possui plano ativo', ['user_id' => $user->id]);
                 session()->flash('message', 'Você já possui um plano ativo.');
                 return;
             }
-            // Dados para assinatura MercadoPago
-            $centralDomain = config('tenancy.central_domains')[0];
+            
+            // Verifica se o usuário tem CPF ou CNPJ cadastrado
+            $cpfCnpj = $user->cpf ?? $user->cnpj ?? '';
+            if (empty($cpfCnpj)) {
+                session()->flash('warning', 'É necessário ter CPF ou CNPJ cadastrado para assinar um plano. Por favor, atualize seu perfil.');
+                return;
+            }
+            
+            // Dados para assinatura - seleciona domínio correto
+            $centralDomains = config('tenancy.central_domains');
+            // Filtra localhost e 127.0.0.1 e pega o primeiro domínio de produção
+            $centralDomain = collect($centralDomains)
+                ->filter(fn($domain) => !in_array($domain, ['localhost', '127.0.0.1']))
+                ->first() ?? $centralDomains[0];
+            
             $tenant_id = tenant()->id;
-            $urlCentral = "https://{$centralDomain}/tenant-assinatura/store?tenant_id={$tenant_id}&plan_id={$planoId}&user_email={$user->email}";
+            $urlCentral = "https://{$centralDomain}/tenant-assinatura/store"
+                . "?tenant_id={$tenant_id}"
+                . "&plan_id={$planoId}"
+                . "&user_email=" . urlencode($user->email)
+                . "&user_name=" . urlencode($user->name)
+                . "&cpf_cnpj=" . urlencode($cpfCnpj);
             \Log::debug('Redirecionando para assinatura', ['url' => $urlCentral]);
             return redirect()->away($urlCentral); 
         } else {
@@ -192,6 +226,7 @@ class PlanosDeAssinatura extends Component
         if ($tenantId) {
             \App\Models\TenantPlan::on('mysql')->create([
                 'tenant_id' => $tenantId,
+                'plan_id' => $plano->id,  // ID do plano no banco do tenant
                 'name' => $this->nomePlano,
                 'price' => $this->preco,
                 'duration_days' => $this->duracaoDias,
@@ -296,6 +331,33 @@ class PlanosDeAssinatura extends Component
 
            
             $this->planoSelecionado->save();
+
+            // Atualizar também na tabela tenants_plans do banco central
+            $tenantId = tenant() ? tenant()->id : null;
+            if ($tenantId) {
+                $tenantPlan = \App\Models\TenantPlan::on('mysql')
+                    ->where('tenant_id', $tenantId)
+                    ->where('plan_id', $this->planoSelecionado->id)
+                    ->first();
+                
+                if ($tenantPlan) {
+                    $tenantPlan->update([
+                        'name' => $this->nomePlano,
+                        'price' => $this->preco,
+                        'duration_days' => $this->duracaoDias,
+                    ]);
+                } else {
+                    // Se não existir, criar
+                    \App\Models\TenantPlan::on('mysql')->create([
+                        'tenant_id' => $tenantId,
+                        'plan_id' => $this->planoSelecionado->id,
+                        'name' => $this->nomePlano,
+                        'price' => $this->preco,
+                        'duration_days' => $this->duracaoDias,
+                        'active' => true,
+                    ]);
+                }
+            }
 
             // recarregar os planos para refletir as alterações
             $this->planos = Plan::with('services', 'additionalServices')->get()->map(function ($plano) {

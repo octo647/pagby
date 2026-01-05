@@ -33,6 +33,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'phone' => ['nullable', 'string', 'max:20'],
         ]);
 
         $user = User::create([
@@ -40,12 +41,18 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'salon_id' => tenancy()->tenant->id,
+            'phone' => $request->phone,
         ]);
 
         $user->assignRole(3, 0);//atribui a função de cliente ao novo usuário
 
-
         event(new Registered($user));
+
+        // Envia email de boas-vindas
+        if ($user->email) {
+            \Illuminate\Support\Facades\Mail::to($user->email)
+                ->send(new \App\Mail\WelcomeUser($user));
+        }
 
         Auth::login($user);
 

@@ -36,7 +36,7 @@ class User extends Authenticatable
         'google_id',
         'facebook_id',
         'status',
-       'phone', 'whatsapp', 'birthdate', 'cpf', 'cep', 'street', 'number', 'complement', 'city', 'neighborhood', 'state', 'notifications_enabled'
+       'phone', 'whatsapp', 'whatsapp_activated', 'birthdate', 'cpf', 'cep', 'street', 'number', 'complement', 'city', 'neighborhood', 'state', 'notifications_enabled'
     ];
 
     /**

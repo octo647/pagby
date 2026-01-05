@@ -171,17 +171,21 @@
 
                         {{-- Footer com Ações --}}
                         @php
-                            $centralDomain = config('tenancy.central_domains')[0] ?? 'www.seudominio.com.br';
+                            $centralDomains = config('tenancy.central_domains');
+                            // Filtra localhost e 127.0.0.1 e pega o primeiro domínio de produção
+                            $centralDomain = collect($centralDomains)
+                                ->filter(fn($domain) => !in_array($domain, ['localhost', '127.0.0.1']))
+                                ->first() ?? ($centralDomains[0] ?? 'www.seudominio.com.br');
                         @endphp
                         <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
                             @if(auth()->user()->hasRole('Cliente'))
                                 @if(auth()->user()->currentSubscription() && auth()->user()->currentSubscription()->plan_id == $plano['id'])
                                     <div class="space-y-3">
                                         <p class="text-sm text-blue-600 font-medium text-center">✓ Você está assinando este plano</p>
-                                        @if($assinaturaAtiva)
+                                        @if($this->assinaturaAtiva)
                                         <form method="POST" action="https://{{ $centralDomain }}/tenant-assinatura/cancelar" onsubmit="return confirm('Tem certeza que deseja cancelar a assinatura?');">
                                         @csrf
-                                        <input type="hidden" name="payment_id" value="{{ is_array($assinaturaAtiva) ? $assinaturaAtiva['id'] : $assinaturaAtiva->id }}">
+                                        <input type="hidden" name="payment_id" value="{{ $this->assinaturaAtiva->id }}">
                                         <button type="submit" class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium">
                                             Cancelar Assinatura 
                                         </button>

@@ -33,17 +33,25 @@
                         
                         <div class="alert alert-info">
                             <strong>📋 Instruções:</strong><br>
-                            1. Clique no botão verde abaixo<br>
-                            2. Complete o pagamento no MercadoPago<br>
-                            3. Volte para esta página<br>
-                            4. Clique "Verificar Status"
+                            1. Clique no botão verde abaixo para visualizar a fatura<br>
+                            2. Complete o pagamento via PIX, Boleto ou Cartão<br>
+                            3. Após pagar, esta página atualizará automaticamente<br>
+                            4. Ou clique "Verificar Status" para atualizar manualmente
                         </div>
                         
+                        @if($checkout_url && $checkout_url !== '#')
                         <div class="mt-4 mb-4">
                             <a href="{{ $checkout_url }}" target="_blank" class="btn btn-success btn-lg">
-                                <i class="fas fa-credit-card"></i> Pagar no MercadoPago
+                                <i class="fas fa-barcode"></i> Ver Fatura e Pagar
                             </a>
                         </div>
+                        @else
+                        <div class="mt-4 mb-4">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-clock"></i> Aguardando geração da fatura...
+                            </div>
+                        </div>
+                        @endif
                         
                         <hr>
                         
@@ -86,7 +94,7 @@
                         <hr>
                         
                         <div class="mt-4">
-                            <a href="{{ url('/dashboard?tabelaAtiva=planos-de-assinatura') }}" class="btn btn-secondary">
+                            <a href="https://{{ $tenant_id }}.pagby.com.br/dashboard?tabelaAtiva=planos-de-assinatura" class="btn btn-secondary">
                                 <i class="fas fa-home"></i> Voltar ao Início
                             </a>
                         </div>

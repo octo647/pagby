@@ -656,6 +656,48 @@ class PagBySubscriptionController extends Controller
                     $payment->asaas_payment_id = $asaasPaymentId;
                 }
             }
+            
+            // 3. Se não encontrou em PagByPayment, buscar em TenantsPlansPayment (assinaturas de clientes dos tenants)
+            if (!$payment) {
+                $tenantPayment = \App\Models\TenantsPlansPayment::on('mysql')
+                    ->where('asaas_payment_id', $asaasPaymentId)
+                    ->orWhere('asaas_subscription_id', $request->input('payment.subscription'))
+                    ->first();
+                
+                if ($tenantPayment) {
+                    Log::info('Pagamento de assinatura de cliente encontrado', [
+                        'payment_id' => $tenantPayment->id,
+                        'tenant_id' => $tenantPayment->tenant_id,
+                        'status' => $asaasStatus
+                    ]);
+                    
+                    $tenantPayment->asaas_payment_id = $asaasPaymentId;
+                    $tenantPayment->status = $asaasStatus;
+                    $tenantPayment->asaas_data = json_encode($request->input('payment'));
+                    $tenantPayment->save();
+                    
+                    // Se pagamento foi aprovado, ativar plano do usuário
+                    if (in_array($asaasStatus, ['RECEIVED', 'CONFIRMED', 'PAID'])) {
+                        Log::info('✅ Ativando plano do cliente do tenant', [
+                            'payment_id' => $tenantPayment->id,
+                            'tenant_id' => $tenantPayment->tenant_id
+                        ]);
+                        
+                        // Chamar SubscriptionController para ativar o plano na tabela subscriptions
+                        $subscriptionController = new \App\Http\Controllers\SubscriptionController(
+                            new \App\Services\AsaasService()
+                        );
+                        $subscriptionController->handlePaymentApproved([
+                            'id' => $asaasPaymentId,
+                            'subscription' => $request->input('payment')['subscription'],
+                            'payment' => $tenantPayment
+                        ]);
+                    }
+                    
+                    return response('OK', 200);
+                }
+            }
+            
             if ($payment) {
                 $oldStatus = $payment->status;
                 $payment->status = $asaasStatus;

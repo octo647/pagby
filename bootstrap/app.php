@@ -38,6 +38,27 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (\Illuminate\Console\Scheduling\Schedule $schedule) {
         // Limpeza automática de sessões expiradas a cada hora
         $schedule->command('sessions:clean --force')->hourly();
+        
+        // Verifica assinaturas expirando em 3 dias - executa todo dia às 09h
+        $schedule->command('subscriptions:check-expiring --days=3')
+                 ->dailyAt('09:00')
+                 ->timezone('America/Sao_Paulo');
+        
+        // Verifica assinaturas expirando amanhã - executa todo dia às 10h
+        $schedule->command('subscriptions:check-expiring --days=1')
+                 ->dailyAt('10:00')
+                 ->timezone('America/Sao_Paulo');
+        
+        // Lembretes de agendamento - 24h antes (às 18h)
+        $schedule->command('appointments:send-reminders --hours=24')
+                 ->dailyAt('18:00')
+                 ->timezone('America/Sao_Paulo');
+        
+        // Lembretes de agendamento - 2h antes (a cada hora)
+        $schedule->command('appointments:send-reminders --hours=2')
+                 ->hourly()
+                 ->between('8:00', '20:00')
+                 ->timezone('America/Sao_Paulo');
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

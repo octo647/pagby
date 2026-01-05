@@ -13,6 +13,8 @@ use App\Http\Controllers\Auth\SocialController;
 use App\Http\Middleware\VerifyCsrfToken;
 
 // Todas as rotas devem estar dentro do loop central_domains para evitar conflitos com tenants
+
+require __DIR__.'/subscription.php';
 foreach (config('tenancy.central_domains') as $domain) {
     Route::domain($domain)->group(function () {
         Route::get('/', function () {
@@ -62,9 +64,12 @@ foreach (config('tenancy.central_domains') as $domain) {
         Route::prefix('tenant-assinatura')->name('tenant-assinatura.')->group(function () {
            Route::get('/congrats', [SubscriptionController::class, 'congrats'])->name('congrats');
            Route::post('/webhook', [SubscriptionController::class, 'webhook'])->name('webhook');
-           Route::get('/store', [SubscriptionController::class, 'store'])->name('store');
+           Route::match(['get', 'post'], '/store', [SubscriptionController::class, 'store'])->name('store');
            Route::post('/cancelar', [SubscriptionController::class, 'cancelarAssinatura'])->name('cancelar');
            Route::get('/success', [SubscriptionController::class, 'success'])->name('success');
+           Route::get('/failure', [SubscriptionController::class, 'failure'])->name('failure');
+           Route::get('/wait', [SubscriptionController::class, 'wait'])->name('wait');
+           Route::get('/check-status/{paymentId}', [SubscriptionController::class, 'checkStatus'])->name('check-status');
         });
 
         // Rotas para debug e pagamento automático
