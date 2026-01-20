@@ -67,6 +67,6 @@ return [
 
     'asaas' => [
         'api_url' => env('ASAAS_API_URL', 'https://www.asaas.com/api/v3'),
-        'api_key' => env('ASAAS_API_KEY'),
+        'api_key' => env('ASAAS_API_KEY_PRODUCTION'),
     ],
 ];

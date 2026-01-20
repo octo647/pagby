@@ -3,7 +3,7 @@
 
 namespace App\Livewire\Proprietario;
 
-
+use App\Models\Contact;
 use Livewire\Component;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
@@ -83,85 +83,51 @@ class MeuPagby extends Component {
     }
     public function cancelarAssinatura()
     {
-        // Lógica para cancelar a assinatura no MercadoPago e localmente
-   
         $host = request()->getHost();
-      
         $domain = DB::connection('mysql')->table('domains')->where('domain', $host)->first();
-        $tenant = null;
-        if ($domain && $domain->tenant_id) {
-            $tenant = Tenant::find($domain->tenant_id);
+        if (!$domain || !$domain->tenant_id) {
+            session()->flash('error', 'Tenant não encontrado.');
+            return;
         }
-     
-
-        if ($tenant) {
-            // Buscar pagamento ativo do tenant
-            $pagamento = PagByPayment::on('mysql')
-                ->where('tenant_id', $tenant->id)
-                ->whereIn('status', ['RECEIVED', 'approved', 'pending'])
-                ->orderByDesc('id')
-                ->first();
-
-            if ($pagamento && $pagamento->external_id) {
-                // Cancelar assinatura no MercadoPago
-                $accessToken = config('services.pagby.access_token');
-                $preapprovalId = $pagamento->external_id;
-                $url = 'https://api.mercadopago.com/preapproval/' . $preapprovalId;
-                $data = [
-                    'status' => 'cancelled'
-                ];
-                $ch = curl_init();
-                curl_setopt($ch, CURLOPT_URL, $url);
-                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-                curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
-                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
-                curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                    'Authorization: Bearer ' . $accessToken,
-                    'Content-Type: application/json'
-                ]);
-                $response = curl_exec($ch);
-                $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-                $curlError = curl_error($ch);
-                curl_close($ch);
-
-                if ($httpCode === 200) {
-                    // Atualiza status do pagamento local
-                    $pagamento->status = 'cancelled';
-                    $pagamento->save();
-
-                    // Atualiza os campos relacionados à assinatura
-                    $tenant->subscription_status = 'suspended';
-                    $tenant->current_plan = null;
-                    $tenant->subscription_started_at = null;
-                    $tenant->subscription_ends_at = null;
-                    $tenant->is_blocked = true; // Bloqueia o tenant após o cancelamento
-                    $tenant->save();
-
-                    // Atualiza as propriedades do componente
-                    $this->planoAtual = $tenant->current_plan;
-                    $this->statusPagamento = $tenant->subscription_status;
-                    $this->proximoVencimento = $tenant->subscription_ends_at;
-                    $this->isBlocked = $tenant->is_blocked;
-                    Log::info('Assinatura cancelada com sucesso no MercadoPago e localmente para o tenant ID: ' . $tenant->id);
-                } else {
-                    // Falha ao cancelar no MercadoPago
-                    // Opcional: logar erro ou exibir mensagem
-                    Log::error('Erro ao cancelar assinatura no MercadoPago', [
-                        'http_code' => $httpCode,
-                        'response' => $response,
-                        'curl_error' => $curlError,
-                    ]);
-                    // $curlError, $response
-                }
+        $tenant = Tenant::find($domain->tenant_id);
+        if (!$tenant) {
+            session()->flash('error', 'Tenant não encontrado.');
+            return;
+        }
+        // Buscar último pagamento ativo
+        $pagamento = PagByPayment::on('mysql')
+            ->where('tenant_id', $tenant->id)
+            ->whereNotNull('asaas_payment_id')
+            ->whereIn('status', ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH', 'PENDING', 'AWAITING_PAYMENT', 'IN_ANALYSIS'])
+            ->latest()
+            ->first();
+        if (!$pagamento) {
+            session()->flash('error', 'Nenhum pagamento ativo encontrado para cancelar.');
+            return;
+        }
+        try {
+            $asaasService = new AsaasService();
+            $result = $asaasService->cancelarCobranca($pagamento->asaas_payment_id);
+            if ($result['success'] ?? false) {
+                $pagamento->status = 'CANCELED';
+                $pagamento->save();
+                session()->flash('mensagem', 'Assinatura cancelada com sucesso!');
+                $this->mount();
             } else {
-                // Não encontrou pagamento ativo ou preapproval_id
-                // Opcional: logar erro ou exibir mensagem
+                \Log::warning('Erro ao cancelar assinatura Asaas', [
+                    'tenant_id' => $tenant->id,
+                    'asaas_payment_id' => $pagamento->asaas_payment_id,
+                    'error' => $result['message'] ?? 'Erro desconhecido',
+                ]);
+                session()->flash('error', 'Erro ao cancelar assinatura. Tente novamente ou contate o suporte.');
             }
-        } else {
-            $this->planoAtual = null;
-            $this->statusPagamento = null;
-            $this->proximoVencimento = null;
-            $this->isBlocked = null;
+        } catch (\Exception $e) {
+            \Log::error('Erro ao cancelar assinatura Asaas', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            session()->flash('error', 'Erro ao cancelar assinatura. Tente novamente ou contate o suporte.');
         }
     }
      public function verOutrosPlanos()
@@ -424,12 +390,16 @@ class MeuPagby extends Component {
                     ->where('tenant_id', $tenant->id)
                     ->latest()
                     ->first();
+                $customer = Contact::on('mysql')
+                    ->where('id', $pagamento->contact_id)
+                    ->first();
+
 
                 $customerData = [
-                    'name' => $tenant->name ?? 'Cliente',
-                    'email' => $tenant->email,
-                    'cpfCnpj' => $tenant->cnpj ?? '',
-                    'phone' => $tenant->phone ?? '',
+                    'name' => $customer->owner_name ?? 'Cliente',
+                    'email' => $customer->email,
+                    'cpfCnpj' => $customer->cpf ?? '',
+                    'phone' => $customer->phone ?? '',
                 ];
 
                 $diferencaFuncionarios = $this->novoNumeroFuncionarios - $this->employeeCount;
@@ -464,11 +434,15 @@ class MeuPagby extends Component {
                         $pagamento->save();
                     }
 
-                    session()->flash('mensagem', 
-                        'Plano ajustado com sucesso! Uma cobrança de R$ ' . 
-                        number_format($this->ajusteCalculado['ajuste'], 2, ',', '.') . 
-                        ' foi gerada. Você pode pagá-la via PIX, boleto ou cartão através do link que será enviado por email.'
-                    );
+                    $mensagem = 'Plano ajustado com sucesso! Uma cobrança de R$ ' .
+                        number_format($this->ajusteCalculado['ajuste'], 2, ',', '.') .
+                        ' foi gerada.';
+                    if (!empty($adjustment->asaas_invoice_url)) {
+                        $mensagem .= ' <a href="' . $adjustment->asaas_invoice_url . '" target="_blank" rel="noopener noreferrer" style="color:#2563eb;text-decoration:underline;font-weight:bold;">Clique aqui para pagar agora (PIX, boleto ou cartão)</a>.';
+                    } else {
+                        $mensagem .= ' Você pode pagá-la via PIX, boleto ou cartão através do link que será enviado por email.';
+                    }
+                    session()->flash('mensagem', $mensagem);
                 } else {
                     Log::error('Erro ao criar cobrança Asaas para ajuste', [
                         'adjustment_id' => $adjustment->id,

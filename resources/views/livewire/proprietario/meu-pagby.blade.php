@@ -2,7 +2,7 @@
     {{-- Mensagens de sucesso/erro --}}
     @if (session()->has('mensagem'))
         <div class="mb-4 px-4 py-3 rounded bg-green-100 text-green-800 flex items-center justify-between">
-            <span>{{ session('mensagem') }}</span>
+            <span>{!! session('mensagem') !!}</span>
             <button class="ml-4 text-green-700 hover:text-green-900" onclick="this.parentElement.style.display='none';">&times;</button>
         </div>
     @endif
@@ -77,7 +77,7 @@
             @endif
 
             @if(!$planoAtual || !in_array($statusPagamento, ['RECEIVED','CONFIRMED','RECEIVED_IN_CASH']))
-                <a href="{{ route('pagby-subscription.choose-plan',['plan' => 'unico']) }}"
+                <a href="https://pagby.com.br/#planos"
                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition text-center">
                     Ver Planos e Assinar
                 </a>
@@ -121,6 +121,15 @@
                                 <strong>{{ $ajustePendente->employee_count_before }} para {{ $ajustePendente->employee_count_after }} funcionário(s)</strong>
                                 no valor de <strong>R$ {{ number_format($ajustePendente->amount, 2, ',', '.') }}</strong>.
                             </p>
+                            @if($ajustePendente->asaas_invoice_url && $ajustePendente->status === 'pending' && $ajustePendente->type === 'debito')
+                                <div class="mt-2">
+                                    <a href="{{ $ajustePendente->asaas_invoice_url }}" target="_blank" rel="noopener noreferrer"
+                                       class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition">
+                                        Pagar ajuste agora (PIX, boleto ou cartão)
+                                    </a>
+                                    <p class="text-xs text-gray-500 mt-1">O pagamento é processado pelo Asaas. Após o pagamento, o ajuste será aplicado automaticamente.</p>
+                                </div>
+                            @endif
                             <p class="text-sm text-yellow-700 mt-1">
                                 Você pode cancelar este ajuste ou criar um novo (que substituirá o anterior).
                             </p>

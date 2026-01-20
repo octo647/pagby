@@ -69,42 +69,43 @@ class ListContacts extends Component
             $contactArray['has_paid'] = $contact->pagbypayment()->where('status', 'RECEIVED')->exists();
             $contactArray['payment_count'] = $contact->pagbypayment()->count();
             $contactArray['total_paid_amount'] = $contact->pagbypayment()->where('status', 'RECEIVED')->sum('amount');
-            $contactArray['last_payment_plan'] = $contact->pagbypayment()->latest()->first()?->plan;
+            $lastPayment = $contact->pagbypayment()->latest()->first();
+            $contactArray['last_payment_plan'] = $lastPayment?->plan;
 
-            $data = $contact->pagbypayment()->latest()->first()->created_at;
+            if ($lastPayment && $lastPayment->created_at) {
+                $data = $lastPayment->created_at;
                 $timestamp = strtotime($data);
                 $data_pgto = date('d/m/Y', $timestamp);
 
-            if($contactArray['last_payment_plan'] == 'mensal'){
-                $contactArray['last_payment_plan'] = 'Mensal';
-                $data_vct = date('d/m/Y', strtotime($data . ' +1 month'));
-            } elseif($contactArray['last_payment_plan'] == 'trimestral'){
-                $contactArray['last_payment_plan'] = 'Trimestral';
-                $data_vct = date('d/m/Y', strtotime($data . ' +3 months'));
-            } elseif($contactArray['last_payment_plan'] == 'semestral'){
-                $contactArray['last_payment_plan'] = 'Semestral';
-                $data_vct = date('d/m/Y', strtotime($data . ' +6 months'));
-            } elseif($contactArray['last_payment_plan'] == 'anual'){
-                $contactArray['last_payment_plan'] = 'Anual';
-                $data_vct = date('d/m/Y', strtotime($data . ' +12 months'));
-            } else{
-                $data_vct = 'N/A';
+                if($contactArray['last_payment_plan'] == 'mensal'){
+                    $contactArray['last_payment_plan'] = 'Mensal';
+                    $data_vct = date('d/m/Y', strtotime($data . ' +1 month'));
+                } elseif($contactArray['last_payment_plan'] == 'trimestral'){
+                    $contactArray['last_payment_plan'] = 'Trimestral';
+                    $data_vct = date('d/m/Y', strtotime($data . ' +3 months'));
+                } elseif($contactArray['last_payment_plan'] == 'semestral'){
+                    $contactArray['last_payment_plan'] = 'Semestral';
+                    $data_vct = date('d/m/Y', strtotime($data . ' +6 months'));
+                } elseif($contactArray['last_payment_plan'] == 'anual'){
+                    $contactArray['last_payment_plan'] = 'Anual';
+                    $data_vct = date('d/m/Y', strtotime($data . ' +12 months'));
+                } else{
+                    $data_vct = 'N/A';
+                }
+                $contactArray['due_date'] = $data_vct;
+                $contactArray['last_payment_date'] = $data_pgto;
+            } else {
+                $contactArray['due_date'] = 'N/A';
+                $contactArray['last_payment_date'] = 'N/A';
             }
-            $contactArray['due_date'] = $data_vct;   
-            
-            $contactArray['last_payment_date'] = $data_pgto;
 
-            $contactArray['last_payment_amount'] = $contact->pagbypayment()->latest()->first()?->amount;
-            $contactArray['last_payment_method'] = $contact->pagbypayment()->latest()->first()?->payment_method;
-            
-            $contactArray['last_payment_external_id'] = $contact->pagbypayment()->latest()->first()?->external_id;
-            $contactArray['last_payment_id'] = $contact->pagbypayment()->latest()->first()?->id;
-            
-            $contactArray['last_payment_employee_count'] = $contact->pagbypayment()->latest()->first()?->employee_count;
-            
-            $contactArray['last_payment_asaas_payment_id'] = $contact->pagbypayment()->latest()->first()?->asaas_payment_id;
-
-            $contactArray['last_payment_status'] = $contact->pagbypayment()->latest()->first()?->status;
+            $contactArray['last_payment_amount'] = $lastPayment?->amount;
+            $contactArray['last_payment_method'] = $lastPayment?->payment_method;
+            $contactArray['last_payment_external_id'] = $lastPayment?->external_id;
+            $contactArray['last_payment_id'] = $lastPayment?->id;
+            $contactArray['last_payment_employee_count'] = $lastPayment?->employee_count;
+            $contactArray['last_payment_asaas_payment_id'] = $lastPayment?->asaas_payment_id;
+            $contactArray['last_payment_status'] = $lastPayment?->status;
 
             return $contactArray;
         })->toArray();
