@@ -62,8 +62,14 @@
             {{-- Lista de Usuários --}}
             <div class="divide-y divide-gray-200">
                 @forelse($salon_users as $user)
-                    <div wire:click="showUserDetails({{ $user->id }})" 
-                         class="p-6 hover:bg-gray-50 transition-colors cursor-pointer">
+                    <div class="p-6 hover:bg-gray-50 transition-colors cursor-pointer"
+                         x-data
+                         @click="
+                            if (!($event.target.closest('button') || $event.target.closest('select') || $event.target.closest('input'))) {
+                                $wire.showUserDetails({{ $user->id }});
+                            }
+                         "
+                    >
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
                             
                             {{-- Nome do Usuário --}}
@@ -91,27 +97,43 @@
                                 </div>
                             </div>
 
-                            {{-- Status --}}
+                            {{-- Status e Papéis --}}
                             <div>
                                 @if($editingUserId === $user->id)
-                                    <select wire:model="editingStatus" 
+                                    <div class="mb-2">
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                                        <select wire:model="editingStatus" 
                                             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                        <option value="Ativo">Ativo</option>
-                                        <option value="Inativo">Inativo</option>
-                                    </select>
+                                            <option value="Ativo">Ativo</option>
+                                            <option value="Inativo">Inativo</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Papéis</label>
+                                        <select wire:model.defer="editingRoles" multiple
+                                            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                            @foreach($roles as $role)
+                                                <option value="{{ $role }}">{{ $role }}</option>
+                                            @endforeach
+                                        </select>
+                                        <small class="text-gray-400">Segure Ctrl (Windows) ou Command (Mac) para selecionar múltiplos papéis</small>
+                                    </div>
                                 @else
-                                    <div class="flex items-center">
-                                        @if($user->status === 'Ativo')
-                                            <div class="flex items-center">
+                                    <div class="flex flex-col gap-1">
+                                        <div class="flex items-center">
+                                            @if($user->status === 'Ativo')
                                                 <div class="h-2 w-2 bg-green-400 rounded-full mr-2"></div>
                                                 <span class="text-sm font-medium text-green-800">Ativo</span>
-                                            </div>
-                                        @else
-                                            <div class="flex items-center">
+                                            @else
                                                 <div class="h-2 w-2 bg-red-400 rounded-full mr-2"></div>
                                                 <span class="text-sm font-medium text-red-800">Inativo</span>
-                                            </div>
-                                        @endif
+                                            @endif
+                                        </div>
+                                        <div class="flex flex-wrap gap-1 mt-1">
+                                            @foreach($user->roles as $role)
+                                                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $role->role }}</span>
+                                            @endforeach
+                                        </div>
                                     </div>
                                 @endif
                             </div>
@@ -249,9 +271,15 @@
                                     <span class="text-sm text-gray-900">{{ $userDetails['phone'] ?? 'N/A' }}</span>
                                 </div>
                                 <div class="flex justify-between">
-                                    <span class="text-sm font-medium text-gray-600">Função:</span>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                        {{ $userDetails['funcao'] ?? 'N/A' }}
+                                    <span class="text-sm font-medium text-gray-600">Papéis:</span>
+                                    <span class="flex flex-wrap gap-1">
+                                        @if(isset($userDetails['funcoes']) && is_array($userDetails['funcoes']) && count($userDetails['funcoes']))
+                                            @foreach($userDetails['funcoes'] as $funcao)
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $funcao }}</span>
+                                            @endforeach
+                                        @else
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-500">N/A</span>
+                                        @endif
                                     </span>
                                 </div>
                             </div>

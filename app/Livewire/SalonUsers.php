@@ -10,11 +10,14 @@ use Illuminate\Support\Facades\DB;
 
 class SalonUsers extends Component
 {
+    protected $casts = [
+        'editingRoles' => 'array',
+    ];
     use WithPagination;
 
     public $searchTerm = '';
     public $editingUserId = null;
-    public $editingRole = '';
+    public $editingRoles = [];
     public $editingStatus = '';
     public $showModal = false;
     public $selectedUser = null;
@@ -23,32 +26,31 @@ class SalonUsers extends Component
 
     public function showUserDetails($userId)
     {
-    $user = User::with('roles')->find($userId);
+        $user = User::with('roles')->find($userId);
 
-    // Exemplo de busca dos dados extras:
-    $phone = $user->phone ?? '';
-    $agendamentos = $user->clientAppointments()->count();
-    $ultimoAgendamento = $user->clientAppointments()->latest('appointment_date')->first();
+        // Exemplo de busca dos dados extras:
+        $phone = $user->phone ?? '';
+        $agendamentos = $user->clientAppointments()->count();
+        $ultimoAgendamento = $user->clientAppointments()->latest('appointment_date')->first();
 
-    $temAgendamento = $user->clientAppointments()->where('appointment_date', '>=', now())->exists();
-    $currentSubscription = $user->currentSubscription();
+        $temAgendamento = $user->clientAppointments()->where('appointment_date', '>=', now())->exists();
+        $currentSubscription = $user->currentSubscription();
 
-    $this->userDetails = [
-        'nome' => $user->name,
-        'email' => $user->email,
-        'phone' => $phone,
-        'photo' => $user->photo,
-        'funcao' => $user->roles->first()->role ?? '',
-        'agendamentos' => $agendamentos,
-        'ultimo_agendamento' => $ultimoAgendamento ? $ultimoAgendamento->appointment_date->format('d/m/Y H:i') : 'Nunca',
-        'tem_agendamento' => $temAgendamento ? 'Sim' : 'Não',
-        'plano' => $currentSubscription ? $currentSubscription->plan->name : 'Nenhum plano ativo',
-        'plano_inicio' => $currentSubscription ? $currentSubscription->start_date->format('d/m/Y') : 'N/A',
-        'plano_fim' => $currentSubscription ? $currentSubscription->end_date->format('d/m/Y') : 'N/A',
-      
-    ];
+        $this->userDetails = [
+            'nome' => $user->name,
+            'email' => $user->email,
+            'phone' => $phone,
+            'photo' => $user->photo,
+            'funcoes' => $user->roles->pluck('role')->toArray(),
+            'agendamentos' => $agendamentos,
+            'ultimo_agendamento' => $ultimoAgendamento ? $ultimoAgendamento->appointment_date->format('d/m/Y H:i') : 'Nunca',
+            'tem_agendamento' => $temAgendamento ? 'Sim' : 'Não',
+            'plano' => $currentSubscription ? $currentSubscription->plan->name : 'Nenhum plano ativo',
+            'plano_inicio' => $currentSubscription ? $currentSubscription->start_date->format('d/m/Y') : 'N/A',
+            'plano_fim' => $currentSubscription ? $currentSubscription->end_date->format('d/m/Y') : 'N/A',
+        ];
 
-    $this->showModal = true;
+        $this->showModal = true;
     }
     public function closeModal()
     {
@@ -65,7 +67,7 @@ class SalonUsers extends Component
     {
         $this->editingUserId = $userId;
         $user = User::with('roles')->find($userId);
-        $this->editingRole = $user->roles->first()->role ?? '';
+        $this->editingRoles = $user->roles->pluck('role')->toArray();
         $this->editingStatus = $user->status;
         
     }
@@ -76,39 +78,32 @@ class SalonUsers extends Component
         if ($user) {
             // Atualiza status
             $user->status = $this->editingStatus;
-           
             $user->save();
 
-            // Atualiza função (role)
-            $role = Role::where('role', $this->editingRole)->first();
-            if ($role) {
-                // Se está mudando para Funcionário, verifica o limite
-                if ($this->editingRole === 'Funcionário') {
-                    $currentEmployeeCount = DB::table('branch_user')->count();
-                    $tenant = tenancy()->tenant;
-                    $employeeLimit = $tenant->employee_count ?? 1;
-                    
-                    // Verifica se o usuário já é funcionário
-                    $isAlreadyEmployee = $user->roles()->where('role', 'Funcionário')->exists();
-                    
-                    if (!$isAlreadyEmployee && $currentEmployeeCount >= $employeeLimit) {
-                        session()->flash('error', "Limite de funcionários atingido! Seu plano permite apenas {$employeeLimit} funcionário(s). Para adicionar mais funcionários, atualize seu plano.");
-                        $this->editingUserId = null;
-                        return;
-                    }
+            // Atualiza papéis (roles)
+            $roleIds = Role::whereIn('role', $this->editingRoles)->pluck('id')->toArray();
+
+            // Limite de funcionários: só bloqueia se está adicionando Funcionário e não tinha antes
+            $isAddingFuncionario = in_array('Funcionário', $this->editingRoles) && !$user->roles()->where('role', 'Funcionário')->exists();
+            if ($isAddingFuncionario) {
+                $currentEmployeeCount = DB::table('branch_user')->count();
+                $tenant = tenancy()->tenant;
+                $employeeLimit = $tenant->employee_count ?? 1;
+                if ($currentEmployeeCount >= $employeeLimit) {
+                    session()->flash('error', "Limite de funcionários atingido! Seu plano permite apenas {$employeeLimit} funcionário(s). Para adicionar mais funcionários, atualize seu plano.");
+                    $this->editingUserId = null;
+                    return;
                 }
-                
-                // Remove todas as funções e adiciona a nova
-                $user->roles()->sync([$role->id]);
             }
-            // Se a função for 'Funcionário', adiciona o usuário na tabela branch_users
-            if ($this->editingRole === 'Funcionário') {
+            $user->roles()->sync($roleIds);
+
+            // Atualiza branch_user conforme papéis
+            if (in_array('Funcionário', $this->editingRoles)) {
                 DB::table('branch_user')->updateOrInsert(
                     ['user_id' => $user->id],
-                    []                    
+                    []
                 );
             } else {
-                // Remove o usuário da tabela branch_users se não for 'Funcionário'
                 DB::table('branch_user')->where('user_id', $user->id)->delete();
             }
         }
@@ -124,9 +119,6 @@ class SalonUsers extends Component
     public function render()
     {
         $salon_users = User::query()
-            ->whereHas('roles', function($query) {
-                $query->where('role', 'Cliente');
-            })
             ->when($this->searchTerm, function($query) {
                 $query->where(function($q) {
                     $q->where('name', 'like', '%'.$this->searchTerm.'%')
