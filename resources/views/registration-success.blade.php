@@ -61,7 +61,7 @@
                         <a href="{{ route('registration-finalize') }}"
                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200">
                             <i class="fas fa-credit-card mr-2"></i>
-                            Finalizar Assinatura {{ ucfirst($selected_plan) }}
+                            Finalizar Assinatura
                         </a>
                     @else
                         <!-- Se não tem plano, mostrar opções -->

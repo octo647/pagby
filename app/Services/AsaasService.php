@@ -2,11 +2,42 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
-
-
-
+use Illuminate\Support\Facades\Http;    
+ 
 class AsaasService {
+    /**
+     * Lista todas as cobranças em aberto para um cliente pelo CPF/CNPJ.
+     * @param string $cpfCnpj
+     * @return array|null
+     */
+    public function listarCobrancasAbertasPorCpf($cpfCnpj)
+    {
+        // Buscar cliente pelo CPF/CNPJ
+        $response = Http::withHeaders([
+            'access_token' => $this->apiKey,
+            'Content-Type' => 'application/json',
+        ])->get($this->apiUrl . '/customers', [
+            'cpfCnpj' => $cpfCnpj
+        ]);
+        if (!$response->successful() || empty($response['data'][0]['id'])) {
+            return null;
+        }
+        $customerId = $response['data'][0]['id'];
+
+        // Buscar cobranças em aberto para o cliente
+        $payments = Http::withHeaders([
+            'access_token' => $this->apiKey,
+            'Content-Type' => 'application/json',
+        ])->get($this->apiUrl . "/payments", [
+            'customer' => $customerId,
+            'status' => 'OPEN', // pega todas em aberto, inclusive vencidas
+        ]);
+        if ($payments->successful() && isset($payments['data'])) {
+            return $payments['data'];
+        }
+        return null;
+    }
+
     public function criarCheckout(array $customerData, array $paymentData)
     {
         // Criar checkout sem vincular cliente - Asaas cria o cliente automaticamente no pagamento
