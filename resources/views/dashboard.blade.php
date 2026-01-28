@@ -1,3 +1,6 @@
+@php
+    $menuSelecionado = request()->input('menu');
+@endphp
 <x-app-layout>
     <x-slot name="header">
     
@@ -94,9 +97,9 @@
                         @livewire('proprietario.filiais')
                     @elseif($tabelaAtiva === 'funcionarios')
                         @livewire('proprietario.branch-users')
-                    @elseif($tabelaAtiva === 'horarios')
+                    @elseif($tabelaAtiva === 'horarios' && $menuSelecionado === 'proprietario')
                         @livewire('proprietario.salon-times')
-                    @elseif($tabelaAtiva === 'servicos')
+                    @elseif($tabelaAtiva === 'servicos' && $menuSelecionado === 'proprietario')
                         @livewire('proprietario.services')
                     @elseif($tabelaAtiva === 'func_serv')
                         @if(request()->input('funcionario_id'))
@@ -164,22 +167,22 @@
                 @can('Funcionário')
                 @if($tabelaAtiva === 'agenda')
                     @livewire('funcionario.agenda')
-                @elseif($tabelaAtiva === 'servicos')
+                @elseif($tabelaAtiva === 'servicos' && $menuSelecionado === 'funcionario')
                     @livewire('funcionario.servicos')
                 @elseif($tabelaAtiva === 'servicos-planos')
                     @livewire('funcionario.controle-pagamento-planos')
                 @elseif($tabelaAtiva === 'servicos-funcionario-realizados')
                     @livewire('funcionario.servicos-funcionario-realizados')
-                @elseif($tabelaAtiva === 'horarios')
+                @elseif($tabelaAtiva === 'horarios' && $menuSelecionado === 'funcionario')
                     @livewire('funcionario.horarios')
                 @elseif($tabelaAtiva === 'estatisticas')
                     @livewire('funcionario.estatisticas')
                 @elseif($tabelaAtiva === 'avaliacoes-profissional')
                     @livewire('funcionario.avaliacoes-profissional')
-                @elseif($tabelaAtiva === 'dias-pico')
+               {{-- @elseif($tabelaAtiva === 'dias-pico')
                     @livewire('dias-pico')
                 @elseif($tabelaAtiva === 'horarios-pico')
-                    @livewire('horarios-pico')
+                    @livewire('horarios-pico')--}}
                 @elseif($tabelaAtiva === 'servicos-avulsos')
                     @livewire('funcionario.controle-ganhos-avulsos')
                 @endif
