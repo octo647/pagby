@@ -8,7 +8,7 @@ return new class extends Migration {
     public function up()
     {
         Schema::table('estoque', function (Blueprint $table) {
-            $table->decimal('percentual_produtos', 5, 2)->default(0)->after('preco_unitario');
+            $table->decimal('percentual_produtos', 5, 2)->default(0);
         });
     }
 

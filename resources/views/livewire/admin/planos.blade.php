@@ -23,7 +23,15 @@
                     <td class="px-4 py-2 border">{{ $payment->created_at ? $payment->created_at->format('d/m/Y H:i') : '-' }}</td>
                     <td class="px-4 py-2 border text-right">R$ {{ number_format($payment->amount, 2, ',', '.') }}</td>
                     <td class="px-4 py-2 border">{{ $payment->status }}</td>
-                    <td class="px-4 py-2 border">{{ $payment->asaas_payment_id }}</td>
+                    <td class="px-4 py-2 border">
+                        @if($payment->asaas_payment_id)
+                            <a href="{{ url('/admin/asaas/verificar/' . $payment->asaas_payment_id) }}" class="text-blue-600 underline hover:text-blue-800" target="_blank">
+                                {{ $payment->asaas_payment_id }}
+                            </a>
+                        @else
+                            -
+                        @endif
+                    </td>
                     
                 </tr>
                 @empty

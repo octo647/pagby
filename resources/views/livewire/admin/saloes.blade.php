@@ -1,18 +1,5 @@
 <div>
-    {{-- Conteúdo principal --}}
-     @if(session()->has('message'))
-     <div class="bg-teal-100 border-t-4  border-b-4 border-teal-500 rounded-b text-teal-900 px-4 py-3 shadow-md mb-4" role="alert">
-        <div class="flex">
-            <div class="py-1"><svg class="fill-current h-6 w-6 text-teal-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z"/></svg>
-            </div>
-            <div>
-            <p class="font-bold">{{ session('message') }}</p>
-            </div>
-        </div>
-     </div>
-     @endif
-
-    
+       
     <div class="flex justify-end mb-4">
         <button class="btn btn-primary" wire:click="createSalon">Novo Salão</button>   
        
@@ -177,25 +164,31 @@
                 @endif
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">Tipo de Estabelecimento</label>
-                <input type="text" class="w-full border rounded px-2 py-1 mb-2" wire:model="newSalon.type" placeholder="Ex: Barbearia1, SalaoBeleza1, etc.">
+                <label class="block font-semibold mb-1">Tipo de Template</label>
+                <input type="text" class="w-full border rounded px-2 py-1 mb-2" wire:model="newSalon.type" placeholder="Ex: Barbearia, Salao de Beleza, etc." >
+                <label class="block font-semibold mb-1">Template</label>
+                <input type="text" class="w-full border rounded px-2 py-1 mb-2" wire:model="newSalon.template" placeholder="Ex: Moderna, Atual, etc." >
                 <div class="flex gap-2 items-center mt-2">
-                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('templateModal').classList.remove('hidden')">Escolher Template</button>
+                    <button type="button" class="btn btn-primary w-full" onclick="document.getElementById('templateModal').classList.remove('hidden')">Escolher Template</button>
                 </div>
             </div>
 
             <!-- Modal de seleção de template -->
             <div id="templateModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-                <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative">
+                <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative flex flex-col" style="overflow:visible;">
                     <button type="button" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold" onclick="document.getElementById('templateModal').classList.add('hidden')">&times;</button>
                     <h3 class="text-lg font-bold mb-4">Escolha um template</h3>
-                    <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
-                        @foreach($templateList as $template)
-                            <div class="cursor-pointer group" onclick="window.dispatchEvent(new CustomEvent('template-selected', { detail: '{{ $template['name'] }}' })); document.getElementById('templateModal').classList.add('hidden')">
-                                <img src="{{ $template['thumbnail'] }}" alt="{{ $template['name'] }}" class="rounded shadow group-hover:scale-105 transition-transform h-32 w-full object-cover mb-2">
-                                <div class="text-center font-semibold">{{ $template['name'] }}</div>
-                            </div>
-                        @endforeach
+                    <div class="flex items-center justify-center gap-4 flex-1" style="height:100%;">
+                        <button id="carouselPrev" type="button" class="text-2xl px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 z-10">&#8592;</button>
+                        <div id="carouselContainer" class="flex overflow-x-auto gap-6 w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" style="scroll-behavior: smooth; height:100%;">
+                            @foreach($templateList as $template)
+                                <div class="min-w-[180px] max-w-[200px] flex-shrink-0 cursor-pointer group" style="height:100%;" onclick="window.dispatchEvent(new CustomEvent('template-selected', { detail: '{{ $template['name'] }}' })); document.getElementById('templateModal').classList.add('hidden')">
+                                    <img src="{{ $template['thumbnail'] }}" alt="{{ $template['name'] }}" class="rounded shadow group-hover:scale-105 transition-transform h-32 w-full object-cover mb-2">
+                                    <div class="text-center font-semibold">{{ $template['name'] }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                        <button id="carouselNext" type="button" class="text-2xl px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 z-10">&#8594;</button>
                     </div>
                 </div>
             </div>
@@ -354,14 +347,40 @@
         if (window.Livewire && Livewire.find) {
             const component = Livewire.find(wireId);
             if (component) {
-                component.set('newSalon.type', e.detail);
+                component.set('newSalon.template', e.detail);
             }
         } else if (window.livewire && window.livewire.find) {
             // fallback para Livewire v2
             const component = window.livewire.find(wireId);
             if (component) {
-                component.set('newSalon.type', e.detail);
+                component.set('newSalon.template', e.detail);
             }
         }
+    });
+
+    // Carrossel horizontal para templates (reativa após Livewire updates)
+    function attachCarouselListeners() {
+        setTimeout(function() {
+            const container = document.getElementById('carouselContainer');
+            const prevBtn = document.getElementById('carouselPrev');
+            const nextBtn = document.getElementById('carouselNext');
+            if (container && prevBtn && nextBtn) {
+                const scrollAmount = container.offsetWidth > 0 ? container.offsetWidth * 0.8 : 220;
+                prevBtn.onclick = function(e) {
+                    e.preventDefault();
+                    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                };
+                nextBtn.onclick = function(e) {
+                    e.preventDefault();
+                    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                };
+            }
+        }, 150); // Pequeno delay para garantir que DOM foi atualizado
+    }
+    document.addEventListener('DOMContentLoaded', attachCarouselListeners);
+    document.addEventListener('livewire:load', function() {
+        window.Livewire.hook('message.processed', function() {
+            attachCarouselListeners();
+        });
     });
 </script>

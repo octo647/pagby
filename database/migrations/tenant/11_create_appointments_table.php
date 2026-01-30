@@ -38,6 +38,8 @@ return new class extends Migration
             $table->time('start_time');
             $table->time('end_time');
             $table->enum('status', ['Pendente', 'Realizado', 'Cancelado', 'bloqueio'])->default('Pendente');
+            $table->timestamp('reminder_sent_at')->nullable();
+            $table->json('reminder_types_sent')->nullable();
             $table->string('notes', 250)->nullable(); 
             $table->unsignedBigInteger('created_by')->nullable();
             $table->foreign('created_by')

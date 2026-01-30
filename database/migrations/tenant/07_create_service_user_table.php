@@ -24,6 +24,9 @@ return new class extends Migration
             ->references('id')
             ->on('services')
             ->cascadeOnDelete();
+            $table->integer('custom_duration_minutes')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->text('notes')->nullable();
         });
     }
 

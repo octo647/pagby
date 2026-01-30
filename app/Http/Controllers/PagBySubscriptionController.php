@@ -58,37 +58,43 @@ class PagBySubscriptionController extends Controller
         ];
        
      
-        $paymentData = [
-            'name' => 'Assinatura PagBy - ' . ucfirst($planName),
-            'description' => 'Pagamento de assinatura do plano ' . ucfirst($planName),
-            'billingType' => 'UNDEFINED',
+        $subscriptionData = [
+            'cycle' => 'MONTHLY',
             'value' => $amount,
-            'plan' => $planName, // Para referência futura
-            
+            'billingType' => 'UNDEFINED', // Cliente escolhe forma de pagamento
+            'description' => 'Assinatura PagBy - ' . ucfirst($planName),
+            'nextDueDate' => now()->addDays(7)->format('Y-m-d'),
+            'externalReference' => 'pagby-contact-' . $contact->id,
         ];
         $asaasService = new \App\Services\AsaasService();
-        $asaasResult = $asaasService->criarCheckout($customerData, $paymentData);
-        if ($asaasResult['success'] && !empty($asaasResult['data']['url'])) {
+        $asaasResult = $asaasService->criarAssinatura($customerData, $subscriptionData, null);
+        if ($asaasResult['success'] && !empty($asaasResult['data']['id'])) {
             // Logar retorno completo do Asaas para debug
-            \Log::info('Retorno Asaas criarCheckout', ['asaas_data' => $asaasResult['data']]);
-            // Salvar o pagamento localmente
+            \Log::info('Retorno Asaas criarAssinatura', ['asaas_data' => $asaasResult['data']]);
+            // Salvar o link de pagamento se existir
+            $invoiceUrl = $asaasResult['data']['invoiceUrl'] ?? null;
+            $desc = 'Assinatura Asaas: ' . ($asaasResult['data']['description'] ?? '');
+            if ($invoiceUrl) {
+                $desc .= ' ' . $invoiceUrl;
+            }
             $payment = PagByPayment::create([
                 'tenant_id' => 'temp_' . $contact->id,
                 'contact_id' => $contact->id,
                 'mp_payment_id' => null,
-                'external_id' => $asaasResult['data']['paymentLink'] ?? $asaasResult['data']['id'] ?? null,
-                'asaas_payment_id' => null, // Só será preenchido via webhook
+                'external_id' => $asaasResult['data']['id'] ?? null,
+                'asaas_payment_id' => null,
+                'asaas_subscription_id' => $asaasResult['data']['id'] ?? null,
                 'amount' => $amount,
                 'status' => 'pending',
                 'employee_count' => $contact->employee_count ?? 1,
                 'type' => 'subscription',
                 'plan' => $planName,
-                'description' => 'Checkout Asaas: ' . ($asaasResult['data']['url'] ?? '')
+                'description' => $desc
             ]);
             // Redireciona o usuário para a página de espera do pagamento
             return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
         } else {
-            return redirect()->back()->with('error', 'Erro ao criar link de pagamento no Asaas.');
+            return redirect()->back()->with('error', 'Erro ao criar assinatura no Asaas.');
         }
     }
 
@@ -245,35 +251,31 @@ class PagBySubscriptionController extends Controller
             $contact = \App\Models\Contact::find($payment->contact_id);
         }
         $tenantName = $contact ? ($contact->tenant_name ?? $contact->owner_name ?? 'Não informado') : 'Não informado';
+
+        // Extract payment link from description if not set
+        $paymentLink = null;
+        if ($checkoutUrl) {
+            $paymentLink = $checkoutUrl;
+        } elseif (!empty($payment->description) && str_contains($payment->description, 'http')) {
+            // Regex robusto: captura até espaço, aspas ou fim de linha
+            preg_match('/https?:\/\/[\w\-\.\/?&=#:;%+~,_@!\[\]()]+/i', $payment->description, $matches);
+            if (!empty($matches[0])) {
+                // Remove possíveis caracteres de pontuação no final
+                $paymentLink = rtrim($matches[0], ".,;:!?)\"]}");
+            }
+        }
+        // ...
+
         return view('pagby-subscription.wait', [
             'payment' => $payment,
             'checkout_url' => $checkoutUrl,
+            'payment_link' => $paymentLink,
             'payment_id' => $paymentId,
             'tenant_name' => $tenantName,
             'plan_name' => $payment->plan ?? 'Não informado'
         ]);
     }
-    private function configureMercadoPago()
-    {
-        $accessToken = config('services.pagby.access_token');
-        $environment = config('services.pagby.environment', 'sandbox');
-
-        Log::info('=== Configurando MercadoPago ===');
-        try {
-            Log::info('Método 1 - Config', [
-                'token' => substr($accessToken, 0, 20) . '...',
-                'environment' => $environment
-            ]);
-            MercadoPagoConfig::setAccessToken($accessToken);
-            Log::info('MercadoPago configurado com sucesso!');
-        } catch (\Exception $e) {
-            Log::error('❌ Erro ao configurar MercadoPago:', [
-                'error' => $e->getMessage(),
-                'environment' => $environment
-            ]);
-            throw $e;
-        }
-    }
+    
 
     public function choosePlan($plan)
     {
@@ -631,6 +633,38 @@ class PagBySubscriptionController extends Controller
         ]);
         
         if ($asaasPaymentId) {
+            // Atualizar link de pagamento já no PAYMENT_CREATED ou status PENDING
+            $eventType = $request->input('event');
+            $paymentStatus = $request->input('payment.status');
+            $invoiceUrl = $request->input('payment.invoiceUrl');
+            $descUpdate = false;
+            // Buscar PagByPayment por asaas_payment_id, paymentLink, externalReference ou subscription_id
+            $payment = PagByPayment::where('asaas_payment_id', $asaasPaymentId)->first();
+            if (!$payment && $request->input('payment.paymentLink')) {
+                $payment = PagByPayment::where('external_id', $request->input('payment.paymentLink'))->first();
+                if ($payment) $payment->asaas_payment_id = $asaasPaymentId;
+            }
+            if (!$payment && $request->input('payment.externalReference')) {
+                $payment = PagByPayment::where('external_id', $request->input('payment.externalReference'))->first();
+                if ($payment) $payment->asaas_payment_id = $asaasPaymentId;
+            }
+            // Try by subscription ID if still not found
+            if (!$payment && $request->input('payment.subscription')) {
+                $payment = PagByPayment::where('asaas_subscription_id', $request->input('payment.subscription'))->first();
+                if ($payment) {
+                    $payment->asaas_payment_id = $asaasPaymentId;
+                }
+            }
+            // Atualiza description com o link se for PAYMENT_CREATED ou status PENDING
+            if ($payment && $invoiceUrl && ($eventType === 'PAYMENT_CREATED' || $paymentStatus === 'PENDING')) {
+                $desc = $payment->description ?? '';
+                if (!str_contains($desc, $invoiceUrl)) {
+                    $desc = trim($desc . ' ' . $invoiceUrl);
+                    $payment->description = $desc;
+                    $descUpdate = true;
+                }
+            }
+            if ($descUpdate) $payment->save();
             // 1. Verificar se é um ajuste de plano (PlanAdjustment)
             $adjustment = \App\Models\PlanAdjustment::where('asaas_payment_id', $asaasPaymentId)->first();
             
@@ -654,6 +688,22 @@ class PagBySubscriptionController extends Controller
                 // Se encontrar, atualizar o asaas_payment_id
                 if ($payment) {
                     $payment->asaas_payment_id = $asaasPaymentId;
+                }
+            }
+            // Se ainda não encontrar, buscar por externalReference
+            if (!$payment && $request->input('payment.externalReference')) {
+                $payment = PagByPayment::where('external_id', $request->input('payment.externalReference'))->first();
+                if ($payment) {
+                    $payment->asaas_payment_id = $asaasPaymentId;
+                }
+            }
+            // Atualizar o campo description com o invoiceUrl se existir
+            if ($payment && $request->input('payment.invoiceUrl')) {
+                $desc = $payment->description ?? '';
+                $invoiceUrl = $request->input('payment.invoiceUrl');
+                if (!str_contains($desc, $invoiceUrl)) {
+                    $desc = trim($desc . ' ' . $invoiceUrl);
+                    $payment->description = $desc;
                 }
             }
             

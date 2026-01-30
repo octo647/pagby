@@ -14,8 +14,11 @@ return new class extends Migration
             $table->string('external_id')->unique(); // ID do MercadoPago
             $table->string('mp_payment_id')->nullable(); // ID da preferência
             $table->string('tenant_id')->nullable(); // ID do tenant do qual o usuário pertence
-            $table->string('plan_id'); //identificação do plano do tenant            
-            $table->decimal('amount', 10, 2); // Valor do pagamento            
+            $table->string('plan_id'); //identificação do plano do tenant
+            $table->string('asaas_subscription_id')->nullable()->comment('ID da assinatura no Asaas');
+            $table->string('asaas_payment_id')->nullable()->comment('ID do pagamento individual no Asaas (cada cobrança da assinatura)');
+            $table->text('asaas_data')->nullable()->comment('Dados completos da assinatura Asaas (JSON)');
+            $table->decimal('amount', 10, 2); // Valor do pagamento
             $table->string('status'); // pending, approved, rejected, cancelled
             $table->string('payment_method')->nullable();
             $table->string('payment_type')->nullable();
@@ -23,9 +26,11 @@ return new class extends Migration
             $table->json('mercadopago_data')->nullable(); // Resposta completa do MP
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('expires_at')->nullable();
-            $table->timestamps();           
+            $table->timestamps();
             $table->index(['status', 'plan_id']);
             $table->index('external_id');
+            $table->index('asaas_subscription_id');
+            $table->index('asaas_payment_id');
         });
     }
 

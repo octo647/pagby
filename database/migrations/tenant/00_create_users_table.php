@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('phone')->nullable()->comment('Telefone do usuário');
+            $table->string('whatsapp_jid', 255)->nullable();
             $table->boolean('whatsapp')->default(false);
+            $table->boolean('whatsapp_activated')->default(false);
             $table->string('cpf')->nullable()->unique()->comment('CPF do usuário');
             $table->string('cep')->nullable();
             $table->string('street')->nullable();
@@ -27,6 +29,7 @@ return new class extends Migration
             $table->boolean('notifications_enabled')->default(true);
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
+            $table->boolean('created_via_public_booking')->default(false);
             $table->string('google_id')->nullable()->unique()->comment('ID do Google');
             $table->string('facebook_id')->nullable()->unique()->comment('ID do Facebook');
             $table->string('password');

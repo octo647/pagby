@@ -30,13 +30,26 @@
                             <p><strong>Plano:</strong> {{ $plan_name }}</p>
                             <p><strong>Valor:</strong> R$ {{ number_format($payment->amount, 2, ',', '.') }}</p>
                         </div>
-                        @if(str_contains($payment->description ?? '', 'http'))
-                        <div class="mb-4">
-                            <a href="{{ explode(' ', $payment->description)[2] ?? $payment->description }}" target="_blank" class="btn btn-success btn-lg">
+                        @if(!empty($payment_link))
+                        <div class="mb-4" id="payment-link-section">
+                            <a href="{{ $payment_link }}" target="_blank" class="btn btn-success btn-lg">
                                 <i class="fas fa-credit-card"></i> Ir para página segura de pagamento
                             </a>
                             <p class="mt-2 text-muted">Você será redirecionado para o ambiente seguro do Asaas para finalizar o pagamento.</p>
                         </div>
+                        @else
+                        <div class="mb-4" id="waiting-link-section">
+                            <div class="alert alert-warning">
+                                <i class="fas fa-clock"></i> Aguardando geração do link de pagamento pelo Asaas...<br>
+                                Esta página será atualizada automaticamente.
+                            </div>
+                        </div>
+                        <script>
+                        // Auto-refresh a cada 5 segundos até o link aparecer
+                        setTimeout(function() {
+                            window.location.reload();
+                        }, 5000);
+                        </script>
                         @endif
                         
                         <div class="alert alert-info">

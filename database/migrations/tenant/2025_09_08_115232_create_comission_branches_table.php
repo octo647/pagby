@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::table('branches', function (Blueprint $table) {
            
-            $table->boolean('require_commission')->default(false)->after('require_advance_payment');
+            $table->boolean('require_commission')->default(false);
 
-            $table->decimal('commission', 5, 2)->default(0)->after('require_commission'); // Exemplo: 15.00 para 15%
+            $table->decimal('commission', 5, 2)->default(0); // Exemplo: 15.00 para 15%
 
             
         });

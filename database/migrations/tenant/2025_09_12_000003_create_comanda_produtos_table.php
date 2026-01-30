@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('comanda_produtos', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('funcionario_id')->nullable();
+            $table->foreign('funcionario_id')->references('id')->on('users')->nullOnDelete();
             $table->foreignId('comanda_id')->constrained('comandas')->onDelete('cascade');
             $table->foreignId('estoque_id')->constrained('estoque')->onDelete('cascade'); // Produto do estoque
             $table->integer('quantidade');
@@ -20,7 +22,6 @@ return new class extends Migration
             $table->decimal('subtotal', 10, 2); // quantidade * preco_unitario
             $table->text('observacoes')->nullable();
             $table->timestamps();
-            
             // Índices
             $table->index('comanda_id');
             $table->index('estoque_id');

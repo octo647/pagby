@@ -12,12 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         if (Schema::hasTable('contacts')) {
-            return; // Se a tabela já existir, não faz nada
+            // Se a tabela já existir, garantir que campos e renomeações estejam corretos
+            if (Schema::hasColumn('contacts', 'salon') && !Schema::hasColumn('contacts', 'tenant_name')) {
+                Schema::table('contacts', function (Blueprint $table) {
+                    $table->renameColumn('salon', 'tenant_name');
+                });
+            }
+            return;
         }
         Schema::create('contacts', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
+            $table->string('subscription_plan', 20)->nullable();
             $table->string('phone')->nullable();
             $table->text('notas')->nullable();
             $table->text('address')->nullable();
@@ -25,7 +32,13 @@ return new class extends Migration
             $table->string('cep')->nullable();
             $table->string('city')->nullable();
             $table->string('state')->nullable();
-            $table->string('salon')->nullable();
+            $table->string('neighborhood')->nullable();
+            $table->string('owner_name')->nullable();
+            $table->string('tipo')->nullable();
+            $table->string('cpf')->nullable();
+            $table->integer('employee_count')->nullable();
+            $table->string('tenant_name')->nullable();
+            $table->timestamp('contract_accepted_at')->nullable();
             $table->timestamps();
         });
     }

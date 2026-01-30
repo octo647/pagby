@@ -14,11 +14,16 @@ return new class extends Migration
             $table->string('tenant_id');
             $table->string('contact_id')->nullable();
             $table->string('mp_payment_id')->unique()->nullable();
-            $table->string('plan'); // 'basico' ou 'premium'
+            $table->string('asaas_payment_id')->nullable();
+            $table->string('asaas_subscription_id')->nullable();
             $table->string('status'); // 'pending', 'approved', 'rejected'
             $table->decimal('amount', 8, 2);
+            $table->integer('employee_count')->default(1);
+            $table->string('plan')->nullable();
+            $table->string('type')->default('subscription');
             $table->string('payment_method')->nullable();
             $table->json('mp_data')->nullable();
+            $table->text('description')->nullable();
             $table->string('external_id')->nullable();
             $table->timestamps();
             $table->index(['tenant_id', 'status']);

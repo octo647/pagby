@@ -31,8 +31,23 @@ class Saloes extends Component
      */
     public function loadTemplateList()
     {
-        $templateDir = resource_path('Templates');
-        $publicImagesDir = public_path('images');
+        // Determina o tipo selecionado (padrão: Barbearias)
+        $type = $this->newSalon['type'] ?? 'Barbearia';
+        $template = $this->newSalon['template'] ?? 'default';
+        // Mapeamento para o nome do diretório
+        $typeMap = [
+            'Barbearia' => 'Barbearias',
+            'Salão de Beleza' => 'Salões',
+            'Spa' => 'Spas',
+            'Estetica' => 'Esteticistas',
+            'PetShop' => 'PetShops',
+            'Veterinaria' => 'Veterinárias',
+        ];
+        $templateType = $typeMap[$type] ?? 'Barbearias';
+        // Atualiza o campo templateType no array newSalon
+        $this->newSalon['templateType'] = $templateType;
+        $templateDir = resource_path('Templates/' . $templateType);
+        $publicImagesDir = public_path('images/Templates/' . $templateType);
         $this->templateList = [];
         if (is_dir($templateDir)) {
             foreach (scandir($templateDir) as $entry) {
@@ -40,15 +55,16 @@ class Saloes extends Component
                 $templatePath = $templateDir . DIRECTORY_SEPARATOR . $entry;
                 if (is_dir($templatePath)) {
                     // Tenta encontrar uma miniatura padrão ou alternativa
-                    // Busca arquivos photo.*, ambiente.*, hero.*
                     $thumbnail = null;
                     $patterns = ['photo.', 'ambiente.', 'hero.'];
-                    if (is_dir("$publicImagesDir/$entry")) {
-                        $files = scandir("$publicImagesDir/$entry");
+                    $imageDir = "/images/Templates/$templateType/$entry";
+                    $absImageDir = public_path($imageDir);
+                    if (is_dir($absImageDir)) {
+                        $files = scandir($absImageDir);
                         foreach ($patterns as $pattern) {
                             foreach ($files as $file) {
                                 if (strpos($file, $pattern) === 0) {
-                                    $thumbPath = "/images/$entry/$file";
+                                    $thumbPath = "$imageDir/$file";
                                     if (file_exists(public_path($thumbPath))) {
                                         $thumbnail = $thumbPath;
                                         break 2;
@@ -57,7 +73,6 @@ class Saloes extends Component
                             }
                         }
                     }
-                    // Se não encontrar, usa uma imagem placeholder
                     if (!$thumbnail) {
                         $thumbnail = '/images/placeholder-template.png';
                     }
@@ -68,6 +83,12 @@ class Saloes extends Component
                 }
             }
         }
+    }
+
+    // Atualiza templates ao mudar tipo de salão
+    public function updatedNewSalonType($value)
+    {
+        $this->loadTemplateList();
     }
     public function loadSaloes()
     {
@@ -118,8 +139,10 @@ class Saloes extends Component
             $this->newSalon['cnpj'] = $contact->cnpj;
             $this->newSalon['slug'] = Str::slug($contact->tenant_name) ?? '';
             $this->newSalon['employee_count'] = $contact->employee_count ?? 1;
-            $this->newSalon['type'] = $contact->tipo ?? 'barbearia'; // Default type
+            $this->newSalon['type'] = $contact->tipo ?? 'Barbearia'; // Default type
+            $this->newSalon['template'] = $contact->template ?? 'default'; // Default template
             $this->newSalon['plan'] = $contact->subscription_plan ?? 'mensal'; // Default plan
+            $this->loadTemplateList();
         }
     }
     
@@ -127,7 +150,8 @@ class Saloes extends Component
     {
         $this->newSalon = [
             'id' => '',
-            'type' => 'barbearia', // Default type
+            'type' => 'Barbearia', // Default type
+            'template' => 'default', // Default template
             'employee_count' => 1, // Default employee count
             'email' => '',
             'phone' => '', 
@@ -243,6 +267,7 @@ class Saloes extends Component
 
             $salonModel->update([
                 'type' => $salon['type'] ?? null,
+                'template' => $salon['template'] ?? null,
                 'email' => $salon['email'] ?? null,
                 'phone' => $salon['phone'] ?? null,                
                 'whatsapp' => $salon['whatsapp'] ?? null,
@@ -339,7 +364,8 @@ class Saloes extends Component
         $this->createOwnerAccount($tenant);
 
         //Criar a estrutura de diretórios
-        $this->createTenantDirectoryStructure($this->newSalon['id'], $this->newSalon['type'] ?? 'barbearia');
+        $this->createTenantDirectoryStructure($this->newSalon['id'], $this->newSalon['templateType'] ?? 'Barbearias', 
+        $this->newSalon['template'] ?? 'default');
 
         // Salvar logo se enviada (em public/tenants/$tenantId/logo.{ext})
         if ($this->logoFile) {
@@ -398,7 +424,7 @@ class Saloes extends Component
         $this->dispatch('salonLogoUpdated');
 
         // Limpa o cache de views para garantir que novos symlinks/templates sejam reconhecidos
-        \Artisan::call('view:clear');
+        Artisan::call('view:clear');
 
         $this->showCreateSalonPanel = false;
         $this->loadSaloes(); // Recarrega a lista
@@ -408,20 +434,20 @@ class Saloes extends Component
     /**
      * Cria a estrutura de diretórios para o tenant
      */
-    private function createTenantDirectoryStructure($tenantId, $tenantType)
+    private function createTenantDirectoryStructure($tenantId, $templateType, $template)
     {
-        $basePath = env('HOSTGATOR_PUBLIC_PATH', public_path());
-        $storagePath = env('HOSTGATOR_STORAGE_PATH', storage_path());
-
+        
         // Diretórios principais
         $directories = [
-            $basePath . "/tenants/$tenantId",
-            storage_path("app/public/images/$tenantId"),
+            public_path("/tenants/$tenantId"),
+            storage_path("/tenants/$tenantId"),
             resource_path("views/tenants/$tenantId"),
-            $storagePath . "/tenant{$tenantId}/app/public/profile-photos",
-            $storagePath . "/tenant{$tenantId}/app/public/services",
-            $storagePath . "/tenant{$tenantId}/app/public/gallery",
-            $storagePath . "/tenant{$tenantId}/framework/cache",
+            storage_path("/tenants/$tenantId/profile-photos"),
+            storage_path("/tenants/$tenantId/services"),
+            storage_path("/tenants/$tenantId/gallery"),
+            storage_path("/tenants/$tenantId/cache"),
+            storage_path("/tenants/$tenantId/framework/cache"),
+            
         ];
 
         // Subdiretórios padrões para a home do tenant
@@ -450,35 +476,10 @@ class Saloes extends Component
                 }
             }
         }
-
-
-        // Cria symlink para o diretório de imagens do template
-
-        // Usa diretamente o nome informado em $tenantType (ex: SalaoBeleza1, Barbearia1)
-        $templateType = trim($tenantType);
-        $templateImages = public_path("images/$templateType");
-        $tenantImages = public_path("images/tenants/$tenantId");
-        Log::info('Tentando criar symlink de imagens', ['templateImages' => $templateImages, 'tenantImages' => $tenantImages]);
-        // Remove qualquer arquivo, diretório ou symlink existente antes de criar o symlink
-        // Remover qualquer coisa existente
-        if (file_exists($tenantImages) || is_link($tenantImages)) {
-            @unlink($tenantImages);
-            if (file_exists($tenantImages)) {
-                \Illuminate\Support\Facades\File::deleteDirectory($tenantImages);
-            }
-        }
-        // Só cria se não existir mais nada
-        if (!file_exists($tenantImages) && !is_link($tenantImages) && file_exists($templateImages)) {
-            symlink($templateImages, $tenantImages);
-            Log::info('Symlink de imagens criado', ['from' => $templateImages, 'to' => $tenantImages]);
-        } else if (file_exists($tenantImages) || is_link($tenantImages)) {
-            Log::error('Falha ao criar symlink: destino ainda existe', ['tenantImages' => $tenantImages]);
-        } else {
-            Log::error('Diretório de template de imagens não encontrado', ['templateImages' => $templateImages]);
-        }
+ 
 
         // Cria symlink para o template home.blade.php
-        $templateHome = resource_path("Templates/$templateType/home.blade.php");
+        $templateHome = resource_path("Templates/$templateType/$template/home.blade.php");
         $tenantHome = resource_path("views/tenants/$tenantId/home.blade.php");
             Log::info('Tentando criar symlink do home.blade.php', ['templateHome' => $templateHome, 'tenantHome' => $tenantHome]);
         if (!is_link($tenantHome)) {
@@ -500,24 +501,9 @@ class Saloes extends Component
     /**
      * Copia imagens padrão para o diretório do tenant
      */
-    private function copyImages($tenantId, $tenantType)
-    {
-        
-        // Não faz mais cópia, apenas symlink criado em createTenantDirectoryStructure
-    }
+   
 
-   /**
-     * Cria o arquivo home.blade.php personalizado para o tenant
-     */
-    private function createTenantHomeView($tenantId, $tenantType)
-    {
-        $homeViewPath = resource_path("views/tenants/$tenantId/home.blade.php");
-        $homeContent = file_get_contents(resource_path("Templates/$tenantType/home.blade.php"));
-        
-               
-        file_put_contents($homeViewPath, $homeContent);
-    }
-
+   
 
 
 /**
@@ -525,8 +511,8 @@ class Saloes extends Component
  */
 private function createTenantStorageLink($tenantId)
 {
-    $storagePath = storage_path("tenant{$tenantId}/app/public");
-    $publicPath = public_path("storage/tenant{$tenantId}");
+    $storagePath = storage_path("tenants/$tenantId/app/public");
+    $publicPath = public_path("storage/tenants/$tenantId");
 
     // Log para diagnóstico
     Log::info('Tentando criar symlink de storage', [
@@ -673,15 +659,16 @@ private function createTenantStorageLink($tenantId)
 
                 // Remove diretórios criados (apenas do tenant específico)
                 $dirs = [
-                    public_path("images/$slug"),
-                    storage_path("app/public/images/$slug"),
+                    public_path("tenants/$slug"),
+                    storage_path("tenants/$slug"),
                     resource_path("views/tenants/$slug"),
-                    storage_path("$slug/app/public/profile-photos"),
-                    storage_path("$slug/app/public/services"),
-                    storage_path("$slug/app/public/gallery"),
-                    storage_path("$slug/framework/cache"),
-                    storage_path("$slug"),
+                    storage_path("tenants/$slug/app/public/profile-photos"),
+                    storage_path("tenants/$slug/app/public/services"),
+                    storage_path("tenants/$slug/app/public/gallery"),
+                    storage_path("tenants/$slug/framework/cache"),
+                    storage_path("tenants/$slug"),
                 ];
+                //dd($dirs);
 
                 foreach ($dirs as $dir) {
                     // Protege contra exclusão da pasta raiz de tenants

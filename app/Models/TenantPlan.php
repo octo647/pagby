@@ -10,6 +10,7 @@ class TenantPlan extends Model
 
     protected $fillable = [
         'tenant_id',
+        'plan_id',
         'name',
         'price',
         'duration_days',

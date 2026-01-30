@@ -118,9 +118,27 @@
             @endif
 
             {{-- MENU ADMIN --}}
+            @php
+                use App\Models\Plan;
+                $isTenant = !in_array(request()->getHost(), config('tenancy.central_domains'));
+                $temPlanoAtivo = false;
+                if ($isTenant) {
+                    $temPlanoAtivo = Plan::where('active', true)->exists();
+                }
+                $menuAdmin = [
+                    [ 'label' => 'Contatos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="8" r="4" fill="#60A5FA"/><rect x="4" y="16" width="16" height="5" rx="2.5" fill="#F472B6"/></svg>', 'tabelaAtiva' => 'contatos'],
+                    [ 'label' => 'Salões', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="10" width="18" height="8" rx="2" fill="#FBBF24"/><rect x="7" y="6" width="10" height="4" rx="2" fill="#34D399"/></svg>', 'tabelaAtiva' => 'saloes'],
+                    [ 'label' => 'Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><polygon points="12,2 22,8 12,14 2,8" fill="#A78BFA"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#F472B6"/></svg>', 'tabelaAtiva' => 'planos'],
+                    [ 'label' => 'Ajustes de Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="8" width="18" height="8" rx="3" fill="#10B981"/><path d="M8 12h8M12 8v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>', 'tabelaAtiva' => 'ajustes-planos'],
+                ];
+            @endphp
             @if($isAdmin)
-                <!-- Itens do menu Admin -->
-                <!-- Adicione os itens do menu Admin aqui -->
+                @foreach($menuAdmin as $item)
+                    <x-responsive-nav-link :href="route('tenant.dashboard', ['tabelaAtiva' => $item['tabelaAtiva'], 'menu' => $menuSelecionado])" :active="request()->input('tabelaAtiva') === $item['tabelaAtiva'] && request()->input('menu', $menuSelecionado) === 'admin'">
+                        {!! $item['icon'] ?? '' !!}
+                        {{ $item['label'] }}
+                    </x-responsive-nav-link>
+                @endforeach
             @endif
 
             {{-- MENU PROPRIETÁRIO --}}
@@ -131,9 +149,11 @@
                         ['tabelaAtiva' => 'controle-pagamento-planos', 'label' => 'Pagamento de Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#A78BFA"/><rect x="7" y="10" width="10" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
                         ['tabelaAtiva' => 'controle-agenda', 'label' => 'Controle de Agendas', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="6" width="18" height="12" rx="3" fill="#34D399"/><rect x="7" y="10" width="10" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#A78BFA"/></svg>'],
                         ['tabelaAtiva' => 'gerenciar-comandas', 'label' => 'Controle de Comandas', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="6" width="16" height="12" rx="3" fill="#FBBF24"/><rect x="8" y="10" width="8" height="4" rx="2" fill="#34D399"/><circle cx="12" cy="16" r="2" fill="#F472B6"/></svg>'],
-                        ['tabelaAtiva' => 'planos-de-assinatura', 'label' => 'Planos de Assinatura', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#A78BFA"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'],
-                        ['tabelaAtiva' => 'meu-pagby', 'label' => 'Meu Pagby', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#F472B6"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#FBBF24"/></svg>'],
                     ];
+                    
+                        $menuProprietario[] = ['tabelaAtiva' => 'planos-de-assinatura', 'label' => 'Planos de Assinatura', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#A78BFA"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#FBBF24"/><circle cx="12" cy="16" r="2" fill="#34D399"/></svg>'];
+                    
+                    $menuProprietario[] = ['tabelaAtiva' => 'meu-pagby', 'label' => 'Meu Pagby', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="4" y="8" width="16" height="8" rx="4" fill="#F472B6"/><rect x="8" y="12" width="8" height="4" rx="2" fill="#A78BFA"/><circle cx="12" cy="16" r="2" fill="#FBBF24"/></svg>'];
                     
                     $menuCadastros = [
                         'label' => 'Cadastros',
@@ -296,7 +316,7 @@
                     ];
                     
                     // Adicionar planos se tiver plano ativo
-                    $temPlanoAtivo = false; // Defina conforme sua lógica
+                    // $temPlanoAtivo já definido acima
                     if($temPlanoAtivo) {
                         $menuCliente[] = ['tabelaAtiva' => 'planos-de-assinatura', 'label' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle"><path fill-rule="evenodd" d="M3.75 3.375c0-1.036.84-1.875 1.875-1.875H9a3.75 3.75 0 0 1 3.75 3.75v1.875c0 1.036.84 1.875 1.875 1.875H16.5a3.75 3.75 0 0 1 3.75 3.75v7.875c0 1.035-.84 1.875-1.875 1.875H5.625a1.875 1.875 0 0 1-1.875-1.875V3.375Zm10.5 1.875a5.23 5.23 0 0 0-1.279-3.434 9.768 9.768 0 0 1 6.963 6.963A5.23 5.23 0 0 0 16.5 7.5h-1.875a.375.375 0 0 1-.375-.375V5.25ZM12 10.5a.75.75 0 0 1 .75.75v.028a9 .727 .727 .00001 .00001 -2 .28 .75 .75 .00001 -2 .374 -2 .453 1.452 8.207 8.207 0 0 0 -1.313 -.226v1.68l.969 .332c.67 .23 1.281 .85 1.281 1.704 0 .158 -.007 .314 -.02 .468 -.083 .931 -.83 1.582 -1.669 1.695a9.776 9.776 0 0 1 -.561 .059v .028a.75 .75 0 0 1 -1.5 0v -.029a9 .724 .724 .00001 -2 -1.687 -.278 .75 .75 .00001 -2 .374 -2 .453 1.453 c0 .113 -.005 .225 -.015 .336 -.013 .146 -.14 .309 -.374 .34 -.12 .016 -.24 .03 -.361 .04Z" clip-rule="evenodd" /></svg> Planos de Assinatura'];
                     }

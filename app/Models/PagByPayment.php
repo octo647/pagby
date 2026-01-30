@@ -18,6 +18,7 @@ class PagByPayment extends Model
         'contact_id',        
         'mp_payment_id',
         'asaas_payment_id',
+        'asaas_subscription_id',
         'external_id',
         'plan',
         'employee_count',

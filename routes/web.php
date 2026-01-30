@@ -88,6 +88,10 @@ foreach (config('tenancy.central_domains') as $domain) {
             Route::get('/tenants', [TenantAdminController::class, 'index'])->name('admin.tenants');
             Route::get('/tenants/{tenant}', [TenantAdminController::class, 'show'])->name('admin.tenants.show');
             Route::get('/planos', [PlanAdminController::class, 'index'])->name('admin.planos');
+
+            // Verificação/atualização de status do pagamento Asaas
+            Route::get('/asaas/verificar/{asaas_payment_id}', [\App\Http\Controllers\AsaasAdminController::class, 'verificarPagamento'])
+                ->name('admin.asaas.verificar');
         });
 
         // ROTAS OAUTH

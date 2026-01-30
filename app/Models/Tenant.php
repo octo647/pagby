@@ -24,6 +24,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         return [
             'id',
             'type',
+            'template',
             'employee_count',
             'email',
             'phone',
@@ -49,6 +50,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'trial_ends_at',
             'subscription_ends_at',
             'is_blocked',
+            'template',
         ];
 
     }

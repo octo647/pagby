@@ -17,11 +17,13 @@ class CreateTenantsTable extends Migration
     {
         Schema::create('tenants', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->enum('type', ['barbearia', 'salao_beleza', 'clinica'])->default('barbearia'); // Assuming 'barbearia' is the default type
+            $table->string('type')->default('barbearia');
+            $table->string('template')->default('default');
+            $table->integer('employee_count')->default(1);
             $table->string('email')->unique()->nullable();
             $table->string('phone')->nullable();
             $table->string('whatsapp')->nullable();
-            $table->string('instagram')->nullable();            
+            $table->string('instagram')->nullable();
             $table->string('google_client_id')->nullable();
             $table->string('google_client_secret')->nullable();
             $table->string('facebook_client_id')->nullable();
@@ -39,14 +41,17 @@ class CreateTenantsTable extends Migration
             $table->string('city')->nullable();
             $table->string('state')->nullable();
             $table->string('logo')->nullable();
-            $table->string('plan')->nullable(); // Assuming this is a reference to a plan, adjust as necessary
-            $table->string('status')->default('Ativo'); // Example status field, adjust as necessary   
-
-            // your custom columns may go here
-            $table->json('data')->nullable(); // Example of a JSON column for additional data
-
+            $table->string('status')->default('Ativo');
+            $table->timestamp('trial_started_at')->nullable();
+            $table->timestamp('trial_ends_at')->nullable();
+            $table->enum('subscription_status', ['trial', 'active', 'expired', 'suspended'])->default('trial');
+            $table->timestamp('subscription_started_at')->nullable();
+            $table->timestamp('subscription_ends_at')->nullable();
+            $table->boolean('is_blocked')->default(false);
+            $table->string('asaas_wallet_id')->nullable()->comment('ID da subconta Asaas para split de pagamentos');
+            $table->text('asaas_account_data')->nullable()->comment('Dados completos da subconta Asaas (JSON)');
+            $table->json('data')->nullable();
             $table->timestamps();
-            
         });
     }
 
