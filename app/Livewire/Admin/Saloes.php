@@ -440,13 +440,13 @@ class Saloes extends Component
         // Diretórios principais
         $directories = [
             public_path("/tenants/$tenantId"),
-            storage_path("/tenants/$tenantId"),
+            storage_path("/tenant$tenantId"),
             resource_path("views/tenants/$tenantId"),
-            storage_path("/tenants/$tenantId/profile-photos"),
-            storage_path("/tenants/$tenantId/services"),
-            storage_path("/tenants/$tenantId/gallery"),
-            storage_path("/tenants/$tenantId/cache"),
-            storage_path("/tenants/$tenantId/framework/cache"),
+            storage_path("/tenant$tenantId/profile-photos"),
+            storage_path("/tenant$tenantId/services"),
+            storage_path("/tenant$tenantId/gallery"),
+            storage_path("/tenant$tenantId/cache"),
+            storage_path("/tenant$tenantId/framework/cache"),
             
         ];
 
@@ -659,14 +659,13 @@ private function createTenantStorageLink($tenantId)
 
                 // Remove diretórios criados (apenas do tenant específico)
                 $dirs = [
-                    public_path("tenants/$slug"),
-                    storage_path("tenants/$slug"),
-                    resource_path("views/tenants/$slug"),
-                    storage_path("tenants/$slug/app/public/profile-photos"),
-                    storage_path("tenants/$slug/app/public/services"),
-                    storage_path("tenants/$slug/app/public/gallery"),
-                    storage_path("tenants/$slug/framework/cache"),
-                    storage_path("tenants/$slug"),
+                    public_path("tenants/tenant$slug"),
+                    resource_path("views/tenants/tenant$slug"),
+                    storage_path("tenant$slug/app/public/profile-photos"),
+                    storage_path("tenant$slug/app/public/services"),
+                    storage_path("tenant$slug/app/public/gallery"),
+                    storage_path("tenant$slug/framework/cache"),
+                    storage_path("tenant$slug"),
                 ];
                 //dd($dirs);
 
