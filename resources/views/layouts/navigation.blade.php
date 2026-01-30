@@ -126,6 +126,9 @@
                     $temPlanoAtivo = Plan::where('active', true)->exists();
                 }
                 $menuAdmin = [
+                    [ 'label' => 'Contatos Booksy',
+                    'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="8" r="4" fill="#F59E42"/><rect x="4" y="16" width="16" height="5" rx="2.5" fill="#F472B6"/></svg>',
+                    'tabelaAtiva' => 'contatos-booksy'],
                     [ 'label' => 'Contatos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><circle cx="12" cy="8" r="4" fill="#60A5FA"/><rect x="4" y="16" width="16" height="5" rx="2.5" fill="#F472B6"/></svg>', 'tabelaAtiva' => 'contatos'],
                     [ 'label' => 'Salões', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><rect x="3" y="10" width="18" height="8" rx="2" fill="#FBBF24"/><rect x="7" y="6" width="10" height="4" rx="2" fill="#34D399"/></svg>', 'tabelaAtiva' => 'saloes'],
                     [ 'label' => 'Planos', 'icon' => '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" class="size-5 inline mr-1 align-middle"><polygon points="12,2 22,8 12,14 2,8" fill="#A78BFA"/><rect x="6" y="16" width="12" height="4" rx="2" fill="#F472B6"/></svg>', 'tabelaAtiva' => 'planos'],

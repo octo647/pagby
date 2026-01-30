@@ -7,9 +7,10 @@
         <h2 class="text-xl font-semibold leading-tight text-center text-gray-800">
         @if(auth()->user()->hasrole('Admin'))
             {{ __($tabelaAtiva === 'contatos' ? 'Contatos' : 
+            ($tabelaAtiva === 'contatos-booksy' ? 'Contatos Booksy' :
             ($tabelaAtiva === 'saloes' ? 'Salões' : 
             ($tabelaAtiva === 'planos' ? 'Planos' :
-            ($tabelaAtiva === 'ajustes-planos' ? 'Ajustes de Planos' : ''))))}}
+            ($tabelaAtiva === 'ajustes-planos' ? 'Ajustes de Planos' : '')))))}}
         @elseif(auth()->user()->hasrole('Proprietário'))
             @php
                 $titles = [
@@ -74,8 +75,9 @@
                 {{session('chooseone')}}
                 @endif
                 @can('Admin')
-    
-                @if($tabelaAtiva === 'contatos')
+                @if($tabelaAtiva === 'contatos-booksy')
+                    @livewire('admin.booksy-contacts') 
+                @elseif($tabelaAtiva === 'contatos')
                     @livewire('list-contacts') 
                 @elseif($tabelaAtiva === 'saloes')
                     @livewire('admin.saloes')
