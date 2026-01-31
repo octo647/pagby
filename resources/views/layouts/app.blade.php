@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
+            <!-- Flatpickr CSS -->
+            <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -15,12 +17,15 @@
      
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
         <style>[x-cloak] { display: none !important; }</style>
          
        
         @livewireStyles
     </head>
     <body class="font-sans antialiased">
+            <!-- Flatpickr JS -->
+            <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <div class="min-h-screen bg-gray-100">
            @include('layouts.navigation')
 
@@ -40,7 +45,7 @@
         </div>
 
         @livewireScripts
-
+        <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
         <script>
         document.addEventListener('livewire:init', function () {
             window.addEventListener('confirm-cancel', event => {

@@ -1,94 +1,22 @@
 <div>
    
    
-    <!-- Filtros -->
-    <div class="bg-white p-6 rounded-lg shadow">
-        <h3 class="text-lg font-medium text-gray-900 mb-4">Filtros</h3>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-            <div>
-                <label for="search" class="block text-sm font-medium text-gray-700">Buscar</label>
-                <input wire:model.live="searchTerm" type="text" placeholder="Número, cliente, telefone..." 
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-            </div>
-
-            <div>
-                <label for="filtro_branch" class="block text-sm font-medium text-gray-700">Filial</label>
-                <select wire:model.live="filtro_branch" 
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Todas</option>
-                    @if($branches)
-                        @foreach($branches as $branch)
-                            <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
-                        @endforeach
-                    @endif
-                </select>
-            </div>
-
-            <div>
-                <label for="filtro_status" class="block text-sm font-medium text-gray-700">Status</label>
-                <select wire:model.live="filtro_status" 
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Todos</option>
-                    <option value="Aberta">Aberta</option>
-                    <option value="Finalizada">Finalizada</option>
-                    <option value="Cancelada">Cancelada</option>
-                </select>
-            </div>
-
-            <div>
-                <label for="filtro_funcionario" class="block text-sm font-medium text-gray-700">Funcionário</label>
-                <select wire:model.live="filtro_funcionario" 
-                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                    <option value="">Todos ({{ $users ? count($users) : 0 }})</option>
-                    @if($users)
-                        @foreach($users as $funcionario)
-                            <option value="{{ $funcionario->id }}">{{ $funcionario->name }}</option>
-                        @endforeach
-                    @endif
-                </select>
-            </div>
-
-            <div>
-                <label for="data_inicio" class="block text-sm font-medium text-gray-700">Data Início</label>
-                <input wire:model.live="data_inicio" type="date" 
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                @if($data_inicio)
-                    <div class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($data_inicio)->format('d-m-Y') }}</div>
-                @endif
-            </div>
-
-            <div>
-                <label for="data_fim" class="block text-sm font-medium text-gray-700">Data Fim</label>
-                <input wire:model.live="data_fim" type="date" 
-                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                @if($data_fim)
-                    <div class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($data_fim)->format('d-m-Y') }}</div>
-                @endif
-            </div>
-        </div>
-
-        <div class="mt-4 flex space-x-2">
-            <button wire:click="limparFiltros" 
-                    class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200">
-                Limpar Filtros
-            </button>
-        </div>
+    <!-- Frase informativa no topo -->
+    <div class="mb-4">
+        <p class="text-sm text-gray-600 flex items-center">
+            <svg class="w-6 h-6 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Comandas são criadas automaticamente quando agendamentos são confirmados
+        </p>
     </div>
 
-    <!-- Cabeçalho com botão de nova comanda -->
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">Controle de Comandas</h2>
-            <p class="text-sm text-gray-600 mt-1">
-                <span class="inline-flex items-center">
-                    <svg class="w-4 h-4 mr-1 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Comandas são criadas automaticamente quando agendamentos são confirmados
-                </span>
-            </p>
-        </div>
+    <!-- Botão Filtros e Nova Comanda lado a lado -->
+    <div x-data="{ open: false }" class="mb-6 flex justify-begin items-center space-x-2">
+        <button @click="open = true" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
+            
+            Filtros
+        </button>
         <button wire:click="abrirModal" 
                 class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -96,7 +24,86 @@
             </svg>
             Nova Comanda
         </button>
+        <template x-if="open">
+            <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mx-2 relative">
+                    <button @click="open = false" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Filtros</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Filtros originais -->
+                        <div>
+                            <label for="search" class="block text-sm font-medium text-gray-700">Buscar</label>
+                            <input wire:model.live="searchTerm" type="text" placeholder="Número, cliente, telefone..." 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="filtro_branch" class="block text-sm font-medium text-gray-700">Filial</label>
+                            <select wire:model.live="filtro_branch" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">Todas</option>
+                                @if($branches)
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->branch_name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filtro_status" class="block text-sm font-medium text-gray-700">Status</label>
+                            <select wire:model.live="filtro_status" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">Todos</option>
+                                <option value="Aberta">Aberta</option>
+                                <option value="Finalizada">Finalizada</option>
+                                <option value="Cancelada">Cancelada</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="filtro_funcionario" class="block text-sm font-medium text-gray-700">Funcionário</label>
+                            <select wire:model.live="filtro_funcionario" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="">Todos ({{ $users ? count($users) : 0 }})</option>
+                                @if($users)
+                                    @foreach($users as $funcionario)
+                                        <option value="{{ $funcionario->id }}">{{ $funcionario->name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                        <div>
+                            <label for="data_inicio" class="block text-sm font-medium text-gray-700">Data Início</label>
+                            <input wire:model.live="data_inicio" type="date" 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            @if($data_inicio)
+                                <div class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($data_inicio)->format('d-m-Y') }}</div>
+                            @endif
+                        </div>
+                        <div>
+                            <label for="data_fim" class="block text-sm font-medium text-gray-700">Data Fim</label>
+                            <input wire:model.live="data_fim" type="date" 
+                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            @if($data_fim)
+                                <div class="text-xs text-gray-500 mt-1">{{ \Carbon\Carbon::parse($data_fim)->format('d-m-Y') }}</div>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="mt-4 flex space-x-2">
+                        <button wire:click="limparFiltros" 
+                                class="px-4 py-2 text-sm text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200">
+                            Limpar Filtros
+                        </button>
+                        <button @click="open = false" class="px-4 py-2 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700">Fechar</button>
+                    </div>
+                </div>
+            </div>
+        </template>
     </div>
+
+    
 
     <!-- Lista de Comandas -->
     @if($comandas->count() > 0)
@@ -482,17 +489,25 @@
 
 
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Desconto Serviços (%)</label>
-                                    <input wire:model="desconto_servicos" type="number" step="0.01" min="0" max="100"
-                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    @error('desconto_servicos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                                </div>
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700">Desconto Produtos (%)</label>
-                                    <input wire:model="desconto_produtos" type="number" step="0.01" min="0" max="100"
-                                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                    @error('desconto_produtos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                <div x-data="{ showDescontos: false }" class="col-span-2">
+                                    <button type="button" @click="showDescontos = !showDescontos" class="mb-2 px-3 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 transition">
+                                        <span x-show="!showDescontos">Adicionar Descontos</span>
+                                        <span x-show="showDescontos">Ocultar Descontos</span>
+                                    </button>
+                                    <div x-show="showDescontos" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Desconto Serviços (%)</label>
+                                            <input wire:model="desconto_servicos" type="number" step="0.01" min="0" max="100"
+                                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            @error('desconto_servicos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700">Desconto Produtos (%)</label>
+                                            <input wire:model="desconto_produtos" type="number" step="0.01" min="0" max="100"
+                                                   class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                            @error('desconto_produtos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
@@ -699,32 +714,15 @@
 
     <!-- Painel Lateral de Detalhes da Comanda -->
     @if($mostrar_painel_detalhes && $comanda_detalhes)
-    <div class="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
-        <!-- Background overlay -->
-        <div class="absolute inset-0 overflow-hidden">
-            <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" wire:click="fecharPainelDetalhes"></div>
-            
-            <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
-                <div class="pointer-events-auto relative w-screen max-w-2xl">
-                    <!-- Header do painel -->
-                    <div class="flex h-full flex-col overflow-y-scroll bg-white py-6 shadow-xl">
-                        <div class="px-4 sm:px-6">
-                            <div class="flex items-start justify-between">
-                                <h2 class="text-lg font-medium text-gray-900">Detalhes da Comanda #{{ $comanda_detalhes->numero_comanda }}</h2>
-                                <div class="ml-3 flex h-7 items-center">
-                                    <button type="button" wire:click="fecharPainelDetalhes"
-                                            class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
-                                        <span class="sr-only">Fechar painel</span>
-                                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Conteúdo do painel -->
-                        <div class="relative mt-6 flex-1 px-4 sm:px-6">
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div class="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl mx-2 relative">
+            <button type="button" wire:click="fecharPainelDetalhes" class="absolute top-2 right-2 text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+            <h2 class="text-lg font-medium text-gray-900 mb-4">Detalhes da Comanda #{{ $comanda_detalhes->numero_comanda }}</h2>
+            <div class="overflow-y-auto max-h-[80vh] pr-2">
                             <!-- Informações da comanda -->
                             <div class="mb-6 rounded-lg bg-gray-50 p-4">
                                 <div class="grid grid-cols-2 gap-4 text-sm">
@@ -783,22 +781,28 @@
                                     </div>
                                 </div>
                                 <div class="mt-4 p-4 rounded-lg bg-blue-50 border border-blue-200">
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label class="block text-sm font-medium text-blue-900">Desconto Serviços (%)</label>
-                                            <input wire:model="desconto_servicos" type="number" step="0.01" min="0" max="100"
-                                                   class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            @error('desconto_servicos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                    <div x-data="{ showDescontos: false }">
+                                        <button type="button" @click="showDescontos = !showDescontos" class="mb-2 px-3 py-2 bg-yellow-100 text-yellow-800 rounded hover:bg-yellow-200 transition">
+                                            <span x-show="!showDescontos">Mostrar Descontos</span>
+                                            <span x-show="showDescontos">Ocultar Descontos</span>
+                                        </button>
+                                        <div x-show="showDescontos" x-transition class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-blue-900">Desconto Serviços (%)</label>
+                                                <input wire:model="desconto_servicos" type="number" step="0.01" min="0" max="100"
+                                                       class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                @error('desconto_servicos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-blue-900">Desconto Produtos (%)</label>
+                                                <input wire:model="desconto_produtos" type="number" step="0.01" min="0" max="100"
+                                                       class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                                @error('desconto_produtos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="block text-sm font-medium text-blue-900">Desconto Produtos (%)</label>
-                                            <input wire:model="desconto_produtos" type="number" step="0.01" min="0" max="100"
-                                                   class="mt-1 block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                            @error('desconto_produtos') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                                        <div class="mt-4 text-right" x-show="showDescontos" x-transition>
+                                            <button wire:click="salvarDescontosPainel" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:border-blue-700 focus:ring focus:ring-blue-200 active:bg-blue-600 disabled:opacity-25 transition">Salvar Descontos</button>
                                         </div>
-                                    </div>
-                                    <div class="mt-4 text-right">
-                                        <button wire:click="salvarDescontosPainel" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 focus:outline-none focus:border-blue-700 focus:ring focus:ring-blue-200 active:bg-blue-600 disabled:opacity-25 transition">Salvar Descontos</button>
                                     </div>
                                 </div>
                             </div>

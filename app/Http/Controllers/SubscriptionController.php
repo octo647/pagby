@@ -203,7 +203,8 @@ class SubscriptionController extends Controller
 
         if (!$event || !$paymentData) {
             Log::warning('Webhook inválido');
-            return response('Invalid', 400);
+            // Sempre responder 200 para evitar erro no Asaas
+            return response('OK', 200);
         }
 
         switch ($event) {

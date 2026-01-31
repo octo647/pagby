@@ -1,26 +1,18 @@
 
 <div class="min-h-screen bg-gray-50 py-6">
+ 
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {{-- Header com data e calendário --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-            <div>
+            <div  class="relative flex items-center gap-2">
                 <h2 class="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <span class="text-blue-700">Agenda do dia</span>
-                    <span class="ml-2 px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-semibold text-lg">
-                        {{ \Carbon\Carbon::parse($selectedDate ?? now())->translatedFormat('d \d\e F, l') }}
+                    <input type="date" id="dataInput" wire:model.live="selectedDate" class="px-3 py-2 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500 " style='display:none;' />
+                    <span onclick="document.getElementById('dataInput').showPicker()" >
+                        📅 {{ \Carbon\Carbon::parse($selectedDate ?? now())->translatedFormat('d \\d\\e F, l') }}
                     </span>
                 </h2>
-            </div>
-            <div>
-                <label class="inline-flex items-center cursor-pointer">
-                    <svg class="w-6 h-6 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <input type="date" wire:model.live="selectedDate" class="border border-gray-300 rounded px-2 py-1 focus:ring-blue-500 focus:border-blue-500" />
-                </label>
+               
+               
             </div>
         </div>
         {{-- Tabela para desktop --}}
@@ -94,7 +86,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-4 text-center text-gray-500">Nenhum agendamento para hoje.</td>
+                            <td colspan="4" class="px-6 py-4 text-center text-gray-500">Nenhum agendamento neste dia.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -158,7 +150,7 @@
                     @endif
                 </div>
             @empty
-                <div class="bg-white rounded-xl shadow p-4 text-center text-gray-500">Nenhum agendamento futuro.</div>
+                <div class="bg-white rounded-xl shadow p-4 text-center text-gray-500">Nenhum agendamento neste dia.</div>
             @endforelse
         </div>
     </div>

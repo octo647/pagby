@@ -108,7 +108,7 @@
                     $urlFuncionario = url()->current() . '?' . http_build_query(array_merge($query, ['menu' => 'funcionario']));
                 @endphp
                 <div class="flex justify-center gap-2 mb-6">
-                    <a href="{{ route('tenant.dashboard', ['tabelaAtiva' => 'controle-pagamento', 'menu' => 'proprietario']) }}" class="px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-150 {{ $menuSelecionado === 'proprietario' ? 'bg-blue-200 text-blue-900 border-blue-400' : 'bg-white text-gray-600 border-gray-300 hover:bg-blue-50' }}">
+                    <a href="{{ route('tenant.dashboard', ['tabelaAtiva' => 'gerenciar-comandas', 'menu' => 'proprietario']) }}" class="px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-150 {{ $menuSelecionado === 'proprietario' ? 'bg-blue-200 text-blue-900 border-blue-400' : 'bg-white text-gray-600 border-gray-300 hover:bg-blue-50' }}">
                         Proprietário
                     </a>
                     <a href="{{ route('tenant.dashboard', ['tabelaAtiva' => 'agenda', 'menu' => 'funcionario']) }}" class="px-3 py-1 rounded-full text-sm font-semibold border transition-all duration-150 {{ $menuSelecionado === 'funcionario' ? 'bg-pink-200 text-pink-900 border-pink-400' : 'bg-white text-gray-600 border-gray-300 hover:bg-pink-50' }}">

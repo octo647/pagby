@@ -21,7 +21,7 @@ class DashboardController extends Controller
             if ($user->hasRole('Funcionário')) {
                 $tabelaAtiva = $request->get('tabelaAtiva', 'agenda');
             } elseif ($user->hasRole('Proprietário')) {
-                $tabelaAtiva = $request->get('tabelaAtiva', 'usuarios');
+                $tabelaAtiva = $request->get('tabelaAtiva', 'gerenciar-comandas');
             } elseif ($user->hasRole('Cliente')) {
                 $tabelaAtiva = $request->get('tabelaAtiva', 'appointments');
             } elseif ($user->hasRole('Admin')) {

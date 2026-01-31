@@ -1,5 +1,6 @@
 <div class="min-h-screen bg-gray-50">
-    {{-- Cabeçalho da Página --}}
+    {{-- Cabeçalho da Página
+    
     <div class="bg-white border-b border-gray-200 mb-8">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="py-6">
@@ -7,15 +8,38 @@
                 <p class="mt-2 text-gray-600">Gerencie seus agendamentos e acompanhe seu status</p>
             </div>
         </div>
-    </div>
-
-    {{-- Conteúdo Principal --}}
+    </div> --}}
+    
+    
+        {{-- Conteúdo Principal --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-        @if(count($agendamentos)>0)
+        @php
+            // Filtra agendamentos: remove cancelados e passados
+            $agora = \Carbon\Carbon::now();
+            $agendamentosFiltrados = collect($agendamentos)->filter(function($schedule) use ($agora) {
+                if (isset($schedule['status']) && strtolower($schedule['status']) === 'cancelado') {
+                    return false;
+                }
+                // Tenta criar a data/hora do agendamento
+                try {
+                    $dataHora = \Carbon\Carbon::createFromFormat('d/m/Y H:i', $schedule['date'].' '.$schedule['start_time']);
+                } catch (Exception $e) {
+                    try {
+                        $dataHora = \Carbon\Carbon::createFromFormat('d/m H:i', $schedule['date'].' '.$schedule['start_time']);
+                        $dataHora->year = $agora->year;
+                    } catch (Exception $e2) {
+                        $dataHora = \Carbon\Carbon::parse($schedule['date'].' '.$schedule['start_time']);
+                    }
+                }
+                // Só mostra se ainda não passou
+                return $dataHora->greaterThan($agora);
+            })->values();
+        @endphp
+        @if(count($agendamentosFiltrados)>0)
             {{-- Lista de Agendamentos --}}
             <div class="space-y-6">
 
-                @foreach($agendamentos as $index=>$schedule)
+                @foreach($agendamentosFiltrados as $index=>$schedule)
                     <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow duration-300">
                         {{-- Header do Card --}}
                         <div class="bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-4">
@@ -224,6 +248,7 @@
                                 @endphp
                                 <div class="px-6 py-4 bg-gray-50 border-t border-gray-100">
                                     <div class="flex justify-end">
+                                  
                                         @if($hoje && $diffMinutos < 0)
                                             @if($diffMinutos < -120)
                                                 <div class="text-left w-full text-sm text-gray-700 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -242,7 +267,8 @@
                                                     . 
                                                 </div>
                                             @endif
-                                        @else
+                                        @elseif($diffMinutos < -120)
+                                        
                                             <button wire:click="deleteSchedule({{$schedule['id']}})" 
                                                     class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 transform hover:scale-105">
                                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -280,7 +306,8 @@
                     </svg>
                 </div>
                 <h3 class="text-xl font-semibold text-gray-900 mb-2">Nenhum agendamento encontrado</h3>
-                <p class="text-gray-500 mb-8">Você ainda não possui agendamentos. Faça seu primeiro agendamento!</p>
+                
+                
             </div>
         @endif
 

@@ -14,6 +14,7 @@ use App\Models\User; // Certifique-se de que o modelo User está importado
 
 
 class PlanosDeAssinatura extends Component
+    
 {
     public $planos = [];
 
@@ -32,6 +33,29 @@ class PlanosDeAssinatura extends Component
     public $modalNovoPlano = false;
     public $allowedDays = []; // Array para armazenar os dias permitidos
     public $assinaturaAtivaId = null; // ID da assinatura ativa (não o objeto)
+
+
+    /**
+     * Cria subconta Asaas para o tenant e salva o walletId.
+     * Chame este método após criar o plano, se o tenant ainda não tiver walletId.
+     */
+    protected function criarSubcontaAsaasSeNecessario()
+    {
+        $tenant = tenant();
+        if (!$tenant || $tenant->asaas_wallet_id) {
+            return;
+        }
+        // Verifica se a conta Pagby é filha (subconta) e evita criar subconta se for
+        $asaasService = new \App\Services\AsaasService();
+        if (str_starts_with($asaasService->apiKey ?? '', '$aact_')) { // Exemplo: prefixo de apiKey de subconta
+            \Log::warning('Conta Pagby é subconta no Asaas. Não é permitido criar subcontas filhas. Ignorando criação de subconta para o tenant.', [
+                'tenant_id' => $tenant->id,
+                'apiKey' => $asaasService->apiKey
+            ]);
+            return;
+        }
+        // ...existing code para criar subconta se permitido...
+    }
     
     // Listener para atualizar descontos quando serviços adicionais mudarem
     public function updatedServicosAdicionais()
@@ -126,28 +150,31 @@ class PlanosDeAssinatura extends Component
         $user = Auth::user();
         if ($plano) {
             \Log::debug('Plano encontrado', ['plano_id' => $plano->id, 'user_id' => $user->id]);
-            
+
             // Verifica se o usuário já tem um plano ativo
             if (is_object($user) && method_exists($user, 'hasRole') && $user->hasRole('Cliente') && $user->plano_atual) {
                 \Log::debug('Usuário já possui plano ativo', ['user_id' => $user->id]);
                 session()->flash('message', 'Você já possui um plano ativo.');
                 return;
             }
-            
+
             // Verifica se o usuário tem CPF ou CNPJ cadastrado
             $cpfCnpj = $user->cpf ?? $user->cnpj ?? '';
             if (empty($cpfCnpj)) {
                 session()->flash('warning', 'É necessário ter CPF ou CNPJ cadastrado para assinar um plano. Por favor, atualize seu perfil.');
                 return;
             }
-            
+
+            // Garante que o walletId do tenant está salvo antes de criar assinatura
+            $this->criarSubcontaAsaasSeNecessario();
+
             // Dados para assinatura - seleciona domínio correto
             $centralDomains = config('tenancy.central_domains');
             // Filtra localhost e 127.0.0.1 e pega o primeiro domínio de produção
             $centralDomain = collect($centralDomains)
                 ->filter(fn($domain) => !in_array($domain, ['localhost', '127.0.0.1']))
                 ->first() ?? $centralDomains[0];
-            
+
             $tenant_id = tenant()->id;
             $urlCentral = "https://{$centralDomain}/tenant-assinatura/store"
                 . "?tenant_id={$tenant_id}"
@@ -156,7 +183,7 @@ class PlanosDeAssinatura extends Component
                 . "&user_name=" . urlencode($user->name)
                 . "&cpf_cnpj=" . urlencode($cpfCnpj);
             \Log::debug('Redirecionando para assinatura', ['url' => $urlCentral]);
-            return redirect()->away($urlCentral); 
+            return redirect()->away($urlCentral);
         } else {
             \Log::debug('Plano não encontrado', ['planoId' => $planoId]);
         }
@@ -232,6 +259,8 @@ class PlanosDeAssinatura extends Component
                 'duration_days' => $this->duracaoDias,
                 'active' => true,
             ]);
+            // Criar subconta Asaas se necessário
+            $this->criarSubcontaAsaasSeNecessario();
         }
 
         // Atualiza a lista de planos

@@ -40,8 +40,8 @@ class AuthenticatedSessionController extends Controller
     // Exemplo: ajuste conforme sua lógica de papéis
     if ($user->hasRole('Funcionário')) {
         return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'agenda']);
-    } elseif ($user->hasRole('Proprietário')) {
-        return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'usuarios']);
+        } elseif ($user->hasRole('Proprietário')) {
+            return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'gerenciar-comandas']);
     } elseif ($user->hasRole('Admin')) {
         return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'contatos']); // Redireciona para a página index
     } else {

@@ -14,6 +14,7 @@
         @elseif(auth()->user()->hasrole('Proprietário'))
             @php
                 $titles = [
+                    'agenda' => 'Minha Agenda',
                     'usuarios' => 'Usuários',
                     'filiais' => 'Filiais',
                     'funcionarios' => 'Funcionários por filial',

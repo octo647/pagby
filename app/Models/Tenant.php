@@ -55,6 +55,38 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 
     }
 
+    protected $fillable = [
+        'id',
+        'type',
+        'template',
+        'employee_count',
+        'email',
+        'phone',
+        'whatsapp',
+        'instagram',
+        'facebook_client_id',
+        'facebook_client_secret',
+        'google_client_id',
+        'google_client_secret',
+        'social_login_enabled',
+        'name',
+        'cnpj',
+        'fantasy_name',
+        'slug',
+        'address',
+        'number',
+        'complement',
+        'neighborhood',
+        'contract_accpted_at',
+        'logo',
+        'subscription_status',
+        'trial_ends_at',
+        'subscription_ends_at',
+        'is_blocked',
+        'asaas_wallet_id',
+        'asaas_account_data',
+        'data',
+    ];
     protected $casts = [
         'trial_started_at' => 'datetime',
         'trial_ends_at' => 'datetime',

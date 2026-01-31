@@ -200,11 +200,11 @@ class AsaasSubscriptionController extends Controller
             $splitData = [
                 [
                     'walletId' => $tenant->asaas_wallet_id, // carteira do salão
-                    'percentualValue' => 95 // percentual do salão
+                    'percentualValue' => 95 // percentual do salão (ajuste conforme regra)
                 ],
                 [
                     'walletId' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7', // carteira Pagby
-                    'percentualValue' => 5 // percentual Pagby
+                    'percentualValue' => 5 // percentual Pagby (ajuste conforme regra)
                 ]
             ];
             Log::info('💰 Assinatura com split: 95% salão, 5% Pagby', [

@@ -68,6 +68,9 @@ class AsaasService {
     {
         $this->apiUrl = config('services.asaas.api_url', 'https://www.asaas.com/api/v3');
         $this->apiKey = config('services.asaas.api_key');
+        \Log::info('[AsaasService] apiKey carregada', [
+            'apiKey' => $this->apiKey ? substr($this->apiKey, 0, 12) . '...' : null
+        ]);
     }
 
     /**
