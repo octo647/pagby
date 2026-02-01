@@ -48,7 +48,7 @@ class CreateTenantsTable extends Migration
             $table->timestamp('subscription_started_at')->nullable();
             $table->timestamp('subscription_ends_at')->nullable();
             $table->boolean('is_blocked')->default(false);
-            $table->string('asaas_wallet_id')->nullable()->comment('ID da subconta Asaas para split de pagamentos');
+            $table->string('asaas_customer_id')->nullable()->comment('ID do customer Asaas para cobranças');
             $table->text('asaas_account_data')->nullable()->comment('Dados completos da subconta Asaas (JSON)');
             $table->json('data')->nullable();
             $table->timestamps();

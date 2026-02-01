@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Contact;
+use App\Services\AsaasService;
 use Illuminate\Support\Facades\Log;
 
 class TenantRegistrationController extends Controller
@@ -71,7 +72,6 @@ class TenantRegistrationController extends Controller
             $validatedData['cep'] = preg_replace('/\D/', '', $validatedData['cep']);
             $validatedData['cpf'] = preg_replace('/\D/', '', $validatedData['cpf']);
 
-
             // Salvar data/hora do aceite do contrato
             $validatedData['contract_accepted_at'] = now();
 
@@ -83,6 +83,20 @@ class TenantRegistrationController extends Controller
 
             // Criar o contato no banco de dados
             $contact = Contact::create($validatedData);
+
+            // INTEGRAÇÃO ASAAS: criar cliente e salvar customer_id
+            $asaas = new AsaasService();
+            $customerData = [
+                'name' => $contact->owner_name,
+                'email' => $contact->email,
+                'cpfCnpj' => $contact->cpf,
+                'phone' => $contact->phone,
+            ];
+            $customerId = $asaas->getOrCreateCustomer($customerData);
+            if ($customerId) {
+                $contact->asaas_customer_id = $customerId;
+                $contact->save();
+            }
 
             // Pegar o plano da sessão se existir
             $selectedPlan = $validatedData['selected_plan'] ?? session('selected_plan');

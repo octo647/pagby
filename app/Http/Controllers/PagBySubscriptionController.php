@@ -24,34 +24,11 @@ use MercadoPago\Entities\Payer;
 
 
 class PagBySubscriptionController extends Controller
-    /**
-     * Busca e salva o walletId do proprietário do salão no Tenant ao criar plano de assinatura.
-     * Chame este método após criar a subconta Asaas do salão.
-     */
-    protected function saveTenantWalletId($tenantId, $ownerCpfCnpj)
-    {
-        $asaasService = new \App\Services\AsaasService();
-        // Buscar subconta pelo CPF/CNPJ do proprietário
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'access_token' => config('services.asaas.api_key'),
-            'Content-Type' => 'application/json',
-        ])->get(config('services.asaas.api_url', 'https://www.asaas.com/api/v3') . '/accounts', [
-            'cpfCnpj' => $ownerCpfCnpj
-        ]);
-        if ($response->successful() && !empty($response['data'][0]['walletId'])) {
-            $walletId = $response['data'][0]['walletId'];
-            $tenant = \App\Models\Tenant::find($tenantId);
-            if ($tenant) {
-                $tenant->asaas_wallet_id = $walletId;
-                $tenant->save();
-                \Log::info('WalletId salvo no Tenant', ['tenant_id' => $tenantId, 'walletId' => $walletId]);
-                return true;
-            }
-        }
-        \Log::warning('Não foi possível obter walletId para o Tenant', ['tenant_id' => $tenantId, 'cpfCnpj' => $ownerCpfCnpj]);
-        return false;
-    }
 {
+   
+    /**
+     * Exibe o formulário de pagamento para o cliente.
+     */
 
 
     

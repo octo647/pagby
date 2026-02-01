@@ -24,6 +24,7 @@ class Contact extends Model
         'state',
         'subscription_plan',
         'contract_accepted_at',
+        'asaas_customer_id',
     ];
     use HasFactory;
     public function pagbypayment()

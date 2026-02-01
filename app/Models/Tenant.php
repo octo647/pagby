@@ -83,7 +83,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'trial_ends_at',
         'subscription_ends_at',
         'is_blocked',
-        'asaas_wallet_id',
+        'asaas_customer_id',
         'asaas_account_data',
         'data',
     ];
