@@ -39,6 +39,12 @@ Route::middleware([
     Route::post('reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store']);
     Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
     Route::post('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
+    
+    // Rota pública de agendamento (sem auth)
+    Route::get('/agendar', function () {
+        return view('cliente.agendamento');
+    })->name('agendar');
+    
     // Subscription routes (sempre disponíveis)
     
     Route::get('/subscription/plans', [\App\Http\Controllers\TenantSubscriptionController::class, 'showPlans'])->name('tenant.subscription.plans');
