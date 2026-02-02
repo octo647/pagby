@@ -82,10 +82,10 @@
             @php
                 // Determinar qual menu mostrar baseado no papel principal
                 $user = Auth::user();
-                $isAdmin = $user->hasRole('Admin');
-                $isProprietario = $user->hasRole('Proprietário');
-                $isFuncionario = $user->hasRole('Funcionário');
-                $isCliente = $user->hasRole('Cliente');
+                $isAdmin = $user?->hasRole('Admin') ?? false;
+                $isProprietario = $user?->hasRole('Proprietário') ?? false;
+                $isFuncionario = $user?->hasRole('Funcionário') ?? false;
+                $isCliente = $user?->hasRole('Cliente') ?? false;
                 
                 // Se for ambos (Proprietário e Funcionário), usar parâmetro de menu
                 $menuSelecionado = request()->input('menu');
