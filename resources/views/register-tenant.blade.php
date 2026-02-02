@@ -285,12 +285,41 @@ document.addEventListener('DOMContentLoaded', function() {
                                    value="{{ old('address') }}" 
                                    required 
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white @error('address') border-red-500 @enderror"
-                                   placeholder="Rua e número">
+                                   placeholder="Rua">
                             @error('address')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>
-
+                        <div>
+                            <label for="number" class="block text-sm font-medium text-gray-700 mb-2">
+                                Número *
+                            </label>
+                            <input type="text" 
+                                   id="number" 
+                                   name="number" 
+                                   value="{{ old('number') }}" 
+                                   required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white @error('number') border-red-500 @enderror"
+                                   placeholder="Número">
+                            @error('number')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+ <div>
+                            <label for="complement" class="block text-sm font-medium text-gray-700 mb-2">
+                                Complemento
+                            </label>
+                            <input type="text" 
+                                   id="complement" 
+                                   name="complement" 
+                                   value="{{ old('complement') }}" 
+                                   required 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white @error('complement') border-red-500 @enderror"
+                                   placeholder="Apartamento, bloco, etc.">
+                            @error('complement')
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
                         <div>
                             <label for="neighborhood" class="block text-sm font-medium text-gray-700 mb-2">
                                 Bairro *

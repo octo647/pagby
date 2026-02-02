@@ -18,6 +18,8 @@ class Contact extends Model
         'tenant_name',
         'employee_count',
         'address',
+        'number',
+        'complement',
         'cep',
         'neighborhood',
         'city',

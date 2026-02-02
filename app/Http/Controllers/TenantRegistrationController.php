@@ -39,6 +39,8 @@ class TenantRegistrationController extends Controller
             'selected_employee_count' => 'nullable|integer|min:1',
             'cep' => 'required|string|size:9', // 00000-000
             'address' => 'required|string|max:255',
+            'number' => 'nullable|string|max:20',
+            'complement' => 'nullable|string|max:255',
             'neighborhood' => 'required|string|max:255',
             'city' => 'required|string|max:255',
             'state' => 'required|string|size:2',
@@ -56,14 +58,14 @@ class TenantRegistrationController extends Controller
             'employee_count.min' => 'O número de funcionários deve ser pelo menos 1.',
             'phone.required' => 'O telefone é obrigatório.',
             'tipo.required' => 'Por favor, selecione o tipo de estabelecimento.',
-            'address.required' => 'O endereço é obrigatório.',
-            'neighborhood.required' => 'O bairro é obrigatório.',
-            'city.required' => 'A cidade é obrigatória.',
-            'state.required' => 'O estado é obrigatório.',
+            'address.required' => 'O endereço é obrigat&oacute;rio.',
+            'neighborhood.required' => 'O bairro é obrigat&oacute;rio.',
+            'city.required' => 'A cidade é obrigat&oacute;ria.',
+            'state.required' => 'O estado é obrigat&oacute;rio.',
             'owner_name.min' => 'O nome deve ter pelo menos 3 caracteres.',
-            'phone.min' => 'O telefone deve ter pelo menos 10 dígitos.',
+            'phone.min' => 'O telefone deve ter pelo menos 10 d&iacute;gitos.',
             'cep.size' => 'O CEP deve ter 9 caracteres (00000-000).',
-            'state.size' => 'Selecione um estado válido.'
+            'state.size' => 'Selecione um estado v&aacute;lido.'
         ]);
 
         try {
