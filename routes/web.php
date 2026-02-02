@@ -16,6 +16,20 @@ use App\Http\Middleware\VerifyCsrfToken;
 
 require __DIR__.'/subscription.php';
 foreach (config('tenancy.central_domains') as $domain) {
+    // Endpoint API para social login (central)
+Route::get('/api/social-auth/{token}', function ($token) {
+    $data = \Cache::get('social_auth_' . $token);
+    if (!$data || !isset($data['user'])) {
+        \Log::error('❌ Token não encontrado no cache', ['token' => $token]);
+        return response()->json(['error' => 'Token inválido ou expirado.'], 404);
+    }
+    \Log::info('✅ Token validado com sucesso', ['email' => $data['user']['email']]);
+    // Remove token do cache após uso (one-time use)
+    \Cache::forget('social_auth_' . $token);
+    return response()->json(['user' => $data['user']]);
+})->name('api.social-auth');
+
+
     Route::domain($domain)->group(function () {
         Route::get('/', function () {
             return view('home');
@@ -96,13 +110,12 @@ foreach (config('tenancy.central_domains') as $domain) {
 
         // ROTAS OAUTH
         Route::middleware(['web'])->group(function () {
-            // Google OAuth
+            // Google OAuth (com tenant opcional na query)
             Route::get('/auth/google', [SocialController::class, 'redirectToGoogle'])
                 ->name('login.google');
             Route::get('/auth/google/callback', [SocialController::class, 'handleGoogleCallback'])
                 ->name('login.google.callback');
-            
-            // Facebook OAuth
+            // Facebook OAuth (com tenant opcional na query)
             Route::get('/auth/facebook', [SocialController::class, 'redirectToFacebook'])
                 ->name('login.facebook');
             Route::get('/auth/facebook/callback', [SocialController::class, 'handleFacebookCallback'])
