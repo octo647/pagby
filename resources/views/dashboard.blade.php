@@ -32,7 +32,8 @@
                     'ranking-servicos' => 'Serviços mais Solicitados',
                     'clientes-novos-antigos' => 'Clientes Novos e Antigos',
                     'gerenciar-estoque' => 'Controle de Estoque',
-                    'gerenciar-comandas' => 'Controle de Comandas'
+                    'gerenciar-comandas' => 'Controle de Comandas',
+                    'link-agendamento' => 'Link de Agendamento para Redes Sociais'
                 ];
             @endphp
             {{ __($titles[$tabelaAtiva] ?? '') }}
@@ -154,6 +155,8 @@
                         @livewire('planos-de-assinatura')
                     @elseif($tabelaAtiva === 'meu-pagby')
                         @livewire('proprietario.meu-pagby')
+                    @elseif($tabelaAtiva === 'link-agendamento')
+                        @livewire('create-post')
                     @elseif($tabelaAtiva === 'gerenciar-comandas')
                         <div class="space-y-6">
                             <div class="flex items-center justify-between">
