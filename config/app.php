@@ -14,6 +14,14 @@ return [
     */
 
     'name' => env('APP_NAME', 'Laravel'),
+    /*
+    |--------------------------------------------------------------------------
+    | URL Central do Pagby
+    |--------------------------------------------------------------------------
+    |
+    | Usada para login social centralizado. Ajuste para ambiente de produção.
+    */
+    'central_url' => env('CENTRAL_URL', 'https://pagby.com.br'),
 
     /*
     |--------------------------------------------------------------------------

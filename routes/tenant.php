@@ -31,6 +31,8 @@ Route::middleware([
     // ROTAS PÚBLICAS (SEM MIDDLEWARE)
     Route::get('/auth/google', [\App\Http\Controllers\Auth\SocialController::class, 'redirectToGoogle'])->name('login.google');
     Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\SocialController::class, 'handleGoogleCallback'])->name('login.google.callback');
+    // Nova rota para callback social centralizado
+    Route::get('/auth/social-callback', [\App\Http\Controllers\Auth\SocialController::class, 'handleCentralSocialCallback'])->name('login.social.central.callback');
     Route::get('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create']);
     Route::post('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store']);
     Route::get('reset-password/{token}', [\App\Http\Controllers\Auth\NewPasswordController::class, 'create']);
@@ -167,53 +169,6 @@ Route::get('/plans', function () {
 
 
 
-    //  ROTA SOCIAL CALLBACK
-   Route::get('/auth/social-callback', function(Request $request) {
-    // Recebe os dados do usuário via query string
-    $userData = [
-        'name'        => $request->get('name'),
-        'email'       => $request->get('email'),
-        'password'    => Hash::make(Str::random(24)),
-        'email_verified_at' => now(),        
-        'google_id' => $request->get('provider_id'),
-        'photo'      => $request->get('avatar'),
-    ];
-   
-    
-
-    // Validação básica
-    if (!$userData['email']) {
-        return redirect('/login')->with('error', 'Dados de autenticação inválidos.');
-    }
-
-    $userModel = config('auth.providers.users.model');
-
-    $user = $userModel::where('email', $userData['email'])->first();
-    if (!$user->photo && $userData['photo']) {
-    $user->photo = $userData['photo'];
-    $user->save();
-}
-    
-    if (!$user) {
-        $user = $userModel::create([
-            'name'              => $userData['name'] ?? $userData['email'],
-            'email'             => $userData['email'],
-            'password'          => Hash::make(Str::random(24)),
-            'email_verified_at' => now(),
-            'google_id'       => $userData['google_id'] ?? null,
-            'photo'            => $userData['photo'],
-        ]);
-    } else {
-        $user->update([
-            'name' => $userData['name'] ?? $user->name,
-            'google_id' => $userData['google_id'] ?? null,            
-        ]);
-    }
-    
-    Auth::guard('web')->login($user, true);
-    
-    return redirect()->intended('/dashboard');
-});
 
     //  ROTAS PROTEGIDAS (COM AUTH)
     Route::middleware(['auth'])->group(function () {
