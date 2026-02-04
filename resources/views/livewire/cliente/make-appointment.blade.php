@@ -256,4 +256,29 @@
             @endif
         @endif
     </div>
+    
+    @script
+    <script>
+        // Processar dados restaurados após o componente carregar
+        document.addEventListener('livewire:init', () => {
+            const hasRestoredData = @js($ch_professional_id && $ch_services && count($ch_services) > 0);
+            
+            if (hasRestoredData) {
+                console.log('✅ Restored booking data detected');
+                console.log('Professional ID:', @js($ch_professional_id));
+                console.log('Services:', @js($ch_services));
+                console.log('Selected day:', @js($selected_day));
+                console.log('Selected time:', @js($selected_time));
+                
+                // Aguardar renderização e então forçar recálculo
+                setTimeout(() => {
+                    console.log('🔄 Calling forceRecalculate()...');
+                    @this.call('forceRecalculate');
+                }, 200);
+            } else {
+                console.log('ℹ️ No restored booking data found');
+            }
+        });
+    </script>
+    @endscript
 </div>

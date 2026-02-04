@@ -18,6 +18,44 @@ class ChooseService extends Component
     public $ch_services = [];
     public $ch_professional = null;
 
+    public function mount()
+    {
+        \Log::info('ChooseService mount() called', [
+            'chosen_services' => $this->chosen_services,
+            'ch_services' => $this->ch_services,
+        ]);
+    }
+
+    #[On('services-restored')]
+    public function restoreServices($services)
+    {
+        \Log::info('ChooseService: services-restored event received', [
+            'services' => $services,
+            'is_array' => is_array($services),
+            'count' => is_array($services) ? count($services) : 0,
+        ]);
+        
+        // Garantir que é array
+        if (!is_array($services)) {
+            $services = [$services];
+        }
+        
+        // Converter para inteiros para garantir compatibilidade com wire:model
+        $this->chosen_services = array_map('intval', $services);
+        $this->ch_services = $this->chosen_services;
+        
+        \Log::info('ChooseService: services restored in UI', [
+            'chosen_services' => $this->chosen_services,
+            'ch_services' => $this->ch_services,
+        ]);
+        
+        // Não chamar chosen() aqui - deixar o usuário ver as seleções e clicar no botão
+        // Apenas notificar que serviços foram restaurados
+        $this->dispatch('serviceChoicesRestored');
+        
+        \Log::info('ChooseService: Services visually marked, waiting for user confirmation');
+    }
+
     #[On('services')] 
     public function offeredServices($services){
         $this->services= $services;

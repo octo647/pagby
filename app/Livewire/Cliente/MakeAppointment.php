@@ -35,10 +35,85 @@ class MakeAppointment extends Component
     public $ch_services = [];
     public $ch_professional_id = null;
 
+    public function mount()
+    {
+        // Restaurar dados de agendamento da sessão após login
+        if (Auth::check() && session()->has('booking_data')) {
+            $data = session('booking_data');
+            
+            // Verificar se os dados não são muito antigos (5 minutos)
+            if (isset($data['timestamp']) && (now()->timestamp - $data['timestamp']) < 300) {
+                // Restaurar IDs e dados básicos
+                $this->ch_professional_id = $data['professional'];
+                $this->ch_services = $data['services'];
+                $this->chosen_service_ids = $data['services'];
+                $this->selected_day = $data['date'];
+                $this->selected_time = $data['time'];
+                
+                // Carregar profissional com relacionamentos
+                $professional = User::where('id', $data['professional'])
+                    ->with('branches')
+                    ->first();
+                    
+                if ($professional) {
+                    $this->ch_professional = $professional;
+                    
+                    // Calcular horários disponíveis antes de limpar a sessão
+                    $this->escolhidos();
+                    
+                    // Disparar eventos para atualizar componentes filhos
+                    $this->dispatch('professional-restored', professional: $this->ch_professional_id);
+                    $this->dispatch('services-restored', services: $this->ch_services);
+                    
+                    // Disparar evento window para Alpine.js (múltiplas tentativas para garantir que Alpine está pronto)
+                    $this->js("
+                        const eventData = {
+                            professional: {$this->ch_professional_id},
+                            services: " . json_encode($this->ch_services) . ",
+                            date: '{$this->selected_day}',
+                            time: '{$this->selected_time}'
+                        };
+                        
+                        function dispatchRestoreEvent() {
+                            window.dispatchEvent(new CustomEvent('booking-data-restored', { 
+                                detail: eventData
+                            }));
+                        }
+                        
+                        dispatchRestoreEvent();
+                        setTimeout(dispatchRestoreEvent, 100);
+                        setTimeout(dispatchRestoreEvent, 300);
+                    ");
+                    
+                    // Limpar da sessão
+                    session()->forget('booking_data');
+                    session()->forget('requires_login_for_booking');
+                } else {
+                    \Log::error('Booking data restoration failed: Professional not found', ['id' => $data['professional']]);
+                }
+            } else {
+                \Log::warning('Booking data expired or invalid timestamp');
+            }
+            
+            // Limpar da sessão se houve erro
+            if (!isset($professional) || !$professional) {
+                session()->forget('booking_data');
+                session()->forget('requires_login_for_booking');
+            }
+        }
+    }
+
 
     public function selectTime($time)
     {
-    $this->selected_time = $time; // Define o horário selecionado
+        $this->selected_time = $time; // Define o horário selecionado
+    }
+    
+    public function forceRecalculate()
+    {
+        if ($this->ch_professional && $this->ch_services && !empty($this->ch_services)) {
+            $this->escolhidos();
+        }
     }
     
     #[On('ch_professional')]
@@ -46,8 +121,9 @@ class MakeAppointment extends Component
     {
         $this->ch_professional = User::where('id', $professional)
             ->with('branches')
-            ->first();           
-       
+            ->first();
+        
+        $this->ch_professional_id = $professional;
     }
 
     #[On('ch_services')]
@@ -56,19 +132,16 @@ class MakeAppointment extends Component
         $this->ch_services = Service::whereIn('id', $services)
             ->get()
             ->pluck('id')
-            ->toArray(); // Pluck apenas os IDs dos serviços escolhidos
-            $this->chosen_service_ids = $services;
-       
-        $this->escolhidos(); // Chama o método escolhidos() para processar os serviços escolhidos
+            ->toArray();
+        $this->chosen_service_ids = $services;
+        
+        $this->escolhidos();
     }
     
     public function escolhidos(): void
     {
-    // Recebe os serviços e o profissional escolhidos
-
-  
-    $ch_services = $this->ch_services;  //ids dos serviços escolhidos  
-    $ch_professional = $this->ch_professional;//coleção do profissional escolhido
+    $ch_services = $this->ch_services;
+    $ch_professional = $this->ch_professional;
    
     // Verifica se o profissional e os serviços foram escolhidos
     if (empty($ch_professional)) {
@@ -79,24 +152,20 @@ class MakeAppointment extends Component
         $this->addError('services', 'Por favor, escolha pelo menos um serviço.');
         return;
     }    
-    // Verifica se o usuário está autenticado
-    // Se não estiver logado, exibe mensagem de erro
-
-    if (!Auth::check()) {
-        $this->addError('auth', 'Você precisa estar logado para agendar.');
-        return;
-    } 
+    
+    // NOTA: A verificação de autenticação foi movida para o método de confirmar agendamento
+    // para permitir que usuários não autenticados vejam horários disponíveis
    
     // Verifica se os serviços escolhidos são válidos e os nomes dos serviços
     $service_names = Service::whereIn('id', $ch_services)->pluck('service')->toArray();
     $this->services_string = implode(', ', $service_names);
    
-    $ch_professional_id = $ch_professional->id ?? null;
-    $this->ch_professional_id = $ch_professional->id;
+    if (!$this->ch_professional_id && $ch_professional) {
+        $this->ch_professional_id = $ch_professional->id;
+    }
     
-    
+    $ch_professional_id = $this->ch_professional_id;
 
-    // Verifica se o funcionário foi escolhido
     if (!$ch_professional_id || !is_numeric($ch_professional_id)) {
         $this->addError('employee', 'Por favor, escolha um funcionário.');
         return;
@@ -128,27 +197,19 @@ class MakeAppointment extends Component
     
     $this->available_times = $this->getAvailableTimes($schedules, $appointments, $total_service_time);
 
-    //verifica se há algum plano ativo disponível para o usuário
     $existePlano = Plan::where('active', true)->exists();
-   
     
-    // Verifica se o usuário tem assinatura ativa
-    if($existePlano){
-    $subscription = Subscription::where('user_id', Auth::id())        
-        ->where('start_date', '<=', now())
-        ->where('end_date', '>=', now())
-       // ->where('status', 'Ativo') //ignora o status da assinatura e verifica apenas a data
-        ->with('plan.additionalServices') // Inclui os serviços adicionais do plano
-        ->first();
-        if(!$subscription) {
-            $this->addError('subscription', 'Você não possui uma assinatura ativa. Você gostaria de conhecer nossos planos?
-            <a href="'.route('tenant.dashboard', ['tabelaAtiva' => 'planos-de-assinatura']).'" class="underline text-blue-600 hover:text-blue-900">Clique aqui</a> para ver nossos planos.');
-            return;
-        }
+    $subscription = null;
+    if($existePlano && Auth::check()){
+        $subscription = Subscription::where('user_id', Auth::id())        
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->with('plan.additionalServices')
+            ->first();
     }
-    else {
-        $subscription = null; // Se não houver plano, define como nulo
-    }
+    
+    // Se não houver plano ativo no sistema ou usuário não tiver subscription,
+    // permite agendamento em todos os dias (será cobrado por serviço)
     
 
     if ($subscription && $subscription->plan && $subscription->plan->allowed_days) {
@@ -324,6 +385,28 @@ $busy_slots = $busy->map(function($a) use ($day) {
 public function confirmTime()
 {
     try {
+        // Verificar autenticação antes de confirmar o agendamento
+        if (!Auth::check()) {
+            if (!$this->ch_professional_id || empty($this->ch_services) || !$this->selected_day || !$this->selected_time) {
+                $this->addError('general', 'Dados incompletos. Selecione profissional, serviços, dia e horário.');
+                return;
+            }
+            
+            // Salvar na sessão
+            $bookingData = [
+                'professional' => $this->ch_professional_id,
+                'services' => $this->ch_services,
+                'date' => $this->selected_day,
+                'time' => $this->selected_time,
+                'timestamp' => now()->timestamp,
+            ];
+            
+            session()->put('booking_data', $bookingData);
+            session()->put('requires_login_for_booking', true);
+            
+            return redirect()->route('login')->with('message', 'Faça login para confirmar seu agendamento');
+        }
+        
         if (!$this->selected_day || !$this->selected_time) {
             $this->addError('selected_time', 'Selecione um dia e horário.');
             return;

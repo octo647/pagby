@@ -199,6 +199,12 @@ class SocialController extends Controller
             Auth::guard('web')->login($user, true);
             \Log::info('✅ Login realizado com sucesso para: ' . $user->email);
             
+            // Verificar se há dados de agendamento pendentes na sessão
+            if (session()->has('requires_login_for_booking') && session()->has('booking_data')) {
+                \Log::info('📅 Usuário tem agendamento pendente, redirecionando para /agendar');
+                return redirect('/agendar');
+            }
+            
             return redirect()->intended('/dashboard');
         } catch (\Exception $e) {
             \Log::error('❌ Exceção ao processar callback social', [

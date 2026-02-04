@@ -33,9 +33,49 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        // IMPORTANTE: Salvar booking_data antes de regenerar a sessão
+        $bookingData = session('booking_data');
+        $requiresLogin = session('requires_login_for_booking');
+        $hasBookingData = session()->has('booking_data');
+        
+        \Log::info('Login: Before regenerate', [
+            'has_booking_data' => $hasBookingData,
+            'booking_data' => $bookingData,
+            'requires_login' => $requiresLogin,
+            'all_session_keys' => array_keys(session()->all()),
+        ]);
+
         $request->session()->regenerate();
+        
+        \Log::info('Login: After regenerate', [
+            'all_session_keys' => array_keys(session()->all()),
+        ]);
+        
+        // Restaurar booking_data após regenerar
+        if ($hasBookingData && $bookingData) {
+            session()->put('booking_data', $bookingData);
+            if ($requiresLogin) {
+                session()->put('requires_login_for_booking', $requiresLogin);
+            }
+            
+            \Log::info('Login: Booking data restored after regenerate', [
+                'restored_data' => session('booking_data'),
+                'has_booking_data_now' => session()->has('booking_data'),
+            ]);
+        } else {
+            \Log::warning('Login: No booking data to restore', [
+                'hasBookingData' => $hasBookingData,
+                'bookingData' => $bookingData,
+            ]);
+        }
 
         $user = Auth::user();
+        
+        // Se há dados de agendamento pendentes, redirecionar para /agendar
+        if (session()->has('booking_data')) {
+            \Log::info('Login: Redirecting to /agendar with booking data');
+            return redirect()->route('agendar');
+        }
 
     // Exemplo: ajuste conforme sua lógica de papéis
     if ($user->hasRole('Funcionário')) {

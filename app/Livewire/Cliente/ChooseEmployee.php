@@ -27,6 +27,34 @@ class ChooseEmployee extends Component
         }
     }
 
+    #[On('professional-restored')]
+    public function restoreProfessional($professional)
+    {
+        \Log::info('ChooseEmployee: professional-restored event received', [
+            'professional_id' => $professional,
+        ]);
+        
+        $this->choosedEmployee = $professional;
+        
+        // Carregar o profissional e seu branch
+        $employee = User::find($professional);
+        if ($employee) {
+            $branch = $employee->branches()->first();
+            if ($branch) {
+                $this->ch_branch_id = $branch->id;
+                $this->ch_branch_name = $branch->branch_name;
+                
+                // Carregar funcionários do branch
+                $this->chosenBranch($branch->branch_name);
+            }
+            
+            \Log::info('ChooseEmployee: professional restored in UI', [
+                'employee_name' => $employee->name,
+                'branch' => $this->ch_branch_name,
+            ]);
+        }
+    }
+
     #[On('chosen_branch')] 
     public function chosenBranch(string $chosen_branch): void
         {

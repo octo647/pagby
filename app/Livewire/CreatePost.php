@@ -29,7 +29,7 @@ class CreatePost extends Component
             "🌟 Agende seu horário no {$tenantName}!\n\n" .
             "📅 Escolha o profissional, serviço e horário que preferir!\n" .
             "👉 {$this->bookingUrl}\n\n" .
-            "#Beleza #Agendamento #BeautyTime"
+            "#Beleza #Cabelo #CorteDeCabelo #Penteado #Agendamento #HoraDaBeleza"
         );
         
         $this->facebookText = urlencode(
@@ -41,7 +41,7 @@ class CreatePost extends Component
         $this->instagramText = urlencode(
             "✨ Link de agendamento na bio! ✨\n\n" .
             "📱 Escolha seu profissional e horário: {$this->bookingUrl}\n\n" .
-            "#Beauty #Hair #Nails #Agendamento"
+            "#Beleza #Cabelo #Unhas #Agendamento"
         );
         
         $this->twitterText = urlencode(

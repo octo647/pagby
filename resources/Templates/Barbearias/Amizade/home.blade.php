@@ -124,7 +124,7 @@
                 <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
                     <div class="flex flex-col items-center">
                         <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
-                            <img src="/images/Barbearia1/corte.jpg" class="w-full h-full object-cover" alt="Corte de Cabelo">
+                            <img src="/images/Templates/Barbearias/Amizade/corte.jpg" class="w-full h-full object-cover" alt="Corte de Cabelo">
                         </div>
                         <h3 class="text-xl font-bold text-yellow-400 mb-2">Corte de Cabelo</h3>
                         <p class="text-gray-300 mb-4">Cortes modernos e clássicos, sempre seguindo as últimas tendências.</p>
@@ -135,7 +135,7 @@
                 <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
                     <div class="flex flex-col items-center">
                         <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
-                            <img src="/images/Barbearia1/barba.jpg" class="w-full h-full object-cover" alt="Barba">
+                            <img src="/images/Templates/Barbearias/Amizade/barba.jpg" class="w-full h-full object-cover" alt="Barba">
                         </div>
                         <h3 class="text-xl font-bold text-yellow-400 mb-2">Barba</h3>
                         <p class="text-gray-300 mb-4">Aparar, modelar e definir sua barba com técnicas profissionais.</p>
@@ -146,7 +146,7 @@
                 <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
                     <div class="flex flex-col items-center">
                         <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
-                            <img src="/images/Barbearia1/manicure.jpg" class="w-full h-full object-cover" alt="Manicure">
+                            <img src="/images/Templates/Barbearias/Amizade/manicure.jpg" class="w-full h-full object-cover" alt="Manicure">
                         </div>
                         <h3 class="text-xl font-bold text-yellow-400 mb-2">Manicure</h3>
                         <p class="text-gray-300 mb-4">Cuidados completos para suas mãos e unhas com produtos de qualidade.</p>
@@ -157,7 +157,7 @@
                 <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
                     <div class="flex flex-col items-center">
                         <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
-                            <img src="/images/Barbearia1/coloracao.jpg" class="w-full h-full object-cover" alt="Coloração">
+                            <img src="/images/Templates/Barbearias/Amizade/coloracao.jpg" class="w-full h-full object-cover" alt="Coloração">
                         </div>
                         <h3 class="text-xl font-bold text-yellow-400 mb-2">Coloração</h3>
                         <p class="text-gray-300 mb-4">Mude seu visual com nossas colorações profissionais e produtos de alta qualidade.</p>

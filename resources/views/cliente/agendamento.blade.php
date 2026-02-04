@@ -23,7 +23,7 @@
             chosenBranch: null,
             professionalChosen: false,
             serviceChosen: false,
-            showAgenda: false,
+            showAgenda: false
         }"
         x-init="
             window.addEventListener('branchesCount', e => { branchCount = e.detail.count });
@@ -31,6 +31,11 @@
             window.addEventListener('professionalChosen', e => { professionalChosen = true });
             window.addEventListener('serviceChosen', e => { serviceChosen = true });
             window.addEventListener('showAgenda', e => { showAgenda = true });
+        "
+        @booking-data-restored.window="
+            professionalChosen = true;
+            serviceChosen = true;
+            showAgenda = true;
         "
         class="p-4 mx-auto max-w-4xl flex flex-col gap-4"
     >
@@ -44,6 +49,13 @@
             x-show="!showAgenda"
             x-transition>
             @livewire('cliente.choose-employee')
+        </div>
+
+        <!-- Card Serviço -->
+        <div id="choose-service" class="card bg-white border-2 p-4 w-full max-w-2xl mx-auto" x-cloak
+            x-show="professionalChosen && !showAgenda"
+            x-transition>
+            @livewire('cliente.choose-service')
         </div>
 
         <!-- Card Horário -->
