@@ -28,6 +28,8 @@ Route::middleware([
     InitializeTenancyByDomain::class,
     PreventAccessFromCentralDomains::class,
 ])->group(function () {
+    // Manifest.json dinâmico por tenant
+    Route::get('/manifest.json', \App\Http\Controllers\ManifestController::class)->name('tenant.manifest');
     // ROTAS PÚBLICAS (SEM MIDDLEWARE)
     Route::get('/auth/google', [\App\Http\Controllers\Auth\SocialController::class, 'redirectToGoogle'])->name('login.google');
     Route::get('/auth/google/callback', [\App\Http\Controllers\Auth\SocialController::class, 'handleGoogleCallback'])->name('login.google.callback');

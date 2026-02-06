@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -11,6 +10,34 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialController extends Controller
 {
+    public function redirectToFacebook(Request $request)
+    {
+        // Aceita tenant como parâmetro na query string
+        $tenantHost = $request->query('tenant');
+        if (!$tenantHost) {
+            return redirect('/login')->with('error', 'Tenant não identificado.');
+        }
+
+        // Salva tenant na sessão para uso no callback
+        session(['social_login_tenant' => $tenantHost]);
+
+        return Socialite::driver('facebook')->redirect();
+    }
+
+    public function handleFacebookCallback(Request $request)
+    {
+        // Obtenha os dados do usuário autenticado pelo Facebook
+        $socialUser = Socialite::driver('facebook')->user();
+
+        // Recupera o tenant salvo na sessão
+        $tenantHost = session('social_login_tenant');
+        if (!$tenantHost) {
+            return redirect('/login')->with('error', 'Tenant não identificado no callback.');
+        }
+
+        // Redireciona para o tenant com token seguro
+        return $this->redirectToTenant($socialUser, 'facebook', $tenantHost);
+    }
     public function redirectToGoogle(Request $request)
     {
         // Aceita tenant como parâmetro na query string

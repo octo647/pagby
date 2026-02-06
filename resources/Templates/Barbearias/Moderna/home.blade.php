@@ -1,6 +1,10 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ tenant()->logo }}">
+    <link rel="icon" type="image/png" sizes="512x512" href="{{ tenant()->logo }}">
+    <link rel="apple-touch-icon" href="{{ tenant()->logo }}">
+    <link rel="manifest" href="/manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ tenant()->fantasy_name ?? 'Barbearia Vibe' }} - Estilo Moderno</title>
