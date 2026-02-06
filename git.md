@@ -3,7 +3,8 @@
     git init: Inicializa um novo repositório Git. 
 
 - git clone <url>: Cria uma cópia local de um repositório remoto. 
-- git status: Mostra o estado atual dos arquivos (modificados, prontos para commit, etc.). 
+- git status: Mostra o estado atual 
+dos arquivos (modificados, prontos para commit, etc.). 
 - git add <arquivo> / git add .: Adiciona arquivos (ou todos) à área de staging (preparo). 
 - git commit -m "mensagem": Salva as alterações preparadas no histórico local. 
 - git push: Envia os commits locais para o repositório remoto. 

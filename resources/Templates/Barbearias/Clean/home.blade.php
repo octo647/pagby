@@ -6,7 +6,7 @@
     <title>{{ tenant()->fantasy_name ?? 'Barbearia Minimal | Estilo Essencial' }}</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* Reset e configurações gerais */
+        /* Reset e Configurações de Cores: Branco, Cinza, Preto e Dourado */
         * {
             margin: 0;
             padding: 0;
@@ -15,15 +15,23 @@
         }
         
         body {
-            color: #1a1a1a;
+            color: #333333;
             line-height: 1.6;
             overflow-x: hidden;
             background-color: #ffffff;
         }
+
+        /* Variáveis de Paleta */
+        :root {
+            --ouro: #C5A059;
+            --preto: #111111;
+            --cinza-claro: #F4F4F4;
+            --branco: #FFFFFF;
+        }
         
         /* Cabeçalho */
         header {
-            background-color: #ffffff;
+            background-color: var(--branco);
             position: fixed;
             width: 100%;
             z-index: 1000;
@@ -41,32 +49,39 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 25px 0;
+            padding: 20px 0;
         }
         
         .logo {
             font-size: 24px;
             font-weight: 700;
-            color: #000000;
+            color: var(--preto);
             text-decoration: none;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
+        }
+        
+        .logo img {
+            max-height: 80px;
+            width: auto;
+            object-fit: contain;
         }
         
         .nav-links {
             display: flex;
             list-style: none;
+            gap: 45px;
         }
         
         .nav-links li {
-            margin-left: 35px;
+            margin-left: 0;
         }
         
         .nav-links a {
             text-decoration: none;
-            color: #333333;
-            font-weight: 400;
-            font-size: 15px;
-            letter-spacing: 0.5px;
+            color: var(--preto);
+            font-weight: 500;
+            font-size: 13px;
+            letter-spacing: 1px;
             transition: color 0.3s;
             position: relative;
         }
@@ -75,15 +90,15 @@
             content: '';
             position: absolute;
             width: 0;
-            height: 1px;
+            height: 2px;
             bottom: -5px;
             left: 0;
-            background-color: #000000;
+            background-color: var(--ouro);
             transition: width 0.3s;
         }
         
         .nav-links a:hover {
-            color: #000000;
+            color: var(--ouro);
         }
         
         .nav-links a:hover::after {
@@ -91,51 +106,61 @@
         }
         
         .btn-agendar {
-            background-color: #000000;
-            color: #ffffff;
-            padding: 12px 25px;
-            border: 1px solid #000000;
+            background-color: var(--preto);
+            color: var(--branco);
+            padding: 12px 28px;
+            border: 1px solid var(--preto);
             text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
+            font-weight: 600;
+            font-size: 13px;
             letter-spacing: 1px;
             transition: all 0.3s;
         }
         
         .btn-agendar:hover {
-            background-color: #ffffff;
-            color: #000000;
+            background-color: var(--ouro);
+            border-color: var(--ouro);
+            color: var(--branco);
         }
         
         .menu-toggle {
             display: none;
             font-size: 22px;
             cursor: pointer;
-            color: #000000;
+            color: var(--preto);
         }
         
         /* Seção Hero */
         .hero {
             height: 100vh;
-            background-color: #f8f8f8;
+            background-color: var(--cinza-claro);
             display: flex;
             align-items: center;
-            color: #000000;
+            color: var(--preto);
             position: relative;
             overflow: hidden;
+            padding-top: 80px;
         }
         
         .hero-content {
-            max-width: 700px;
+            max-width: 630px;
             z-index: 2;
+            position: relative;
+            background-color: var(--cinza-claro);
+            padding-right: 40px;
         }
         
         .hero h1 {
-            font-size: 3.8rem;
+            font-size: 3.5rem;
             margin-bottom: 25px;
             font-weight: 300;
             line-height: 1.1;
             letter-spacing: -1px;
+        }
+        
+        .hero h1 span {
+            color: var(--ouro);
+            font-weight: 600;
         }
         
         .hero p {
@@ -143,25 +168,25 @@
             margin-bottom: 40px;
             color: #555555;
             max-width: 500px;
-            line-height: 1.7;
         }
         
         .btn-hero {
-            background-color: #000000;
-            color: #ffffff;
-            padding: 16px 40px;
-            border: 1px solid #000000;
+            background-color: var(--preto);
+            color: var(--branco);
+            padding: 18px 45px;
+            border: 1px solid var(--preto);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 14px;
-            letter-spacing: 1.5px;
+            letter-spacing: 2px;
             display: inline-block;
-            transition: all 0.3s;
+            transition: all 0.4s;
         }
         
         .btn-hero:hover {
             background-color: transparent;
-            color: #000000;
+            color: var(--preto);
+            border-color: var(--ouro);
         }
         
         .hero-image {
@@ -169,17 +194,18 @@
             right: 0;
             top: 0;
             height: 100%;
-            width: 50%;
+            width: 45%;
             background-image: url('images/Templates/Barbearias/Clean/hero.avif');
             background-size: cover;
             background-position: center;
-            filter: grayscale(100%);
+            filter: grayscale(100%) contrast(1.1);
+            z-index: 1;
         }
         
         /* Seção Serviços */
         .servicos {
             padding: 120px 0;
-            background-color: #ffffff;
+            background-color: var(--branco);
         }
         
         .section-title {
@@ -189,17 +215,19 @@
         
         .section-title h2 {
             font-size: 2.2rem;
-            color: #000000;
+            color: var(--preto);
             margin-bottom: 15px;
             font-weight: 300;
-            letter-spacing: -0.5px;
+            letter-spacing: 1px;
         }
-        
-        .section-title p {
-            color: #666666;
-            max-width: 500px;
-            margin: 0 auto;
-            font-size: 15px;
+
+        .section-title h2::after {
+            content: '';
+            display: block;
+            width: 60px;
+            height: 3px;
+            background-color: var(--ouro);
+            margin: 15px auto 0;
         }
         
         .servicos-grid {
@@ -209,19 +237,18 @@
         }
         
         .servico-card {
-            background-color: #ffffff;
-            border: 1px solid #e5e5e5;
+            background-color: var(--branco);
+            border: 1px solid #eeeeee;
             transition: all 0.3s;
-            position: relative;
-            overflow: hidden;
         }
         
         .servico-card:hover {
-            border-color: #000000;
+            border-color: var(--ouro);
+            transform: translateY(-5px);
         }
         
         .servico-img {
-            height: 220px;
+            height: 250px;
             background-size: cover;
             background-position: center;
             filter: grayscale(100%);
@@ -233,33 +260,27 @@
         }
         
         .servico-content {
-            padding: 30px;
+            padding: 35px;
+            text-align: center;
         }
         
         .servico-content h3 {
-            font-size: 1.3rem;
-            margin-bottom: 12px;
-            color: #000000;
-            font-weight: 500;
-        }
-        
-        .servico-content p {
-            color: #666666;
-            margin-bottom: 20px;
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
         }
         
         .servico-preco {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #000000;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--ouro);
+            margin-top: 15px;
         }
         
         /* Seção Sobre */
         .sobre {
             padding: 120px 0;
-            background-color: #f8f8f8;
+            background-color: var(--cinza-claro);
         }
         
         .sobre-content {
@@ -276,56 +297,40 @@
         .sobre-img::before {
             content: '';
             position: absolute;
-            top: -20px;
-            left: -20px;
-            right: 20px;
-            bottom: 20px;
-            border: 1px solid #000000;
+            top: -15px;
+            left: -15px;
+            right: 15px;
+            bottom: 15px;
+            border: 2px solid var(--ouro);
             z-index: 1;
         }
         
         .sobre-img img {
             width: 100%;
-            height: auto;
-            display: block;
-            position: relative;
             z-index: 2;
             filter: grayscale(100%);
-        }
-        
-        .sobre-text {
-            flex: 1;
+            position: relative;
         }
         
         .sobre-text h2 {
             font-size: 2.2rem;
             margin-bottom: 25px;
-            color: #000000;
             font-weight: 300;
-            letter-spacing: -0.5px;
-        }
-        
-        .sobre-text p {
-            margin-bottom: 20px;
-            color: #555555;
-            line-height: 1.7;
         }
         
         /* Seção Galeria */
         .galeria {
             padding: 120px 0;
-            background-color: #ffffff;
         }
         
         .galeria-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 15px;
         }
         
         .galeria-item {
-            height: 300px;
-            position: relative;
+            height: 350px;
             overflow: hidden;
         }
         
@@ -333,242 +338,128 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            transition: transform 0.5s;
             filter: grayscale(100%);
+            transition: all 0.6s cubic-bezier(0.165, 0.84, 0.44, 1);
         }
         
         .galeria-item:hover img {
-            transform: scale(1.05);
+            transform: scale(1.1);
             filter: grayscale(0%);
         }
         
         /* Seção Contato */
         .contato {
             padding: 120px 0;
-            background-color: #f8f8f8;
-        }
-        
-        .contato-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 60px;
+            background-color: var(--cinza-claro);
         }
         
         .contato-info h3 {
             font-size: 1.8rem;
-            margin-bottom: 30px;
-            color: #000000;
+            margin-bottom: 35px;
             font-weight: 300;
         }
         
         .contato-item {
             display: flex;
-            align-items: flex-start;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
         
         .contato-icon {
-            width: 24px;
-            margin-right: 15px;
-            color: #000000;
-            font-size: 18px;
-        }
-        
-        .contato-text h4 {
-            font-size: 1rem;
-            margin-bottom: 5px;
-            color: #000000;
-            font-weight: 500;
-        }
-        
-        .contato-text p {
-            color: #555555;
-            font-size: 15px;
+            width: 30px;
+            color: var(--ouro);
+            font-size: 20px;
         }
         
         .contato-form {
-            background-color: #ffffff;
-            padding: 40px;
-            border: 1px solid #e5e5e5;
-        }
-        
-        .form-group {
-            margin-bottom: 25px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            font-size: 14px;
-            color: #000000;
+            background-color: var(--branco);
+            padding: 50px;
+            border-top: 4px solid var(--ouro);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
         }
         
         .form-control {
             width: 100%;
             padding: 12px 0;
             border: none;
-            border-bottom: 1px solid #e5e5e5;
-            font-size: 15px;
-            background: transparent;
+            border-bottom: 1px solid #dddddd;
+            margin-bottom: 20px;
             transition: border-color 0.3s;
         }
         
         .form-control:focus {
             outline: none;
-            border-color: #000000;
-        }
-        
-        .btn-enviar {
-            background-color: #000000;
-            color: #ffffff;
-            border: 1px solid #000000;
-            padding: 14px 35px;
-            font-weight: 500;
-            font-size: 14px;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-        
-        .btn-enviar:hover {
-            background-color: transparent;
-            color: #000000;
+            border-color: var(--ouro);
         }
         
         /* Rodapé */
         footer {
-            background-color: #000000;
-            color: #ffffff;
+            background-color: var(--preto);
+            color: var(--branco);
             padding: 80px 0 30px;
         }
         
-        .footer-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 40px;
-            margin-bottom: 60px;
-        }
-        
         .footer-col h4 {
-            font-size: 1.2rem;
+            color: var(--ouro);
             margin-bottom: 25px;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-        
-        .footer-col ul {
-            list-style: none;
-        }
-        
-        .footer-col ul li {
-            margin-bottom: 12px;
-        }
-        
-        .footer-col ul li a {
-            color: #cccccc;
-            text-decoration: none;
+            text-transform: uppercase;
             font-size: 14px;
-            transition: color 0.3s;
-        }
-        
-        .footer-col ul li a:hover {
-            color: #ffffff;
-        }
-        
-        .social-links {
-            display: flex;
-            gap: 15px;
+            letter-spacing: 2px;
         }
         
         .social-links a {
-            width: 38px;
-            height: 38px;
-            border: 1px solid #555555;
-            border-radius: 50%;
-            display: flex;
+            width: 40px;
+            height: 40px;
+            border: 1px solid #333;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            color: #cccccc;
+            color: #999;
+            margin-right: 10px;
             transition: all 0.3s;
         }
         
         .social-links a:hover {
-            border-color: #ffffff;
-            color: #ffffff;
+            border-color: var(--ouro);
+            color: var(--ouro);
         }
         
         .footer-bottom {
             text-align: center;
-            padding-top: 30px;
-            border-top: 1px solid #333333;
-            color: #999999;
-            font-size: 13px;
+            padding-top: 40px;
+            margin-top: 60px;
+            border-top: 1px solid #222;
+            font-size: 12px;
+            color: #666;
         }
         
         /* Responsividade */
-        @media (max-width: 992px) {
-            .sobre-content {
-                flex-direction: column;
-            }
-            
-            .sobre-img, .sobre-text {
-                flex: none;
-                width: 100%;
-            }
-            
-            .hero-image {
-                width: 40%;
-            }
-        }
-        
         @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-            
+            .hero h1 { font-size: 2.5rem; }
+            .hero-image { display: none; }
             .nav-links {
                 position: fixed;
-                top: 80px;
+                top: 100px;
                 left: -100%;
                 width: 100%;
-                height: calc(100vh - 80px);
-                background-color: white;
+                height: calc(100vh - 100px);
+                background: var(--branco);
                 flex-direction: column;
                 align-items: center;
-                justify-content: flex-start;
-                padding-top: 50px;
-                transition: left 0.3s;
+                padding-top: 30px;
+                transition: 0.4s;
             }
-            
-            .nav-links.active {
-                left: 0;
-            }
-            
-            .nav-links li {
-                margin: 20px 0;
-            }
-            
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-            
-            .hero-image {
-                display: none;
-            }
-            
-            .section-title h2 {
-                font-size: 1.8rem;
-            }
+            .nav-links.active { left: 0; }
+            .nav-links li { margin: 8px 0; }
+            .menu-toggle { display: block; }
+            .sobre-content { flex-direction: column; }
         }
     </style>
 </head>
 <body>
-    <!-- Cabeçalho -->
     <header>
         <div class="container">
             <nav class="navbar">
-                <a href="#" class="logo">{{ tenant()->fantasy_name ?? 'BARBEARIA ESSENCIAL' }}</a>
+                <a href="#" class="logo"><img src="{{ url(tenant()->logo) }}" alt="{{ tenant()->fantasy_name ?? 'BARBEARIA' }}"></a>
                 
                 <ul class="nav-links">
                     <li><a href="#inicio">INÍCIO</a></li>
@@ -587,24 +478,22 @@
         </div>
     </header>
 
-    <!-- Seção Hero -->
     <section class="hero" id="inicio">
         <div class="container">
             <div class="hero-content">
-                <h1>ESTILO ESSENCIAL PARA HOMENS MODERNOS</h1>
-                <p>Uma experiência de barbearia focada no essencial, onde cada detalhe é pensado para oferecer o máximo em qualidade e sofisticação.</p>
-                <a href="/login" class="btn-hero">AGENDAR HORÁRIO</a>
+                <h1>ESTILO, <span>QUALIDADE</span> E EXPERIÊNCIA</h1>
+                <p>Uma barbearia voltada para você cliente, buscamos entregar o melhor resultado e experiência.</p>
+                <a href="/login" class="btn-hero">RESERVAR AGORA</a>
             </div>
         </div>
         <div class="hero-image"></div>
     </section>
 
-    <!-- Seção Serviços -->
     <section class="servicos" id="servicos">
         <div class="container">
             <div class="section-title">
-                <h2>NOSSOS SERVIÇOS</h2>
-                <p>Serviços especializados com atenção aos detalhes e máxima qualidade.</p>
+                <h2>SERVIÇOS</h2>
+                <p>O equilíbrio perfeito entre a tradição e o estilo moderno.</p>
             </div>
             
             <div class="servicos-grid">
@@ -612,7 +501,7 @@
                     <div class="servico-img" style="background-image: url({{ url('images/Templates/Barbearias/Clean/corte1.jpeg') }})"></div>
                     <div class="servico-content">
                         <h3>CORTE DE CABELO</h3>
-                        <p>Corte preciso e personalizado, executado com técnicas modernas e atenção aos detalhes.</p>
+                        <p>Técnicas avançadas para um acabamento impecável.</p>
                         <div class="servico-preco">R$ 40,00</div>
                     </div>
                 </div>
@@ -620,8 +509,8 @@
                 <div class="servico-card">
                     <div class="servico-img" style="background-image: url({{ url('images/Templates/Barbearias/Clean/barba1.jpeg') }})"></div>
                     <div class="servico-content">
-                        <h3>BARBA</h3>
-                        <p>Modelagem e acabamento perfeitos para uma barba impecável e bem definida.</p>
+                        <h3>BARBA CLASSIC</h3>
+                        <p>Desenho, toalha quente e relaxamento profundo.</p>
                         <div class="servico-preco">R$ 30,00</div>
                     </div>
                 </div>
@@ -629,8 +518,8 @@
                 <div class="servico-card">
                     <div class="servico-img" style="background-image: url({{ url('images/Templates/Barbearias/Clean/homem-com-barba.jpg') }})"></div>
                     <div class="servico-content">
-                        <h3>TRATAMENTO COMPLETO</h3>
-                        <p>Pacote completo que inclui corte, barba e cuidados especiais com a pele.</p>
+                        <h3>O ESSENCIAL</h3>
+                        <p>Corte, barba e consultoria de imagem completa.</p>
                         <div class="servico-preco">R$ 60,00</div>
                     </div>
                 </div>
@@ -638,189 +527,104 @@
         </div>
     </section>
 
-    <!-- Seção Sobre -->
     <section class="sobre" id="sobre">
         <div class="container">
             <div class="sobre-content">
                 <div class="sobre-img">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/photo.avif') }}" alt="Interior da barbearia">
+                    <img src="{{ url('images/Templates/Barbearias/Clean/photo.avif') }}" alt="Espaço Premium">
                 </div>
                 <div class="sobre-text">
-                    <h2>SOBRE NÓS</h2>
-                    <p>A {{ tenant()->fantasy_name ?? 'Barbearia Essencial' }} nasceu da ideia de que menos é mais. Em um mundo cheio de excessos, buscamos oferecer uma experiência essencial, focada no que realmente importa: qualidade, precisão e sofisticação.</p>
-                    <p>Nossa equipe é formada por profissionais altamente qualificados, apaixonados por seu ofício e constantemente atualizados com as últimas técnicas e tendências.</p>
-                    <p>Em nosso espaço, cada detalhe foi cuidadosamente pensado para criar um ambiente sereno onde você pode relaxar e desfrutar de um momento dedicado ao seu cuidado pessoal.</p>
+                    <h2>SOBRE O CONCEITO</h2>
+                    <p>A {{ tenant()->fantasy_name ?? 'Barbearia Essencial' }} redefine o cuidado masculino através de uma paleta de luxo e precisão técnica.</p>
+                    <p>Acreditamos que o ambiente influencia o bem-estar. Por isso, criamos um espaço monocromático com detalhes em ouro para que você foque apenas no seu momento.</p>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Seção Galeria -->
     <section class="galeria" id="galeria">
         <div class="container">
             <div class="section-title">
                 <h2>GALERIA</h2>
-                <p>Conheça nosso ambiente e trabalhos realizados.</p>
             </div>
-            
             <div class="galeria-grid">
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/corte-moderno.jpeg') }}">
-                </div>
-                
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/barba2.jpeg') }}" alt="Cuidados com a barba">
-                </div>
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/produtos.jpeg') }}" alt="Produtos de barbearia">
-                </div>
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/corte2.jpeg') }}" alt="Ambiente da barbearia">
-                </div>
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/corte3.jpeg') }}" alt="Ambiente da barbearia">
-                </div>
-                 <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/corte4.jpeg') }}" alt="Ambiente da barbearia">
-                </div>
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/corte5.jpeg') }}" alt="Ambiente da barbearia">
-                </div>
-                <div class="galeria-item">
-                    <img src="{{ url('images/Templates/Barbearias/Clean/corte6.jpeg') }}" alt="Ambiente da barbearia">
-                </div>
+                <div class="galeria-item"><img src="{{ url('images/Templates/Barbearias/Clean/corte-moderno.jpeg') }}"></div>
+                <div class="galeria-item"><img src="{{ url('images/Templates/Barbearias/Clean/barba2.jpeg') }}"></div>
+                <div class="galeria-item"><img src="{{ url('images/Templates/Barbearias/Clean/produtos.jpeg') }}"></div>
+                <div class="galeria-item"><img src="{{ url('images/Templates/Barbearias/Clean/corte2.jpeg') }}"></div>
             </div>
         </div>
     </section>
 
-    <!-- Seção Contato -->
     <section class="contato" id="contato">
         <div class="container">
-            <div class="section-title">
-                <h2>CONTATO</h2>
-                <p>Entre em contato para agendar seu horário ou tirar dúvidas.</p>
-            </div>
-            
             <div class="contato-content">
                 <div class="contato-info">
-                    <h3>INFORMAÇÕES</h3>
-                    
+                    <h3>CONTATO</h3>
                     <div class="contato-item">
-                        <div class="contato-icon">
-                            <i class="fas fa-map-marker-alt"></i>
-                        </div>
-                        <div class="contato-text">
-                            <h4>ENDEREÇO</h4>
-                            <p>{!! tenant()->address ?? 'Av. Paulista, 1000 - Bela Vista<br>São Paulo, SP' !!}</p>
+                        <i class="fas fa-map-marker-alt contato-icon"></i>
+                        <div>
+                            <h4>LOCALIZAÇÃO</h4>
+                            <p>{{ tenant()->address ?? '' }}@if(tenant()->number), {{ tenant()->number }}@endif</p>
+                            <p>{{ tenant()->neighborhood ?? '' }}</p>
+                            <p>{{ tenant()->city ?? '' }}@if(tenant()->city && tenant()->state) - @endif{{ tenant()->state ?? '' }}</p>
+                            
                         </div>
                     </div>
-                    
                     <div class="contato-item">
-                        <div class="contato-icon">
-                            <i class="fas fa-phone"></i>
-                        </div>
-                        <div class="contato-text">
+                        <i class="fas fa-phone contato-icon"></i>
+                        <div>
                             <h4>TELEFONE</h4>
                             <p>{{ tenant()->phone ?? '(11) 3456-7890' }}</p>
                         </div>
                     </div>
-                    
-                    <div class="contato-item">
-                        <div class="contato-icon">
-                            <i class="fas fa-envelope"></i>
-                        </div>
-                        <div class="contato-text">
-                            <h4>E-MAIL</h4>
-                            <p>{{ tenant()->email ?? 'contato@essencial.com' }}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="contato-item">
-                        <div class="contato-icon">
-                            <i class="fas fa-clock"></i>
-                        </div>
-                        <div class="contato-text">
-                            <h4>HORÁRIOS</h4>
-                            <p>Segunda a Sexta: 9h às 20h<br>Sábado: 9h às 18h<br>Domingo: Fechado</p>
-                        </div>
-                    </div>
                 </div>
                 
-                <div class="contato-form" id="agendar">
-                    <h3>AGENDAR HORÁRIO</h3>
-                    <p>Registre-se e use nosso serviço de agendamento online!</p>
+                <div class="contato-form">
+                    <h3>AGENDAR SESSÃO</h3>
+                    <p>Clique abaixo para escolher seu profissional e horário.</p>
                     <br>
-                    <a href="/login" class="btn-agendar">Agendar Horário</a>
+                    <a href="/login" class="btn-agendar" style="display:inline-block">AGENDAR AGORA</a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Rodapé -->
     <footer>
         <div class="container">
-            <div class="footer-content">
+            <div class="footer-content" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px;">
                 <div class="footer-col">
-                    <h4>{{ tenant()->name ?? 'BARBEARIA ESSENCIAL' }}</h4>
-                    <p style="color: #cccccc; font-size: 14px; line-height: 1.6;">Estilo essencial para homens modernos. Menos é mais.</p>
+                    <h4>{{ tenant()->name ?? 'ESSENCIAL' }}</h4>
                     <div class="social-links">
                         <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-facebook-f"></i></a>
                         <a href="#"><i class="fab fa-whatsapp"></i></a>
                     </div>
                 </div>
-                
-                <div class="footer-col">
-                    <h4>LINKS</h4>
-                    <ul>
-                        <li><a href="#inicio">INÍCIO</a></li>
-                        <li><a href="#servicos">SERVIÇOS</a></li>
-                        <li><a href="#sobre">SOBRE</a></li>
-                        <li><a href="#galeria">GALERIA</a></li>
-                        <li><a href="#contato">CONTATO</a></li>
-                    </ul>
-                </div>
-                
-                <div class="footer-col">
-                    <h4>SERVIÇOS</h4>
-                    <ul>
-                        <li><a href="#">CORTE DE CABELO</a></li>
-                        <li><a href="#">BARBA</a></li>
-                        <li><a href="#">TRATAMENTO COMPLETO</a></li>
-                        <li><a href="#">CONSULTORIA DE ESTILO</a></li>
-                    </ul>
-                </div>
-                
                 <div class="footer-col">
                     <h4>HORÁRIOS</h4>
-                    <ul>
-                        <li>SEGUNDA A SEXTA: 9H ÀS 20H</li>
-                        <li>SÁBADO: 9H ÀS 18H</li>
-                        <li>DOMINGO: FECHADO</li>
-                    </ul>
+                    <p style="font-size: 13px; color: #999;">Seg - Sex: 09h às 20h<br>Sáb: 09h às 18h</p>
                 </div>
             </div>
-            
             <div class="footer-bottom">
-                <p>&copy; 2023 {{ tenant()->fantasy_name ?? 'BARBEARIA ESSENCIAL' }}. TODOS OS DIREITOS RESERVADOS.</p>
+                <p>&copy; 2026 {{ tenant()->fantasy_name ?? 'BARBEARIA ESSENCIAL' }}.</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // Menu responsivo
-        document.querySelector('.menu-toggle').addEventListener('click', function() {
-            document.querySelector('.nav-links').classList.toggle('active');
+        const menuToggle = document.querySelector('.menu-toggle');
+        const navLinks = document.querySelector('.nav-links');
+        const navItems = document.querySelectorAll('.nav-links a');
+        
+        menuToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('active');
         });
         
-        // Fechar menu ao clicar em um link
-        document.querySelectorAll('.nav-links a').forEach(link => {
-            link.addEventListener('click', () => {
-                document.querySelector('.nav-links').classList.remove('active');
+        navItems.forEach(item => {
+            item.addEventListener('click', () => {
+                navLinks.classList.remove('active');
             });
         });
-        
-        
     </script>
 </body>
 </html>

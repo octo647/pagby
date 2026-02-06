@@ -43,14 +43,21 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'number',
             'complement',
             'neighborhood',
-            'contract_accpted_at',
-            'logo', // agora será salvo na coluna correta
-            // Campos críticos para assinatura/bloqueio:
-            'subscription_status',
+            'cep',
+            'city',
+            'state',
+            'logo',
+            'plan',
+            'status',
+            'trial_started_at',
             'trial_ends_at',
-            'subscription_ends_at',
+            'subscription_status',
+            'asaas_wallet_id',
+            'asaas_account_data',
+            'subscription_started_at',
+            'subscription_ends_at', 
             'is_blocked',
-            'template',
+            'data'
         ];
 
     }
@@ -77,15 +84,24 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'number',
         'complement',
         'neighborhood',
-        'contract_accpted_at',
+        'cep',
+        'city',
+        'state',
         'logo',
-        'subscription_status',
+        'plan',
+        'status',
+        'trial_started_at',
         'trial_ends_at',
-        'subscription_ends_at',
-        'is_blocked',
-        'asaas_customer_id',
+        'subscription_status',
+        'asaas_wallet_id',
         'asaas_account_data',
+        'subscription_started_at',
+        'subscription_ends_at', 
+        'is_blocked',
         'data',
+        'crated_at',
+        'updated_at',
+        
     ];
     protected $casts = [
         'trial_started_at' => 'datetime',
