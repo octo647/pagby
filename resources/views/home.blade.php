@@ -424,6 +424,78 @@
         </div>
             </div>
         </div>
+        <!-- Dúvidas sobre o modelo? -->
+        <div class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full text-center">
+            <h3 class="text-2xl font-bold mb-4">Dúvidas se o PagBy irá atender seu modelo de negócio?</h3>
+            <p class="max-w-2xl mx-auto text-white/80">
+                O PagBy é ideal para salões de beleza, barbearias, clínicas de estética e outros negócios do setor de beleza e bem-estar. Se você atende clientes com agendamentos e precisa de uma gestão eficiente, o PagBy é para você!
+            </p>
+            <h3 class="font-bold mt-6 mb-4">Ainda tem dúvidas? Preencha o formulário abaixo e agendaremos uma entrevista online.</h3>
+            
+            <!-- Removido form duplicado -->
+            <form id="contato-duvida-form" class="mt-8 flex flex-col items-center" action="{{ route('contato.duvida.store') }}" method="POST">
+                @csrf
+                <input type="text" name="nome" placeholder="Seu nome" required class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <input type="text" name="telefone" placeholder="Seu telefone" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <input type="email" name="email" placeholder="Seu e-mail" required class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <!-- Cidade e Estado opcionais, não salvos -->
+                <input type="text" name="cidade" placeholder="Cidade (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <input type="text" name="estado" placeholder="Estado (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <textarea name="mensagem" placeholder="Sua mensagem (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900"></textarea>
+                <button type="submit" class="mt-6 bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition">
+                    Enviar
+                </button>
+            </form>
+
+            <!-- Modal de confirmação -->
+            <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-xl p-8 max-w-md w-full text-center">
+                    <h4 class="text-2xl font-bold mb-4 text-pink-600">Recebemos sua dúvida!</h4>
+                    <p class="mb-4 text-gray-700">Em breve nossa equipe entrará em contato por e-mail.<br>Obrigado pelo interesse no PagBy!</p>
+                    <button id="fechar-modal" class="mt-4 bg-pink-600 text-white px-6 py-2 rounded-full font-bold hover:bg-pink-700 transition">Fechar</button>
+                </div>
+            </div>
+
+            <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.getElementById('contato-duvida-form');
+                const modal = document.getElementById('modal-confirmacao');
+                const fecharModal = document.getElementById('fechar-modal');
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const formData = new FormData(form);
+                    const csrfToken = form.querySelector('input[name="_token"]').value;
+                    // Envia para a mesma origem
+                    const url = window.location.origin + '/contato-duvida';
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Erro ao enviar.');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            modal.classList.remove('hidden');
+                            form.reset();
+                        } else {
+                            alert('Erro ao enviar. Tente novamente.');
+                        }
+                    })
+                    .catch(() => alert('Erro ao enviar. Tente novamente.'));
+                });
+                fecharModal.addEventListener('click', function() {
+                    modal.classList.add('hidden');
+                });
+            });
+            </script>
+        </div>
+
        
         <!-- Why PagBy Section -->
      <div class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full text-center">

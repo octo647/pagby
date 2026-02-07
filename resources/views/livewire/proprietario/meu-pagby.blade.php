@@ -18,6 +18,21 @@
             <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
             Meu PagBy
         </h2>
+
+        <!-- Banner de primeiros passos/configuração inicial -->
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg shadow flex flex-col gap-2">
+            <div class="flex items-center gap-2 mb-2">
+                <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2l4 -4"/></svg>
+                <span class="font-semibold text-blue-700 text-lg">Configuração inicial do seu salão</span>
+            </div>
+            <ul class="list-disc pl-6 text-blue-900 text-sm">
+                <li>Configure sua <b>filial</b> principal <a href="/dashboard?tabelaAtiva=filiais&menu=proprietario" class="underline text-blue-600 hover:text-blue-800">(Configurar filial)</a></li>
+                <li>Cadastre os <b>serviços</b> oferecidos <a href="/dashboard?tabelaAtiva=servicos&menu=proprietario" class="underline text-blue-600 hover:text-blue-800">(Configurar serviços)</a></li>
+                <li>Adicione seus <b>funcionários</b> <a href="/dashboard?tabelaAtiva=funcionarios&menu=proprietario" class="underline text-blue-600 hover:text-blue-800">(Cadastrar funcionários)</a></li>
+                <li>Configure os <b>horários de atendimento</b> <a href="/dashboard?tabelaAtiva=horarios&menu=proprietario" class="underline text-blue-600 hover:text-blue-800">(Horários do salão)</a></li>
+            </ul>
+            <div class="mt-2 text-xs text-blue-700">Dica: Complete todos os passos para que seu salão esteja pronto para receber agendamentos online!</div>
+        </div>
         <dl class="space-y-3 mb-6">
             <div>
                 <dt class="text-gray-500">Plano atual</dt>

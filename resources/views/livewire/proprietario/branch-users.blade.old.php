@@ -1,3 +1,12 @@
+<style>
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.2; }
+}
+.animate-blink {
+    animation: blink 1s infinite;
+}
+</style>
 <div>
     {{-- Gestão de Funcionários - Interface Moderna --}}
     
@@ -109,10 +118,13 @@
                                 <div class="flex items-center space-x-4 flex-1">
                                     {{-- Avatar --}}
                                     <div class="flex-shrink-0">
-                                        @if(isset($user['user_photo']))
-                                                <img src="{{ tenant_asset('profile-photos/' . basename($user['user_photo'])) ?? config('app.url').'/images/default-user.png' }}" 
-                                                    class="h-12 w-12 rounded-full object-cover border-2 border-gray-200" 
-                                                    alt="Foto">
+                                        @if(isset($user['user_photo']) && $user['user_photo'])
+                                            @php
+                                                $isExternal = Str::startsWith($user['user_photo'], ['http://', 'https://']);
+                                            @endphp
+                                            <img src="{{ $isExternal ? $user['user_photo'] : tenant_asset('profile-photos/' . basename($user['user_photo'])) }}" 
+                                                class="h-12 w-12 rounded-full object-cover border-2 border-gray-200" 
+                                                alt="Foto">
                                         @else
                                             <div class="h-12 w-12 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                                                 <span class="text-lg font-medium text-white uppercase">
@@ -156,9 +168,12 @@
                                                     {{ $user['branch_name'] }}
                                                 </span>
                                             @else
-                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                    Nenhuma filial atribuída
+                                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 animate-blink">
+                                                    <svg class="w-3 h-3 mr-1 text-yellow-600" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8"/></svg>
+                                                    Sem filial
                                                 </span>
+                                            </div>
+                                            
                                             @endif
                                         </div>
                                     </div>

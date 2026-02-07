@@ -38,7 +38,10 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center gap-3">
                                     @if($agendamento->customer && $agendamento->customer->photo)
-                                        <img src="{{ tenant_asset($agendamento->customer->photo) }}" alt="{{ $agendamento->customer->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
+                                        @php
+                                            $isExternal = Str::startsWith($agendamento->customer->photo, ['http://', 'https://']);
+                                        @endphp
+                                        <img src="{{ $isExternal ? $agendamento->customer->photo : tenant_asset($agendamento->customer->photo) }}" alt="{{ $agendamento->customer->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
                                     @else
                                         <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
                                             {{ $agendamento->customer->name ? strtoupper(substr($agendamento->customer->name, 0, 2)) : '?' }}
@@ -108,7 +111,10 @@
                     </div>
                     <div class="flex items-center gap-2">
                         @if($agendamento->customer && $agendamento->customer->photo)
-                            <img src="{{ tenant_asset($agendamento->customer->photo) }}" alt="{{ $agendamento->customer->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
+                            @php
+                                $isExternal = Str::startsWith($agendamento->customer->photo, ['http://', 'https://']);
+                            @endphp
+                            <img src="{{ $isExternal ? $agendamento->customer->photo : tenant_asset($agendamento->customer->photo) }}" alt="{{ $agendamento->customer->name }}" class="w-10 h-10 rounded-full object-cover border-2 border-gray-200">
                         @else
                             <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold text-lg">
                                 {{ $agendamento->customer->name ? strtoupper(substr($agendamento->customer->name, 0, 2)) : '?' }}

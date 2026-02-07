@@ -36,6 +36,14 @@ Route::get('/api/social-auth/{token}', function ($token) {
         })->name('home');
         
         // Rotas de registro e contrato
+
+        // Rota para envio do formulário de dúvidas sobre o modelo de negócio
+        Route::post('/contato-duvida', [\App\Http\Controllers\ContatoDuvidaController::class, 'store'])->name('contato.duvida.store');
+        // Rota GET de teste para diagnóstico
+        Route::get('/contato-duvida', function() {
+            \Log::info('GET /contato-duvida acessado');
+            return response()->json(['ok' => true, 'msg' => 'GET /contato-duvida está funcionando']);
+        });
         Route::get('/contrato', function() {
             return view('tenant.subscription.contrato', ['tenant' => (object)['fantasy_name' => 'Seu Negócio', 'cnpj' => '00.000.000/0000-00']]);
         })->name('contrato');

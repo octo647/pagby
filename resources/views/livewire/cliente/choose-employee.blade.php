@@ -43,9 +43,12 @@
                                     {{-- Avatar --}}
                                     <div class="flex flex-col items-center text-center">
                                         <div class="relative mb-4">
-                                            <img class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg group-hover:scale-110 transition-transform duration-300" 
-                                                 src="{{tenant_asset($funcionario->photo)}}" 
-                                                 alt="Foto {{$funcionario->name}}">
+                                                @php
+                                                   $isExternal = Str::startsWith($funcionario->photo ?? '', ['http://', 'https://']);
+                                                @endphp
+                                                <img class="w-20 h-20 rounded-full object-cover border-4 border-white shadow-lg group-hover:scale-110 transition-transform duration-300" 
+                                                    src="{{ $isExternal ? $funcionario->photo : tenant_asset($funcionario->photo) }}" 
+                                                    alt="Foto {{$funcionario->name}}">
                                             <div class="absolute -bottom-2 -right-2 w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center border-2 border-white">
                                                 <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -86,9 +89,12 @@
                             <div class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-2xl p-6 text-center">
                                 <div class="flex flex-col items-center">
                                     <div class="relative mb-4">
+                                        @php
+                                            $isExternal = Str::startsWith($selectedUser->photo ?? '', ['http://', 'https://']);
+                                        @endphp
                                         <img class="w-24 h-24 rounded-full object-cover border-4 border-green-400 shadow-lg" 
-                                             src="{{tenant_asset($selectedUser->photo)}}" 
-                                             alt="Foto {{$selectedUser->name}}">
+                                            src="{{ $isExternal ? $selectedUser->photo : tenant_asset($selectedUser->photo) }}" 
+                                            alt="Foto {{$selectedUser->name}}">
                                         <div class="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center border-2 border-white">
                                             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />

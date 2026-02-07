@@ -76,7 +76,10 @@
                             <div class="flex items-center space-x-3">
                                 <div class="flex-shrink-0">
                                     @if($user->photo)
-                                        <img src="{{ tenant_asset($user->photo) }}" 
+                                        @php
+                                            $isExternal = Str::startsWith($user->photo, ['http://', 'https://']);
+                                        @endphp
+                                        <img src="{{ $isExternal ? $user->photo : tenant_asset($user->photo) }}" 
                                              alt="{{ $user->name }}"
                                              class="h-10 w-10 rounded-full object-cover border-2 border-gray-200">
                                     @else
@@ -219,7 +222,10 @@
                     <div class="flex items-center space-x-3">
                         <div class="flex-shrink-0">
                             @if(isset($userDetails['photo']) && $userDetails['photo'])
-                                <img src="{{ tenant_asset($userDetails['photo']) }}" 
+                                @php
+                                    $isExternal = Str::startsWith($userDetails['photo'], ['http://', 'https://']);
+                                @endphp
+                                <img src="{{ $isExternal ? $userDetails['photo'] : tenant_asset($userDetails['photo']) }}" 
                                      alt="{{ $userDetails['nome'] ?? 'Usuário' }}"
                                      class="h-12 w-12 rounded-full object-cover border-2 border-gray-200">
                             @else
