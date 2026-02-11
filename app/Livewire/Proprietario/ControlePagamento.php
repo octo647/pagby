@@ -99,10 +99,8 @@ class ControlePagamento extends Component
             $produtos_vendidos = [];
             foreach ($comandas as $comanda) {
                 foreach ($comanda->comandaProdutos as $cp) {
-                    $estoque = Estoque::find($cp->estoque_id);
-                    if ($estoque) {
-                        $produtos_vendidos[] = $estoque->percentual_produtos;
-                    }
+                    // Usa o percentual salvo no momento da venda, não o atual do estoque
+                    $produtos_vendidos[] = $cp->percentual_produtos ?? 0;
                 }
             }
             if (count($produtos_vendidos)) {

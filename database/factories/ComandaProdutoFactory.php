@@ -20,6 +20,7 @@ class ComandaProdutoFactory extends Factory
             'quantidade' => $quantidade,
             'preco_unitario' => $preco,
             'subtotal' => $preco * $quantidade,
+            'percentual_produtos' => $estoque ? $estoque->percentual_produtos : $this->faker->numberBetween(5, 30),
             'observacoes' => $this->faker->sentence(),
         ];
     }

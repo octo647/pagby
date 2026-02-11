@@ -18,6 +18,7 @@ class ComandaProduto extends Model
         'quantidade',
         'preco_unitario',
         'subtotal',
+        'percentual_produtos',
         'observacoes'
     ];
 

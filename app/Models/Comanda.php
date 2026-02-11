@@ -145,6 +145,7 @@ class Comanda extends Model
             'quantidade' => $quantidade,
             'preco_unitario' => $preco,
             'subtotal' => $quantidade * $preco,
+            'percentual_produtos' => $estoque->percentual_produtos ?? 0,
             'observacoes' => $observacoes
         ]);
 

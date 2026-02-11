@@ -219,6 +219,7 @@
                             <th class="px-6 py-4 text-left text-xs font-semibold text-slate-700 uppercase tracking-wider">Categoria</th>
                             <th class="px-6 py-4 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">Estoque</th>
                             <th class="px-6 py-4 text-right text-xs font-semibold text-slate-700 uppercase tracking-wider">Preço</th>
+                            <th class="px-6 py-4 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">% Comissão</th>
                             
                             <th class="px-6 py-4 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">Validade</th>
                             <th class="px-6 py-4 text-center text-xs font-semibold text-slate-700 uppercase tracking-wider">Status</th>
@@ -312,6 +313,20 @@
                                         <div class="text-xs text-slate-500">por unidade</div>
                                     @else
                                         <span class="text-slate-400 text-sm">Não definido</span>
+                                    @endif
+                                </td>
+
+                                <!-- Percentual Comissão -->
+                                <td class="px-6 py-4 text-center">
+                                    @if($item->percentual_produtos && $item->percentual_produtos > 0)
+                                        <div class="inline-flex items-center px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                            </svg>
+                                            <span class="text-sm font-semibold">{{ number_format($item->percentual_produtos, 2, ',', '.') }}%</span>
+                                        </div>
+                                    @else
+                                        <span class="text-slate-400 text-sm">0%</span>
                                     @endif
                                 </td>
 
@@ -575,6 +590,22 @@
                             </div>
                         </div>
                         
+                        <!-- Percentual Comissão -->
+                        @if($item->percentual_produtos && $item->percentual_produtos > 0)
+                        <div class="bg-purple-50 rounded-xl p-4 mb-5">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-slate-600 uppercase tracking-wide">% Comissão Func.</span>
+                                <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div class="text-lg font-bold text-purple-600">
+                                {{ number_format($item->percentual_produtos, 2, ',', '.') }}%
+                            </div>
+                            <p class="text-xs text-slate-500 mt-1">Destinado ao funcionário que realizar a venda</p>
+                        </div>
+                        @endif
+                        
                         <!-- Data de Validade (se existir) -->
                         @if($item->data_validade)
                             <div class="bg-yellow-50 rounded-xl p-4 mb-5">
@@ -798,6 +829,24 @@
                                                class="w-full pl-10 pr-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
                                     </div>
                                     @error('preco_unitario') 
+                                        <p class="text-red-500 text-sm mt-1 flex items-center">
+                                            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                                            </svg>
+                                            {{ $message }}
+                                        </p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-semibold text-slate-700 mb-2">% Comissão Funcionário</label>
+                                    <div class="relative">
+                                        <input type="number" wire:model="percentual_produtos" step="0.01" min="0" max="100" placeholder="0.00"
+                                               class="w-full px-4 py-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-colors">
+                                        <span class="absolute right-3 top-3 text-slate-500">%</span>
+                                    </div>
+                                    <p class="text-xs text-slate-500 mt-1">Percentual destinado ao funcionário que realizar a venda</p>
+                                    @error('percentual_produtos') 
                                         <p class="text-red-500 text-sm mt-1 flex items-center">
                                             <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                                 <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>

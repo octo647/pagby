@@ -28,6 +28,7 @@ class GerenciarEstoque extends Component
     public $quantidade_atual;
     public $quantidade_minima;
     public $preco_unitario;
+    public $percentual_produtos;
     public $fornecedor;
     public $data_validade;
     public $observacoes;
@@ -43,6 +44,7 @@ class GerenciarEstoque extends Component
         'quantidade_atual' => 'required|integer|min:0',
         'quantidade_minima' => 'required|integer|min:0',
         'preco_unitario' => 'nullable|numeric|min:0',
+        'percentual_produtos' => 'nullable|numeric|min:0|max:100',
         'fornecedor' => 'nullable|string|max:255',
         'data_validade' => 'nullable|date|after:today',
         'observacoes' => 'nullable|string',
@@ -56,6 +58,8 @@ class GerenciarEstoque extends Component
         'quantidade_minima.required' => 'A quantidade mínima é obrigatória.',
         'quantidade_minima.min' => 'A quantidade mínima deve ser maior ou igual a 0.',
         'preco_unitario.min' => 'O preço unitário deve ser maior ou igual a 0.',
+        'percentual_produtos.min' => 'O percentual deve ser maior ou igual a 0.',
+        'percentual_produtos.max' => 'O percentual não pode ser maior que 100.',
         'data_validade.after' => 'A data de validade deve ser posterior à data atual.',
     ];
 
@@ -113,6 +117,7 @@ class GerenciarEstoque extends Component
         $this->quantidade_atual = $estoque->quantidade_atual;
         $this->quantidade_minima = $estoque->quantidade_minima;
         $this->preco_unitario = $estoque->preco_unitario;
+        $this->percentual_produtos = $estoque->percentual_produtos;
         $this->fornecedor = $estoque->fornecedor;
         $this->data_validade = $estoque->data_validade ? $estoque->data_validade->format('Y-m-d') : '';
         $this->observacoes = $estoque->observacoes;
@@ -131,7 +136,7 @@ class GerenciarEstoque extends Component
     {
         $this->reset([
             'estoqueId', 'produto_nome', 'categoria', 'quantidade_atual', 
-            'quantidade_minima', 'preco_unitario', 'fornecedor', 
+            'quantidade_minima', 'preco_unitario', 'percentual_produtos', 'fornecedor', 
             'data_validade', 'observacoes'
         ]);
         $this->resetErrorBag();
@@ -148,6 +153,7 @@ class GerenciarEstoque extends Component
             'quantidade_atual' => $this->quantidade_atual,
             'quantidade_minima' => $this->quantidade_minima,
             'preco_unitario' => $this->preco_unitario ?: null,
+            'percentual_produtos' => $this->percentual_produtos ?: 0,
             'fornecedor' => $this->fornecedor,
             'data_validade' => $this->data_validade ?: null,
             'observacoes' => $this->observacoes,
