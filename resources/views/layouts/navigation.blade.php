@@ -61,7 +61,7 @@
     <!-- Menu lateral (off-canvas) sempre disponível -->
     
     <div x-show="open" @click.self="open = false" class="fixed top-0 left-0 h-full w-72 z-50 bg-white bg-opacity-20 transition-opacity duration-300">
-        <div class="bg-gradient-to-b from-blue-50 via-white to-pink-50 w-72 h-full shadow-2xl p-6 rounded-r-2xl border-r border-blue-200 animate-slidein">
+        <div class="bg-gradient-to-b from-blue-50 via-white to-pink-50 w-72 h-full max-h-screen overflow-y-auto shadow-2xl p-6 rounded-r-2xl border-r border-blue-200 animate-slidein">
             <button @click="open = false" class="mb-6 p-2 rounded-full bg-gradient-to-r from-pink-200 to-blue-200 shadow hover:scale-110 transition-transform">
                 <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

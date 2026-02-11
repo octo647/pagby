@@ -4,7 +4,21 @@
     <form id="send-verification" method="post" action="{{ route('verification.send') }}">
         @csrf
     </form>
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-6 space-y-6">
+    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-0 space-y-6">
+    @if (session('status') === 'profile-updated')
+        <div class="mb-4 p-3 rounded bg-green-100 border border-green-300 text-green-800 text-sm flex items-center gap-2 animate-fade-in" id="profile-success-message">
+            <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+            <span>Perfil atualizado com sucesso!</span>
+        </div>
+        <script>
+        // Rola para o topo absoluto da página ao exibir a mensagem de sucesso
+        document.addEventListener('DOMContentLoaded', function() {
+            if (document.getElementById('profile-success-message')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+        </script>
+    @endif
     @csrf
     @method('PATCH')
     <div class="mt-4 flex flex-col items-center">
@@ -106,7 +120,7 @@
     </div>
     <div>
         <x-input-label for="cep" :value="__('CEP')" />
-        <x-text-input id="cep" name="cep" type="text" class="mt-1 block w-full" :value="old('cep', $user->cep)" maxlength="9" pattern="\d{5}-?\d{3}" required autocomplete="postal-code" />
+        <x-text-input id="cep" name="cep" type="text" class="mt-1 block w-full" :value="old('cep', $user->cep)" maxlength="9" pattern="\d{5}-?\d{3}" autocomplete="postal-code" />
         <x-input-error :messages="$errors->get('cep')" class="mt-2" />
         <span id="cep-error" class="text-red-500 text-xs mt-1 hidden">CEP inválido. Verifique e tente novamente.</span>
     </div>
