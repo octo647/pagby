@@ -9,6 +9,15 @@ use App\Models\User;
 use App\Models\BranchUser;
 class SalonTimes extends Component
 {
+    // Limpa todos os horários de um dia da semana no painel de edição
+    public function limparHorariosDia($dia)
+    {
+        if (!is_array($this->editOfficehour)) return;
+        $this->editOfficehour[$dia . '_ini'] = null;
+        $this->editOfficehour[$dia . '_fim'] = null;
+        $this->editOfficehour[$dia . '_lunch_ini'] = null;
+        $this->editOfficehour[$dia . '_lunch_fim'] = null;
+    }
 
     public $editedIndex = null;
     public $editedField = null;
@@ -62,8 +71,13 @@ class SalonTimes extends Component
             $lunch_end = $officehour[$pt . '_lunch_fim'] ?? '13:00';
             $branchId = $officehour['branch_id'] ?? 1;
 
+            // Corrige campos apagados: se vazio ou igual a '00:00', salva como null
+            if (empty($ini) || $ini === '00:00') $ini = null;
+            if (empty($fim) || $fim === '00:00') $fim = null;
+            if (empty($lunch_ini) || $lunch_ini === '00:00') $lunch_ini = null;
+            if (empty($lunch_end) || $lunch_end === '00:00') $lunch_end = null;
+
             if ($ini && $fim) {
-                
                 Schedule::updateOrCreate(
                     [
                         'user_id' => $officehour['id'],
@@ -73,20 +87,20 @@ class SalonTimes extends Component
                         'branch_id' => $branchId,
                         'start_time' => $ini,
                         'end_time' => $fim,
-                        'lunch_start' => $lunch_ini, // Default lunch start time
-                        'lunch_end' => $lunch_end, // Default lunch end time
+                        'lunch_start' => $lunch_ini,
+                        'lunch_end' => $lunch_end,
                         'updated_at' => now(),
-                        'status' => 'active', // Default status
+                        'status' => 'active',
                     ]
                 );
-            }else {
-        // Se ambos vazios, remove o horário do banco
-        Schedule::where([
-            'user_id' => $officehour['id'],
-            'day_of_week' => $en,
-            'branch_id' => $branchId,
-        ])->delete();
-    }
+            } else {
+                // Se ambos vazios, remove o horário do banco
+                Schedule::where([
+                    'user_id' => $officehour['id'],
+                    'day_of_week' => $en,
+                    'branch_id' => $branchId,
+                ])->delete();
+            }
         }
     }
 

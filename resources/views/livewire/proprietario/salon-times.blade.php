@@ -214,10 +214,21 @@
                                 'dom' => ['nome' => 'Domingo', 'cor' => 'yellow']
                             ] as $dia => $config)
                                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                                    <h3 class="text-sm font-medium text-gray-900 mb-4 flex items-center">
-                                        <div class="w-3 h-3 rounded-full bg-{{ $config['cor'] }}-500 mr-2"></div>
-                                        {{ $config['nome'] }}
-                                    </h3>
+                                    <div class="flex items-center justify-between mb-4">
+                                        <h3 class="text-sm font-medium text-gray-900 flex items-center m-0">
+                                            <div class="w-3 h-3 rounded-full bg-{{ $config['cor'] }}-500 mr-2"></div>
+                                            {{ $config['nome'] }}
+                                        </h3>
+                                        <button type="button"
+                                            wire:click="limparHorariosDia('{{ $dia }}')"
+                                            class="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded bg-gray-200 text-gray-700 hover:bg-red-100 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-400 transition-colors"
+                                            title="Limpar todos os horários deste dia">
+                                            <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                            Limpar dia
+                                        </button>
+                                    </div>
                                     
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         {{-- Horário de Trabalho --}}

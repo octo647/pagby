@@ -68,9 +68,17 @@
                         d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </button>
+            @php
+                $user = Auth::user();
+                $isExternalPhoto = $user && $user->photo && Str::startsWith($user->photo, 'https://');
+            @endphp
             <div class="mb-8 flex flex-col items-center gap-2">
                 @if(!empty(Auth::user()->photo))
-                    <img src="{{tenant_asset(Auth::user()->photo)}}" alt="Foto de {{ Auth::user()->name }}" class="h-16 w-16 rounded-full border-4 border-blue-200 shadow">
+                    @if($isExternalPhoto)
+                        <img src="{{ Auth::user()->photo }}" alt="Foto de {{ Auth::user()->name }}" class="h-16 w-16 rounded-full border-4 border-blue-200 shadow">
+                    @else
+                        <img src="{{ tenant_asset(Auth::user()->photo) }}" alt="Foto de {{ Auth::user()->name }}" class="h-16 w-16 rounded-full border-4 border-blue-200 shadow">
+                    @endif
                 @else
                     <img src="{{ global_asset('images/default-user.png') }}" title="Atualize sua foto de perfil" alt="Atualize a foto" class="h-16 w-16 rounded-full border-4 border-gray-200">
                 @endif
