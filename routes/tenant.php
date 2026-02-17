@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
 use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
@@ -82,6 +83,91 @@ Route::middleware([
 
     Route::get('/pagby-subscription/check-status/{paymentId}', [PagBySubscriptionController::class, 'checkStatus']);
 
+    // Rota para cancelar assinatura de plano do tenant (mantém usuário no tenant)
+    Route::post('/tenant-assinatura/cancelar', function (Request $request) {
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Você precisa estar logado para cancelar a assinatura.');
+        }
+
+        $paymentId = $request->input('payment_id');
+        
+        try {
+            // Buscar o pagamento e cancelar diretamente
+            $payment = TenantsPlansPayment::on('mysql')->find($paymentId);
+
+            if (!$payment || !$payment->asaas_subscription_id) {
+                return redirect()->back()->with('error', 'Assinatura não encontrada.');
+            }
+
+            // Cancelar no Asaas
+            $asaasService = app(\App\Services\AsaasService::class);
+            $result = $asaasService->cancelarAssinatura($payment->asaas_subscription_id);
+
+            Log::info('Resultado do cancelamento Asaas:', [
+                'payment_id' => $paymentId,
+                'asaas_subscription_id' => $payment->asaas_subscription_id,
+                'result' => $result
+            ]);
+
+            if ($result['success']) {
+                $payment->status = 'CANCELLED';
+                $payment->save();
+                
+                // Desativar plano do tenant
+                $tenantPlan = \App\Models\TenantPlan::on('mysql')
+                    ->where('tenant_id', $payment->tenant_id)
+                    ->where('name', $payment->plan)
+                    ->first();
+                
+                if ($tenantPlan) {
+                    $tenantPlan->active = false;
+                    $tenantPlan->save();
+                }
+
+                // Desativar assinatura na base do tenant
+                $tenant = \App\Models\Tenant::on('mysql')->find($payment->tenant_id);
+                if ($tenant) {
+                    $tenant->run(function () use ($payment) {
+                        $payerData = json_decode($payment->payer_data, true);
+                        $email = $payerData['email'] ?? null;
+
+                        if ($email) {
+                            $user = \App\Models\User::where('email', $email)->first();
+                            if ($user) {
+                                $subscription = \App\Models\Subscription::where('user_id', $user->id)
+                                    ->where('mp_payment_id', $payment->asaas_subscription_id)
+                                    ->first();
+
+                                if ($subscription) {
+                                    $subscription->status = 'Cancelado';
+                                    $subscription->save();
+                                }
+                            }
+                        }
+                    });
+                }
+                
+                return redirect()->route('tenant.dashboard')
+                    ->with('success', 'Assinatura cancelada com sucesso!')
+                    ->with('tabelaAtiva', 'planos-de-assinatura');
+            }
+
+            Log::warning('Falha ao cancelar no Asaas:', [
+                'payment_id' => $paymentId,
+                'result' => $result,
+                'message' => $result['message'] ?? 'Sem mensagem'
+            ]);
+            
+            return redirect()->back()->with('error', 'Erro ao cancelar no Asaas: ' . ($result['message'] ?? 'Erro desconhecido'));
+        } catch (\Exception $e) {
+            Log::error('Erro ao cancelar assinatura do tenant:', [
+                'payment_id' => $paymentId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()->with('error', 'Erro ao processar cancelamento. Contate o suporte.');
+        }
+    })->middleware('auth')->name('tenant-assinatura.cancelar');
     
     
 Route::get('/plans', function () {
@@ -143,6 +229,7 @@ Route::get('/plans', function () {
         $payment_id = $request->query('paymentId');
         $payment = TenantsPlansPayment::on('mysql')->find($payment_id);
         $tenant_name = $request->query('tenant_name');     
+        $tenant_id = $request->query('tenant_id');
         $plan_name = $payment->plan;
         
         $message = $request->query('message', 'Seu pagamento está sendo processado. Por favor, aguarde.');
@@ -152,6 +239,7 @@ Route::get('/plans', function () {
         // Se quiser, busque o plano do tenant aqui para exibir informações
         return view('tenant-assinatura.wait', [
             'tenant_name' => $tenant_name,
+            'tenant_id' => $tenant_id,
             'plan_name' => $plan_name,
             'payment' => $payment,
             'message' => $message,
@@ -163,6 +251,35 @@ Route::get('/plans', function () {
     // Rota de checagem de status do pagamento
     Route::get('/tenant-assinatura/check-status/{paymentId}', [SubscriptionController::class, 'checkStatus'])
         ->name('tenant-assinatura.check-status');
+
+    // Rota para buscar invoice URL dinamicamente
+    Route::get('/tenant-assinatura/get-invoice/{paymentId}', function ($paymentId) {
+        $payment = TenantsPlansPayment::on('mysql')->find($paymentId);
+        
+        if (!$payment || !$payment->asaas_subscription_id) {
+            return response()->json(['success' => false, 'message' => 'Pagamento não encontrado']);
+        }
+        
+        $asaasService = new \App\Services\AsaasService();
+        try {
+            $subscriptionPayments = $asaasService->listarCobrancasAssinatura($payment->asaas_subscription_id);
+            
+            if ($subscriptionPayments && isset($subscriptionPayments['data'][0])) {
+                $invoiceUrl = $subscriptionPayments['data'][0]['invoiceUrl'] ?? null;
+                $invoiceNumber = $subscriptionPayments['data'][0]['invoiceNumber'] ?? null;
+                
+                return response()->json([
+                    'success' => true,
+                    'invoiceUrl' => $invoiceUrl,
+                    'invoiceNumber' => $invoiceNumber
+                ]);
+            }
+            
+            return response()->json(['success' => false, 'message' => 'Cobrança ainda não disponível']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()]);
+        }
+    })->name('tenant-assinatura.get-invoice');
 
     //  ROTA DE SUCESSO NO PAGAMENTO
 
@@ -201,7 +318,7 @@ Route::middleware([
         $jid = $request->input('jid'); // Novo: aceitar JID também
         $tenantName = tenant('name') ?? tenant('subdomain') ?? 'unknown';
         
-        \Log::info("🟣 API /whatsapp/activate chamada", [
+        Log::info("🟣 API /whatsapp/activate chamada", [
             'tenant' => $tenantName,
             'phone_received' => $phone,
             'jid_received' => $jid
@@ -209,14 +326,14 @@ Route::middleware([
         
         // Se recebeu JID, tenta buscar diretamente por ele primeiro
         if ($jid) {
-            \Log::info("🔍 Buscando por JID: $jid");
+            Log::info("🔍 Buscando por JID: $jid");
             $user = \App\Models\User::where('whatsapp_jid', $jid)->first();
             
             if ($user) {
                 $user->whatsapp_activated = true;
                 $user->save();
                 
-                \Log::info("✅ Usuário ativado por JID!", [
+                Log::info("✅ Usuário ativado por JID!", [
                     'user_id' => $user->id,
                     'name' => $user->name,
                     'jid' => $jid
@@ -229,11 +346,11 @@ Route::middleware([
                 ]);
             }
             
-            \Log::info("⚠️ Nenhum usuário encontrado com JID: $jid");
+            Log::info("⚠️ Nenhum usuário encontrado com JID: $jid");
         }
         
         if (!$phone) {
-            \Log::warning("⚠️  Telefone e JID não fornecidos");
+            Log::warning("⚠️  Telefone e JID não fornecidos");
             return response()->json(['error' => 'Phone or JID required'], 400);
         }
         
@@ -263,7 +380,7 @@ Route::middleware([
         // Remove variações duplicadas
         $variations = array_unique($variations);
         
-        \Log::info("🔄 Variações geradas", ['variations' => $variations]);
+        Log::info("🔄 Variações geradas", ['variations' => $variations]);
         
         // Lista usuários para debug
         $allUsers = \App\Models\User::select('id', 'name', 'phone')->get()->map(function($u) {
@@ -274,7 +391,7 @@ Route::middleware([
                 'normalized' => preg_replace('/\D/', '', $u->phone)
             ];
         });
-        \Log::info("👥 Usuários no banco", ['users' => $allUsers->toArray()]);
+        Log::info("👥 Usuários no banco", ['users' => $allUsers->toArray()]);
         
         // Busca no banco comparando telefones normalizados
         $users = \App\Models\User::where(function($query) use ($variations) {
@@ -289,7 +406,7 @@ Route::middleware([
             // Auto-populate whatsapp_jid se foi fornecido e ainda não está salvo
             if ($jid && empty($user->whatsapp_jid)) {
                 $user->whatsapp_jid = $jid;
-                \Log::info("📝 Auto-populando whatsapp_jid", [
+                Log::info("📝 Auto-populando whatsapp_jid", [
                     'user_id' => $user->id,
                     'name' => $user->name,
                     'jid' => $jid
@@ -299,7 +416,7 @@ Route::middleware([
             $updated++;
         }
         
-        \Log::info("📊 Resultado da busca", [
+        Log::info("📊 Resultado da busca", [
             'updated' => $updated,
             'success' => $updated > 0
         ]);
@@ -354,7 +471,7 @@ Route::middleware([
             $user->save();
             $linked++;
             
-            \Log::info("✅ JID vinculado ao usuário", [
+            Log::info("✅ JID vinculado ao usuário", [
                 'user_id' => $user->id,
                 'name' => $user->name,
                 'phone' => $user->phone,

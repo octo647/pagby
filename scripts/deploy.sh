@@ -16,11 +16,6 @@ fi
 echo "📦 Compilando assets..."
 npm run build
 
-# Backup do .env local e substitui pelo de produção
-echo "💾 Substituindo .env local pelo de produção..."
-cp .env .env.local.backup
-cp .env_production .env
-
 # Configurações do rsync
 REMOTE_HOST="helder@69.6.222.77"
 REMOTE_PATH="/var/www/pagby/"
@@ -33,6 +28,7 @@ rsync -avz --no-perms --progress -e 'ssh -p 22022' \
     --exclude='vendor/' \
     --exclude='storage/' \
     --exclude='bootstrap/cache/*' \
+    --exclude='.env' \
     --exclude='.env.local.backup' \
     --exclude='.env_production' \
     --exclude='.env.example' \
@@ -43,10 +39,6 @@ rsync -avz --no-perms --progress -e 'ssh -p 22022' \
     --exclude='public/images/tenants/' \
     --exclude='scripts/whatsapp-bot/' \
     ./ $REMOTE_HOST:$REMOTE_PATH
-
-# Restaurar .env local
-echo "🔄 Restaurando .env local..."
-mv .env.local.backup .env
 
 # Comandos no servidor via SSH
 echo "🔧 Executando comandos no servidor..."

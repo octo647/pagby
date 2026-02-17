@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;    
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
  
 class AsaasService {
     /**
@@ -205,21 +206,28 @@ class AsaasService {
             'billingType' => $subscriptionData['billingType'] ?? 'UNDEFINED', // BOLETO, CREDIT_CARD, UNDEFINED, etc
             'cycle' => $subscriptionData['cycle'] ?? 'MONTHLY',
             'value' => $subscriptionData['value'],
-            'nextDueDate' => $subscriptionData['nextDueDate'] ?? now()->addDays(7)->format('Y-m-d'),
+            'nextDueDate' => $subscriptionData['nextDueDate'] ?? now()->format('Y-m-d'), // Gera cobrança imediatamente
             'description' => $subscriptionData['description'] ?? 'Assinatura PagBy',
             'externalReference' => $subscriptionData['externalReference'] ?? null,
         ];
 
-        // Adicionar configuração de split se fornecida
-        if ($splitData && isset($splitData['walletId'])) {
-            $payload['split'] = [
-                [
-                    'walletId' => $splitData['walletId'],
-                    'percentualValue' => $splitData['percentualValue'] ?? null,
-                    'fixedValue' => $splitData['fixedValue'] ?? null,
-                ]
-            ];
+        // Adicionar configuração de split se fornecida (array de múltiplos beneficiários)
+        if ($splitData && is_array($splitData) && count($splitData) > 0) {
+            $payload['split'] = $splitData;
+            Log::info('✅ Split adicionado ao payload', [
+                'split' => $splitData
+            ]);
+        } else {
+            Log::warning('❌ Split NÃO adicionado', [
+                'splitData' => $splitData,
+                'is_array' => is_array($splitData),
+                'count' => $splitData ? count($splitData) : 0
+            ]);
         }
+
+        Log::info('📤 Payload completo para Asaas', [
+            'payload' => $payload
+        ]);
 
         // 3. Criar assinatura
         $response = Http::withHeaders([
@@ -259,15 +267,32 @@ class AsaasService {
      */
     public function cancelarAssinatura($subscriptionId)
     {
+        Log::info('🔴 Cancelando assinatura Asaas', [
+            'subscription_id' => $subscriptionId,
+            'api_url' => $this->apiUrl,
+            'api_key_prefix' => substr($this->apiKey, 0, 20) . '...'
+        ]);
+
         $response = Http::withHeaders([
             'access_token' => $this->apiKey,
             'Content-Type' => 'application/json',
         ])->delete($this->apiUrl . '/subscriptions/' . $subscriptionId);
 
+        Log::info('📡 Resposta Asaas DELETE', [
+            'status' => $response->status(),
+            'successful' => $response->successful(),
+            'body' => $response->body(),
+            'json' => $response->json()
+        ]);
+
         if ($response->successful()) {
             return ['success' => true, 'data' => $response->json()];
         }
-        return ['success' => false, 'message' => $response->body()];
+        return [
+            'success' => false, 
+            'message' => $response->body(),
+            'status' => $response->status()
+        ];
     }
 
     /**

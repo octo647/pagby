@@ -62,6 +62,13 @@ class SubscriptionController extends Controller
         // Buscar tenant para obter wallet_id
         $tenant = Tenant::on('mysql')->find($tenantId);
         
+        Log::info('🏢 Tenant carregado do banco', [
+            'tenant_id' => $tenant?->id,
+            'name' => $tenant?->name,
+            'asaas_wallet_id' => $tenant?->asaas_wallet_id,
+            'attributes' => $tenant?->getAttributes()
+        ]);
+        
         // Criar registro do pagamento
         $payment = TenantsPlansPayment::on('mysql')->create([
             'external_id' => 'asaas-sub-' . uniqid(),
@@ -87,31 +94,45 @@ class SubscriptionController extends Controller
         ];
 
         // Preparar dados da assinatura
+        $tenantName = $tenant->name ?? $tenant->fantasy_name ?? $tenantId;
         $subscriptionData = [
             'cycle' => 'MONTHLY',
             'value' => floatval($plan->price),
             'billingType' => 'UNDEFINED', // Cliente escolhe forma de pagamento
-            'description' => "Assinatura {$plan->name} - PagBy",
-            'nextDueDate' => now()->addDays(7)->format('Y-m-d'),
+            'description' => "Assinatura {$plan->name} - {$tenantName}",
+            'nextDueDate' => now()->format('Y-m-d'), // Gera cobrança imediatamente
             'externalReference' => $payment->external_id,
         ];
 
         // SubscriptionController gerencia APENAS planos DOS TENANTS (Corte, Barba, etc)
-        // SEMPRE aplicar split: 90% para o salão, 10% para PagBy
+        // SEMPRE aplicar split: 95% para o salão, 5% para PagBy
+        
+        Log::info('🔍 Verificando split', [
+            'tenant_exists' => $tenant ? true : false,
+            'tenant_id' => $tenant?->id,
+            'asaas_wallet_id' => $tenant?->asaas_wallet_id,
+            'condition' => ($tenant && $tenant->asaas_wallet_id) ? 'PASS' : 'FAIL'
+        ]);
+        
         $splitData = null;
         if ($tenant && $tenant->asaas_wallet_id) {
             $splitData = [
-                'walletId' => $tenant->asaas_wallet_id,
-                'percentualValue' => 90, // 90% para o salão, 10% PagBy
+                [
+                    'walletId' => $tenant->asaas_wallet_id, // Percentual para o salão
+                    'percentualValue' => 95
+                ]
             ];
-            Log::info('💰 Plano do Tenant: Split 90% salão, 10% PagBy', [
-                'plan_name' => $plan->name,
-                'wallet_id' => $tenant->asaas_wallet_id
+            Log::info('💰 Split configurado: percentual para tenant, restante fica na conta principal (PagBy)', [
+                'tenant_wallet' => $tenant->asaas_wallet_id,
+                'pagby_wallet_producao' => '8e4cb619-654e-4c24-9b3f-5803a9c011c8',
+                'percentualValue' => 95,
+                'plan_name' => $plan->name
             ]);
         } else {
-            Log::warning('⚠️ Tenant sem wallet_id - split NÃO configurado!', [
+            Log::warning('⚠️ Tenant sem subconta Asaas - split NÃO aplicado!', [
                 'tenant_id' => $tenant?->id,
-                'plan_name' => $plan->name
+                'plan_name' => $plan->name,
+                'message' => 'É necessário criar subconta para este tenant'
             ]);
         }
 

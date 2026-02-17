@@ -16,6 +16,21 @@
         </div>
     @endif
 
+    {{-- Notificações de Erro --}}
+    @if (session()->has('error'))
+        <div class="mb-6">
+            <div class="flex items-center p-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-200" role="alert">
+                <svg class="shrink-0 inline w-5 h-5 me-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 .5a9.5 9.5 0 1 0 9.5 9.5A9.51 9.51 0 0 0 10 .5ZM9.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM10 13a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"/>
+                </svg>
+                <span class="sr-only">Erro</span>
+                <div>
+                    <span class="font-medium">{{ session('error') }}</span>
+                </div>
+            </div>
+        </div>
+    @endif
+
 <div x-data="{ 
     open: @entangle('modalAberto'), 
     openServicos: false, 
@@ -183,7 +198,7 @@
                                     <div class="space-y-3">
                                         <p class="text-sm text-blue-600 font-medium text-center">✓ Você está assinando este plano</p>
                                         @if($this->assinaturaAtiva)
-                                        <form method="POST" action="https://{{ $centralDomain }}/tenant-assinatura/cancelar" onsubmit="return confirm('Tem certeza que deseja cancelar a assinatura?');">
+                                        <form method="POST" action="{{ route('tenant-assinatura.cancelar') }}" onsubmit="return confirm('Tem certeza que deseja cancelar a assinatura?');">
                                         @csrf
                                         <input type="hidden" name="payment_id" value="{{ $this->assinaturaAtiva->id }}">
                                         <button type="submit" class="w-full bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium">
@@ -812,6 +827,144 @@
                         class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium">
                     Confirmar Seleção
                 </button>
+            </div>
+        </div>
+    </div>
+@endif
+
+{{-- Modal de Dados Faltantes --}}
+@if($modalDadosFaltantes)
+    <div class="fixed inset-0 z-50 overflow-y-auto" x-data="{ tipoPessoaLocal: @entangle('tipoPessoa') }">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="$wire.modalDadosFaltantes = false"></div>
+
+            <div class="inline-block w-full max-w-2xl overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl animate-fade-in">
+                {{-- Header --}}
+                <div class="bg-gradient-to-r from-purple-600 to-pink-500 px-6 py-4">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-xl font-bold text-white flex items-center">
+                            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Dados Adicionais Necessários
+                        </h3>
+                        <button @click="$wire.modalDadosFaltantes = false" class="text-white hover:text-gray-200 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                {{-- Conteúdo --}}
+                <div class="p-6">
+                    <div class="mb-6">
+                        <p class="text-gray-700 mb-4">
+                            Para criar planos de assinatura e receber pagamentos, precisamos de alguns dados adicionais do proprietário do salão:
+                        </p>
+                    </div>
+
+                    {{-- Tipo de Pessoa --}}
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-gray-700 mb-3">Tipo de Pessoa</label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
+                                   :class="tipoPessoaLocal === 'juridica' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'">
+                                <input type="radio" wire:model.live="tipoPessoa" value="juridica" class="sr-only">
+                                <div class="flex-1">
+                                    <div class="flex items-center">
+                                        <div class="flex items-center justify-center w-10 h-10 mr-3 rounded-full"
+                                             :class="tipoPessoaLocal === 'juridica' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">Pessoa Jurídica</p>
+                                            <p class="text-xs text-gray-500">CNPJ</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all"
+                                   :class="tipoPessoaLocal === 'fisica' ? 'border-purple-600 bg-purple-50' : 'border-gray-200 hover:border-purple-300'">
+                                <input type="radio" wire:model.live="tipoPessoa" value="fisica" class="sr-only">
+                                <div class="flex-1">
+                                    <div class="flex items-center">
+                                        <div class="flex items-center justify-center w-10 h-10 mr-3 rounded-full"
+                                             :class="tipoPessoaLocal === 'fisica' ? 'bg-purple-100 text-purple-600' : 'bg-gray-100 text-gray-400'">
+                                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <p class="font-semibold text-gray-900">Pessoa Física</p>
+                                            <p class="text-xs text-gray-500">CPF</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                        @error('tipoPessoa') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                    </div>
+
+                    {{-- Campos Pessoa Jurídica --}}
+                    <div x-show="tipoPessoaLocal === 'juridica'" x-transition class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">CNPJ</label>
+                            <input type="text" wire:model="cnpj" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                   placeholder="00.000.000/0000-00"
+                                   x-mask="99.999.999/9999-99">
+                            @error('cnpj') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Tipo de Empresa</label>
+                            <select wire:model="companyType" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <option value="">Selecione...</option>
+                                <option value="MEI">MEI - Microempreendedor Individual</option>
+                                <option value="LIMITED">LTDA - Sociedade Limitada</option>
+                                <option value="INDIVIDUAL">Empresário Individual</option>
+                                <option value="ASSOCIATION">Associação</option>
+                            </select>
+                            @error('companyType') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+
+                    {{-- Campos Pessoa Física --}}
+                    <div x-show="tipoPessoaLocal === 'fisica'" x-transition class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">CPF</label>
+                            <input type="text" wire:model="cpf" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                   placeholder="000.000.000-00"
+                                   x-mask="999.999.999-99">
+                            @error('cpf') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Data de Nascimento</label>
+                            <input type="date" wire:model="dataNascimento" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            @error('dataNascimento') <span class="text-red-500 text-sm mt-1">{{ $message }}</span> @enderror
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer --}}
+                <div class="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
+                    <button @click="$wire.modalDadosFaltantes = false" 
+                            class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors font-medium">
+                        Cancelar
+                    </button>
+                    <button wire:click="salvarDadosFaltantes" 
+                            class="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors font-medium">
+                        Salvar e Continuar
+                    </button>
+                </div>
             </div>
         </div>
     </div>

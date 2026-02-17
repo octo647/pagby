@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth; // Para verificar o papel do usuário
 use App\Models\Branch; // Certifique-se de que o modelo Branch está importado
 use App\Models\Subscription; // Certifique-se de que o modelo Subscription está importado
 use App\Models\User; // Certifique-se de que o modelo User está importado
+use App\Services\AsaasService; // Para criar subconta Asaas
 
 
 class PlanosDeAssinatura extends Component
@@ -33,6 +34,14 @@ class PlanosDeAssinatura extends Component
     public $modalNovoPlano = false;
     public $allowedDays = []; // Array para armazenar os dias permitidos
     public $assinaturaAtivaId = null; // ID da assinatura ativa (não o objeto)
+
+    // Propriedades para modal de dados faltantes
+    public $modalDadosFaltantes = false;
+    public $tipoPessoa = 'juridica'; // 'juridica' ou 'fisica'
+    public $cnpj = '';
+    public $cpf = '';
+    public $dataNascimento = '';
+    public $companyType = 'MEI'; // MEI, LIMITED, INDIVIDUAL, ASSOCIATION
 
 
     /**
@@ -148,6 +157,8 @@ class PlanosDeAssinatura extends Component
         ]);
         $plano = Plan::find($planoId);
         $user = Auth::user();
+        $tenant = tenant();
+        
         if ($plano) {
             \Log::debug('Plano encontrado', ['plano_id' => $plano->id, 'user_id' => $user->id]);
 
@@ -158,15 +169,35 @@ class PlanosDeAssinatura extends Component
                 return;
             }
 
+            // VALIDAÇÃO: Verificar se wallet_id é válido antes de criar assinatura
+            $walletIdInvalido = false;
+            if (!empty($tenant->asaas_wallet_id) && str_starts_with($tenant->asaas_wallet_id, 'cus_')) {
+                $walletIdInvalido = true;
+                \Log::warning('⚠️ Tentativa de assinar plano com Wallet ID inválido', [
+                    'tenant_id' => $tenant->id,
+                    'asaas_wallet_id' => $tenant->asaas_wallet_id,
+                    'plano_id' => $planoId
+                ]);
+            }
+            
+            // Se wallet_id inválido OU não preenchido, NÃO PODE ASSINAR (proprietário precisa configurar)
+            if ($walletIdInvalido || empty($tenant->asaas_wallet_id)) {
+                \Log::error('❌ Bloqueando assinatura: wallet_id inválido ou não configurado', [
+                    'tenant_id' => $tenant->id,
+                    'wallet_id' => $tenant->asaas_wallet_id,
+                    'user_role' => $user->roles->pluck('name'),
+                ]);
+                
+                session()->flash('error', 'Este salão ainda não está configurado para receber assinaturas. Por favor, entre em contato com o proprietário do salão.');
+                return;
+            }
+
             // Verifica se o usuário tem CPF ou CNPJ cadastrado
-            $cpfCnpj = $user->cpf ?? $user->cnpj ?? '';
+            $cpfCnpj = $user->cpf ?? $tenant->cnpj ?? '';
             if (empty($cpfCnpj)) {
                 session()->flash('warning', 'É necessário ter CPF ou CNPJ cadastrado para assinar um plano. Por favor, atualize seu perfil.');
                 return;
             }
-
-            // Garante que o walletId do tenant está salvo antes de criar assinatura
-            $this->criarSubcontaAsaasSeNecessario();
 
             // Dados para assinatura - seleciona domínio correto
             $centralDomains = config('tenancy.central_domains');
@@ -196,10 +227,301 @@ class PlanosDeAssinatura extends Component
     
     public function abrirModalNovoPlano()
     {
+        // Verificar se o tenant tem os dados necessários para criar subconta Asaas
+        $tenant = tenant();
+        $user = Auth::user();
+        
+        if (!$tenant || !$user) {
+            session()->flash('error', 'Erro ao identificar o tenant ou usuário.');
+            return;
+        }
+
+        // Log detalhado para debug
+        \Log::info('🔍 VALIDAÇÃO DADOS MODAL', [
+            'tenant_id' => $tenant->id,
+            'tenant_cnpj' => $tenant->cnpj,
+            'tenant_asaas_wallet_id' => $tenant->asaas_wallet_id,
+            'user_id' => $user->id,
+            'user_email' => $user->email,
+            'user_cpf' => $user->cpf,
+            'user_birthdate' => $user->birthdate,
+            'user_birthdate_type' => gettype($user->birthdate),
+            'user_birthdate_is_carbon' => $user->birthdate instanceof \Carbon\Carbon,
+        ]);
+
+        // Verificar se o wallet_id existente é inválido (Customer ID ao invés de Wallet ID)
+        $walletIdInvalido = false;
+        if (!empty($tenant->asaas_wallet_id)) {
+            // Wallet ID válido é UUID (formato: 2dd7ca51-c51d-410e-b0f5-6fee73aed5c7)
+            // Customer ID inválido começa com "cus_"
+            if (str_starts_with($tenant->asaas_wallet_id, 'cus_')) {
+                $walletIdInvalido = true;
+                \Log::warning('⚠️ Wallet ID inválido detectado (Customer ID)', [
+                    'tenant_id' => $tenant->id,
+                    'asaas_wallet_id' => $tenant->asaas_wallet_id
+                ]);
+            }
+        }
+
+        // Verificar se tem CNPJ (pessoa jurídica) ou CPF (pessoa física) com data de nascimento
+        $temCNPJ = !empty($tenant->cnpj) && strlen(preg_replace('/[^0-9]/', '', $tenant->cnpj)) >= 14;
+        $temCPF = !empty($user->cpf) && strlen(preg_replace('/[^0-9]/', '', $user->cpf)) >= 11;
+        $temDataNascimento = !empty($user->birthdate);
+        
+        \Log::info('🔍 VERIFICAÇÕES', [
+            'temCNPJ' => $temCNPJ,
+            'temCPF' => $temCPF,
+            'temDataNascimento' => $temDataNascimento,
+            'walletIdInvalido' => $walletIdInvalido,
+        ]);
+        
+        // Caso 1: Wallet ID inválido (Customer ID) - precisa recriar subconta
+        if ($walletIdInvalido) {
+            \Log::info('✋ Modal aberto: Wallet ID inválido (Customer ID) - requer dados para criar subconta válida');
+            $this->modalDadosFaltantes = true;
+            
+            // Pré-preencher campos se existirem
+            if ($temCNPJ) {
+                $this->tipoPessoa = 'juridica';
+                $this->cnpj = $tenant->cnpj;
+            } elseif ($temCPF) {
+                $this->tipoPessoa = 'fisica';
+                $this->cpf = $user->cpf;
+                // Pré-preencher data de nascimento se existir
+                if ($temDataNascimento) {
+                    // Garantir formato Y-m-d para input date HTML
+                    $this->dataNascimento = $user->birthdate instanceof \Carbon\Carbon 
+                        ? $user->birthdate->format('Y-m-d') 
+                        : $user->birthdate;
+                }
+            }
+            
+            \Log::info('📋 Campos pré-preenchidos', [
+                'tipoPessoa' => $this->tipoPessoa,
+                'cnpj' => $this->cnpj ?? 'null',
+                'cpf' => $this->cpf ?? 'null',
+                'dataNascimento' => $this->dataNascimento ?? 'null',
+            ]);
+            
+            return;
+        }
+        
+        // Caso 2: Não tem CNPJ nem CPF - solicitar dados
+        if (!$temCNPJ && !$temCPF) {
+            \Log::info('✋ Modal aberto: Sem CNPJ e sem CPF');
+            $this->modalDadosFaltantes = true;
+            return;
+        }
+        
+        // Caso 3: Tem CPF mas não tem data de nascimento - solicitar data de nascimento
+        if ($temCPF && !$temDataNascimento) {
+            \Log::info('✋ Modal aberto: Tem CPF mas sem data de nascimento');
+            $this->tipoPessoa = 'fisica';
+            $this->cpf = $user->cpf;
+            $this->modalDadosFaltantes = true;
+            return;
+        }
+        
+        // Caso 4: Tem CNPJ mas é necessário validá-lo (pode estar inválido ou incompleto)
+        if ($temCNPJ && strlen(preg_replace('/[^0-9]/', '', $tenant->cnpj)) < 14) {
+            \Log::info('✋ Modal aberto: CNPJ incompleto');
+            $this->tipoPessoa = 'juridica';
+            $this->cnpj = $tenant->cnpj;
+            $this->modalDadosFaltantes = true;
+            return;
+        }
+        
+        // Dados OK, mas verificar se tem wallet_id válido
+        \Log::info('✅ Dados OK - Verificando wallet_id');
+        
+        // Se não tem wallet_id válido, criar subconta Asaas antes de permitir criar plano
+        $precisaCriarSubconta = empty($tenant->asaas_wallet_id) || str_starts_with($tenant->asaas_wallet_id, 'cus_');
+        
+        if ($precisaCriarSubconta) {
+            \Log::info('🏗️ Criando subconta Asaas antes de abrir modal de plano');
+            $this->criarSubcontaAsaas($tenant, $user);
+            
+            // Recarregar tenant para verificar se wallet_id foi criado
+            $tenant->refresh();
+            
+            // Se ainda não tem wallet_id válido, bloquear criação de plano
+            if (empty($tenant->asaas_wallet_id) || str_starts_with($tenant->asaas_wallet_id, 'cus_')) {
+                \Log::error('❌ Não foi possível criar subconta Asaas');
+                session()->flash('error', 'Não foi possível configurar a conta de pagamento. Entre em contato com o suporte.');
+                return;
+            }
+            
+            \Log::info('✅ Subconta criada com sucesso, prosseguindo para criação de plano');
+        }
+        
+        // Abrir modal de criação de plano
         $this->reset(['nomePlano', 'preco', 'duracaoDias', 'servicosIncluidos', 'servicosAdicionais', 'servicosAdicionaisDescontos', 'features_keys', 'features_values', 'allowedDays']);
         $this->modalNovoPlano = true;
-
     }
+
+    public function salvarDadosFaltantes()
+    {
+        $tenant = tenant();
+        $user = Auth::user();
+        
+        if (!$tenant || !$user) {
+            session()->flash('error', 'Erro ao identificar o tenant ou usuário.');
+            return;
+        }
+
+        // Validar dados conforme tipo de pessoa
+        if ($this->tipoPessoa === 'juridica') {
+            $this->validate([
+                'cnpj' => 'required|string|min:14|max:18',
+                'companyType' => 'required|in:MEI,LIMITED,INDIVIDUAL,ASSOCIATION'
+            ], [
+                'cnpj.required' => 'O CNPJ é obrigatório',
+                'cnpj.min' => 'O CNPJ deve ter pelo menos 14 dígitos',
+                'companyType.required' => 'Tipo de empresa é obrigatório'
+            ]);
+
+            // Remover formatação do CNPJ
+            $cnpjLimpo = preg_replace('/[^0-9]/', '', $this->cnpj);
+            
+            // Atualizar tenant
+            $tenant->cnpj = $cnpjLimpo;
+            $tenant->save();
+
+        } else {
+            $this->validate([
+                'cpf' => 'required|string|min:11|max:14',
+                'dataNascimento' => 'required|date|before:today'
+            ], [
+                'cpf.required' => 'O CPF é obrigatório',
+                'cpf.min' => 'O CPF deve ter pelo menos 11 dígitos',
+                'dataNascimento.required' => 'A data de nascimento é obrigatória',
+                'dataNascimento.before' => 'A data de nascimento deve ser anterior a hoje'
+            ]);
+
+            // Remover formatação do CPF
+            $cpfLimpo = preg_replace('/[^0-9]/', '', $this->cpf);
+            
+            // Atualizar CPF e data de nascimento do usuário proprietário
+            $user->cpf = $cpfLimpo;
+            $user->birthdate = $this->dataNascimento;
+            $user->save();
+        }
+
+        // Criar subconta Asaas automaticamente
+        $this->criarSubcontaAsaas($tenant, $user);
+
+        // Fechar modal de dados faltantes
+        $this->modalDadosFaltantes = false;
+        
+        // Abrir modal de criação de plano
+        $this->reset(['nomePlano', 'preco', 'duracaoDias', 'servicosIncluidos', 'servicosAdicionais', 'servicosAdicionaisDescontos', 'features_keys', 'features_values', 'allowedDays']);
+        $this->modalNovoPlano = true;
+        
+        session()->flash('success', 'Dados salvos com sucesso!');
+    }
+
+    private function criarSubcontaAsaas($tenant, $user)
+    {
+        try {
+            \Log::info('🏗️ Iniciando criação de subconta Asaas', [
+                'tenant_id' => $tenant->id,
+                'user_id' => $user->id
+            ]);
+
+            $asaasService = new AsaasService();
+            
+            // Preparar dados da subconta
+            // Usar !empty() pois string vazia não é null
+            $cpfCnpj = !empty($tenant->cnpj) ? $tenant->cnpj : $user->cpf;
+            
+            // Validar CPF/CNPJ antes de enviar
+            if (strlen($cpfCnpj) == 11) {
+                // Validar CPF
+                if (!$this->validarCPF($cpfCnpj)) {
+                    \Log::error('❌ CPF inválido detectado antes de enviar ao Asaas', [
+                        'cpf' => $cpfCnpj,
+                        'tenant_id' => $tenant->id
+                    ]);
+                    session()->flash('error', 'O CPF cadastrado é inválido. Por favor, corrija o CPF no seu perfil.');
+                    return;
+                }
+            }
+            
+            $accountData = [
+                'name' => $tenant->fantasy_name ?? $tenant->name ?? $tenant->id,
+                'email' => !empty($tenant->email) ? $tenant->email : $user->email,
+                'cpfCnpj' => $cpfCnpj,
+            ];
+
+            // Adicionar telefone se disponível
+            if ($tenant->phone) {
+                $phone = preg_replace('/[^0-9]/', '', $tenant->phone);
+                if (strlen($phone) >= 10) {
+                    $ddd = substr($phone, 0, 2);
+                    $number = substr($phone, 2);
+                    $accountData['mobilePhone'] = $ddd . $number;
+                }
+            }
+
+            // Adicionar endereço se disponível
+            if ($tenant->address && $tenant->city && $tenant->state) {
+                $accountData['address'] = $tenant->address;
+                $accountData['addressNumber'] = $tenant->number ?? 'S/N';
+                $accountData['province'] = $tenant->neighborhood ?? '';
+                $accountData['postalCode'] = preg_replace('/[^0-9]/', '', $tenant->cep ?? '');
+            }
+
+            // Para CNPJ, adicionar companyType
+            if (!empty($tenant->cnpj)) {
+                $accountData['companyType'] = $this->companyType ?? 'MEI';
+                $accountData['incomeValue'] = 5000;
+            } else {
+                // Para CPF, adicionar data de nascimento (formato Y-m-d)
+                $birthDate = $user->birthdate;
+                if ($birthDate instanceof \Carbon\Carbon) {
+                    $birthDate = $birthDate->format('Y-m-d');
+                }
+                $accountData['birthDate'] = $birthDate;
+                $accountData['incomeValue'] = 3000;
+            }
+
+            \Log::info('📤 Enviando dados para Asaas', ['accountData' => $accountData]);
+
+            $result = $asaasService->criarSubconta($accountData);
+
+            if ($result['success']) {
+                $walletId = $result['data']['walletId'];
+                
+                // Atualizar tenant com wallet_id
+                $tenant->asaas_wallet_id = $walletId;
+                $tenant->asaas_account_data = json_encode($result['data']);
+                $tenant->save();
+
+                \Log::info('✅ Subconta Asaas criada com sucesso', [
+                    'tenant_id' => $tenant->id,
+                    'wallet_id' => $walletId
+                ]);
+
+                session()->flash('success', 'Subconta Asaas criada com sucesso! Wallet ID: ' . $walletId);
+            } else {
+                \Log::error('❌ Erro ao criar subconta Asaas', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $result['message']
+                ]);
+                
+                session()->flash('warning', 'Dados salvos, mas houve um problema ao criar a subconta Asaas. Entre em contato com o suporte.');
+            }
+        } catch (\Exception $e) {
+            \Log::error('❌ Exceção ao criar subconta Asaas', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            session()->flash('warning', 'Dados salvos, mas houve um erro ao criar a subconta Asaas. Entre em contato com o suporte.');
+        }
+    }
+
     public function salvarNovoPlano()
     {
         \Log::debug('INICIO salvarNovoPlano', [
@@ -418,17 +740,65 @@ class PlanosDeAssinatura extends Component
     }   
     public function deletePlan($planoId)
     {
-        
         $plano = Plan::find($planoId);
+        
         if ($plano) {
-            $plano->delete();
-            // Recarregar os planos para refletir a exclusão
-            $this->mount();
+            // Verifica se existem subscriptions vinculadas ao plano
+            $subscriptionCount = Subscription::where('plan_id', $planoId)->count();
             
-            session()->flash('message', 'Plano excluído com sucesso!');
+            if ($subscriptionCount > 0) {
+                session()->flash('error', "Não é possível excluir este plano pois existem {$subscriptionCount} cliente(s) com assinatura ativa vinculada a ele.");
+                $this->modalAberto = false;
+                return;
+            }
             
+            try {
+                // Exclui também o registro na tabela tenants_plans (central)
+                $tenantId = tenant('id') ?? (tenant()?->id ?? null);
+                if ($tenantId) {
+                    \App\Models\TenantPlan::on('mysql')->where('tenant_id', $tenantId)->where('plan_id', $planoId)->delete();
+                }
+                $plano->delete();
+                // Recarregar os planos para refletir a exclusão
+                $this->mount();
+                
+                session()->flash('message', 'Plano excluído com sucesso!');
+            } catch (\Exception $e) {
+                session()->flash('error', 'Erro ao excluir o plano. Por favor, tente novamente.');
+            }
         }
-        $this->modalAberto = false; // <-- garanta que o modal está fechado
+        
+        $this->modalAberto = false;
+    }
+    
+    private function validarCPF($cpf)
+    {
+        // Remove caracteres não numéricos
+        $cpf = preg_replace('/[^0-9]/', '', $cpf);
+        
+        // Verifica se tem 11 dígitos
+        if (strlen($cpf) != 11) {
+            return false;
+        }
+        
+        // Verifica se todos os dígitos são iguais (CPF inválido)
+        if (preg_match('/(\d)\1{10}/', $cpf)) {
+            return false;
+        }
+        
+        // Calcula os dígitos verificadores
+        for ($t = 9; $t < 11; $t++) {
+            $d = 0;
+            for ($c = 0; $c < $t; $c++) {
+                $d += $cpf[$c] * (($t + 1) - $c);
+            }
+            $d = ((10 * $d) % 11) % 10;
+            if ($cpf[$c] != $d) {
+                return false;
+            }
+        }
+        
+        return true;
     }
     
     public function render()

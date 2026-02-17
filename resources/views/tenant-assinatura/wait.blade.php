@@ -40,16 +40,18 @@
                         </div>
                         
                         @if($checkout_url && $checkout_url !== '#')
-                        <div class="mt-4 mb-4">
+                        <div class="mt-4 mb-4" id="invoice-section">
                             <a href="{{ $checkout_url }}" target="_blank" class="btn btn-success btn-lg">
                                 <i class="fas fa-barcode"></i> Ver Fatura e Pagar
                             </a>
                         </div>
                         @else
                         <div class="mt-4 mb-4">
-                            <div class="alert alert-warning">
-                                <i class="fas fa-clock"></i> Aguardando geração da fatura...
+                            <div class="alert alert-warning" id="waiting-invoice">
+                                <i class="fas fa-clock fa-spin"></i> Aguardando geração da fatura... 
+                                <br><small>Isso pode levar alguns segundos</small>
                             </div>
+                            <div id="invoice-section"></div>
                         </div>
                         @endif
                         
@@ -109,6 +111,61 @@
     let isChecking = false;
     let checkCount = 0;
     const maxChecks = 20; // Máximo 20 verificações (1 minuto)
+    let invoiceCheckInterval;
+    let invoiceUrl = '{{ $checkout_url ?? "" }}';
+
+    // Função para buscar invoice URL se não estiver disponível
+    function fetchInvoiceUrl() {
+        if (invoiceUrl && invoiceUrl !== '#' && invoiceUrl !== '') {
+            return; // Já tem invoice URL
+        }
+        
+        console.log('Buscando invoice URL...');
+        
+        fetch('/tenant-assinatura/get-invoice/{{ $payment->id }}')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.invoiceUrl) {
+                    invoiceUrl = data.invoiceUrl;
+                    console.log('✅ Invoice URL encontrada:', invoiceUrl);
+                    
+                    // Atualizar botão e mostrar
+                    const invoiceSection = document.getElementById('invoice-section');
+                    const waitingMessage = document.getElementById('waiting-invoice');
+                    
+                    if (invoiceSection && waitingMessage) {
+                        waitingMessage.style.display = 'none';
+                        invoiceSection.innerHTML = `
+                            <a href="${invoiceUrl}" target="_blank" class="btn btn-success btn-lg">
+                                <i class="fas fa-barcode"></i> Ver Fatura e Pagar
+                            </a>
+                        `;
+                    }
+                    
+                    // Parar polling
+                    clearInterval(invoiceCheckInterval);
+                } else {
+                    console.log('⏳ Invoice ainda não disponível');
+                }
+            })
+            .catch(error => {
+                console.error('Erro ao buscar invoice:', error);
+            });
+    }
+
+    // Iniciar polling de invoice se necessário
+    if (!invoiceUrl || invoiceUrl === '#' || invoiceUrl === '') {
+        console.log('Invoice não disponível, iniciando polling...');
+        // Tentar buscar imediatamente
+        fetchInvoiceUrl();
+        // Tentar a cada 3 segundos
+        invoiceCheckInterval = setInterval(fetchInvoiceUrl, 3000);
+        // Parar após 30 segundos
+        setTimeout(() => {
+            clearInterval(invoiceCheckInterval);
+            console.log('Polling de invoice finalizado');
+        }, 30000);
+    }
 
     function checkPaymentStatus() {
       
@@ -175,7 +232,7 @@
     }
 
     // Não auto-verificar - apenas mostrar botão
-    console.log('Página carregada. Clique "Verificar Status" após fazer o aamento.');
+    console.log('Página carregada. Clique "Verificar Status" após fazer o pagamento.');
     </script>
 </body>
 </html>

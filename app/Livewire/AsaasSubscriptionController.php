@@ -184,39 +184,41 @@ class AsaasSubscriptionController extends Controller
         ];
 
         // Preparar dados da assinatura
+        $tenantName = $tenant->name ?? $tenant->fantasy_name ?? $tenantId;
         $subscriptionData = [
             'cycle' => 'MONTHLY',
             'value' => floatval($plan->price),
             'billingType' => 'UNDEFINED', // Cliente escolhe na hora de pagar
-            'description' => "Assinatura {$plan->name} - PagBy",
-            'nextDueDate' => now()->addDays(7)->format('Y-m-d'),
+            'description' => "Assinatura {$plan->name} - {$tenantName}",
+            'nextDueDate' => now()->format('Y-m-d'), // Gera cobrança imediatamente
             'externalReference' => $payment->external_id,
         ];
 
-        // SPLIT: se o plano for do salão, configurar split para Pagby e salão
+        // SPLIT: Planos de tenants (tabela tenants_plans) SEMPRE têm split 95% salão / 5% PagBy
         $splitData = null;
-        // Exemplo: se o plano tiver um campo que indica split, ou se for plano de serviço do salão
-        if ($plan->type === 'SALON_SERVICE_PLAN' && $tenant && $tenant->asaas_wallet_id) {
+        if ($tenant && $tenant->asaas_wallet_id) {
+            // Tenant tem subconta configurada: aplicar split
             $splitData = [
                 [
-                    'walletId' => $tenant->asaas_wallet_id, // carteira do salão
-                    'percentualValue' => 95 // percentual do salão (ajuste conforme regra)
+                    'walletId' => $tenant->asaas_wallet_id, // 95% para o salão
+                    'percentualValue' => 95
                 ],
                 [
-                    'walletId' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7', // carteira Pagby
-                    'percentualValue' => 5 // percentual Pagby (ajuste conforme regra)
+                    'walletId' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7', // 5% para PagBy
+                    'percentualValue' => 5
                 ]
             ];
-            Log::info('💰 Assinatura com split: 95% salão, 5% Pagby', [
+            Log::info('💰 Plano do Tenant com split: 95% salão, 5% PagBy', [
                 'tenant_wallet' => $tenant->asaas_wallet_id,
                 'pagby_wallet' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7',
                 'tenant_id' => $tenantId,
                 'plan' => $plan->name
             ]);
         } else {
-            Log::info('💰 Assinatura PagBy: 100% PagBy (sem split)', [
+            Log::warning('⚠️ Tenant sem subconta Asaas - split NÃO aplicado!', [
                 'tenant_id' => $tenantId,
-                'plan' => $plan->name
+                'plan' => $plan->name,
+                'message' => 'É necessário criar subconta para este tenant'
             ]);
         }
 
@@ -261,16 +263,30 @@ class AsaasSubscriptionController extends Controller
 
             // NÃO ativar aqui - só webhook deve ativar após confirmar pagamento
 
-            // Obter link de pagamento (invoice URL) se disponível
-            $invoiceUrl = $asaasSubscription['invoiceUrl'] ?? null;
+            // Buscar a primeira cobrança da assinatura (pode não estar disponível imediatamente)
+            $invoiceUrl = null;
+            try {
+                $subscriptionPayments = $this->asaasService->listarCobrancasAssinatura($asaasSubscription['id']);
+                if ($subscriptionPayments && isset($subscriptionPayments['data'][0])) {
+                    $invoiceUrl = $subscriptionPayments['data'][0]['invoiceUrl'] ?? null;
+                    Log::info('✅ Primeira cobrança encontrada:', [
+                        'payment_id' => $subscriptionPayments['data'][0]['id'],
+                        'invoiceUrl' => $invoiceUrl
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::warning('⚠️  Cobrança ainda não disponível:', ['error' => $e->getMessage()]);
+            }
             
             // Redirecionar para página de aguarde no domínio do tenant
-            $waitUrl = "https://{$tenantId}.pagby.com.br/assinatura/wait?"
-                . "payment_id={$payment->id}"
+            $waitUrl = "https://{$tenantId}.pagby.com.br/tenant-assinatura/wait?"
+                . "paymentId={$payment->id}"
+                . "&tenant_id={$tenantId}"
+                . "&tenant_name=" . urlencode($tenant->name ?? $tenantId)
                 . "&subscription_id={$asaasSubscription['id']}";
             
             if ($invoiceUrl) {
-                $waitUrl .= "&invoice_url=" . urlencode($invoiceUrl);
+                $waitUrl .= "&checkoutUrl=" . urlencode($invoiceUrl);
             }
 
             return redirect()->away($waitUrl);

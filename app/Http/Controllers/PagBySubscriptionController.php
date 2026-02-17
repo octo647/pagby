@@ -67,7 +67,7 @@ class PagBySubscriptionController extends Controller
             'value' => $amount,
             'billingType' => 'UNDEFINED', // Cliente escolhe forma de pagamento
             'description' => 'Assinatura PagBy - ' . ucfirst($planName),
-            'nextDueDate' => now()->addDays(7)->format('Y-m-d'),
+            'nextDueDate' => now()->format('Y-m-d'), // Gera cobrança imediatamente
             'externalReference' => 'pagby-contact-' . $contact->id,
         ];
         $asaasService = new \App\Services\AsaasService();
