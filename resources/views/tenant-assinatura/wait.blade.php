@@ -156,15 +156,17 @@
     // Iniciar polling de invoice se necessário
     if (!invoiceUrl || invoiceUrl === '#' || invoiceUrl === '') {
         console.log('Invoice não disponível, iniciando polling...');
-        // Tentar buscar imediatamente
         fetchInvoiceUrl();
-        // Tentar a cada 3 segundos
         invoiceCheckInterval = setInterval(fetchInvoiceUrl, 3000);
-        // Parar após 30 segundos
         setTimeout(() => {
             clearInterval(invoiceCheckInterval);
             console.log('Polling de invoice finalizado');
-        }, 30000);
+            // Se o botão ainda não apareceu, recarregar a página
+            const invoiceSection = document.getElementById('invoice-section');
+            if (!invoiceSection || !invoiceSection.innerHTML.includes('btn-success')) {
+                location.reload();
+            }
+        }, 5000);
     }
 
     function checkPaymentStatus() {

@@ -92,10 +92,11 @@
             </div>
             
             <div class="md:col-span-2">
-                <label class="flex items-center">
+             <!--   <label class="flex items-center">
                     <input type="checkbox" wire:model="branch.require_advance_payment" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                     <span class="ml-2 text-sm text-gray-700">Requer pagamento antecipado</span>
                 </label>
+                -->
                 <label class="flex items-center">
                     <input type="checkbox" wire:model.live="branch.require_commission" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500
                     @if($branch['require_commission']) mb-2 checked @endif">

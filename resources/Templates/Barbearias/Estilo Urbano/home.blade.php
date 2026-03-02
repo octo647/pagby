@@ -686,6 +686,7 @@
             justify-content: center;
             color: white;
             transition: all 0.3s;
+            text-decoration: none;
         }
         
         .social-links a:hover {
@@ -1007,10 +1008,15 @@
                     <h4>{{ tenant()->fantasy_name ?? 'BARBEARIA URBANA' }}</h4>
                     <p style="color: #b0b0b0; line-height: 1.6;">O point da galera que curte estilo, qualidade e um ambiente descontraído. Aqui, cada corte tem atitude!</p>
                     <div class="social-links">
-                        <a href="#"><i class="fab fa-instagram"></i>{{ tenant()->instagram }}</a>
-                        <a href="#"><i class="fab fa-tiktok"></i> {{ tenant()->tiktok }}</a>
-                        <a href="#"><i class="fab fa-whatsapp"></i>{{ tenant()->phone }}</a>
-                        <a href="#"><i class="fab fa-spotify"></i>{{ tenant()->spotify }}</a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-tiktok"></i></a>
+                       
+                        <a href="#"><i class="fab fa-spotify"></i></a>
+                    </div>
+                    <div style="margin-top: 10px; color: #b0b0b0; font-size: 1rem;">
+                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', tenant()->phone ?? '11999999999') }}" target="_blank" style="color: #b0b0b0; text-decoration: none;">
+                            <i class="fab fa-whatsapp" style="margin-right: 6px;"></i>{{ tenant()->phone }}
+                        </a>
                     </div>
                 </div>
                 

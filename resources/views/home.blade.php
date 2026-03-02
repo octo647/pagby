@@ -171,7 +171,7 @@
             </div>
             
             <button class="mt-8 bg-pink-600 text-white px-6 py-3 rounded-full font-bold shadow hover:bg-pink-700 transition">
-                <a href="{{ route('funcionalidades') }}">Ver todas as funcionalidades</a>
+                <a href="/funcionalidades">Ver todas as funcionalidades</a>
             </button>
         </div>
         
@@ -257,9 +257,9 @@
                     <label for="numFuncionarios" class="block font-bold mb-3 text-white text-lg">
                         Quantos funcionários?
                     </label>
-                    <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="7" value="1" 
+                    <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="10" value="1" 
                            class="w-24 px-4 py-3 rounded-xl border-2 border-pink-500 text-gray-800 bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent text-xl font-bold text-center" />
-                    <p class="text-sm text-white/70 mt-2">De 1 a 7 funcionários</p>
+                  
                 </div>
                 
                 <div id="avisoFuncionarios" class="hidden text-yellow-300 text-lg font-semibold mb-4 bg-yellow-900/30 rounded-xl p-4 max-w-2xl mx-auto">
@@ -660,13 +660,13 @@
         const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value) || 1;
         
         // Só permite se até 7 funcionários
-        if (numFuncionarios > 7) {
+        /*if (numFuncionarios > 7) {
             document.getElementById('avisoFuncionarios').classList.remove('hidden');
             document.getElementById('avisoFuncionarios').scrollIntoView({ behavior: 'smooth', block: 'center' });
             return;
-        }
+        }*/
         
-        const url = `{{ route('register-tenant') }}?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
+        const url = `/register-tenant?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
         window.location.href = url;
     }
 </script>

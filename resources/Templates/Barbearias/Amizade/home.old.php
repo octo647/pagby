@@ -105,7 +105,7 @@
 
     <!-- Hero Section -->
     <section class="relative w-full h-[80vh] md:h-[100vh] flex items-center justify-center mb-8 overflow-hidden">
-        <div class="absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('/images/Templates/Barbearias/Amizade/ambiente3.jpeg');"></div>
+        <div class="absolute inset-0 w-full h-full bg-cover bg-center" style="background-image: url('/images/Templates/Barbearias/Amizade/ambiente.jpeg');"></div>
         <div class="hero-overlay absolute inset-0 w-full h-full"></div>
         <div class="relative z-10 text-center px-4 max-w-4xl">
             <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold text-yellow-400 drop-shadow mb-6">DESDE 2020 CUIDANDO DO SEU VISUAL</h1>
@@ -122,25 +122,52 @@
         <section id="servicos" class="mb-16 w-full max-w-6xl fade-in">
             <h2 class="text-3xl font-bold text-yellow-400 mb-4">NOSSOS SERVIÇOS</h2>
             <p class="text-gray-300 max-w-2xl mx-auto mb-10">Com profissionais qualificados e atendimento personalizado, nosso clube é ideal para quem valoriza praticidade e qualidade nos cuidados pessoais.</p>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             
-            @foreach($services as $servico)
-                <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
                     <div class="flex flex-col items-center">
                         <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
-                            <img src="{{ asset('/services/' . $servico->photo) }}" alt="{{ $servico->service }}" class="w-full h-full object-cover"> 
+                            <img src="/images/Templates/Barbearias/Amizade/corte.jpg" class="w-full h-full object-cover" alt="Corte de Cabelo">
                         </div>
-                        
-                        
-
-                        <h3 class="text-xl font-bold text-yellow-400 mb-2">{{ $servico->service }}</h3>
-                        <p class="text-gray-300 mb-4">{{ $servico->description }}</p>
-                        <span class="text-yellow-500 font-bold">R$ {{ number_format($servico->price, 2, ',', '.') }}</span>
+                        <h3 class="text-xl font-bold text-yellow-400 mb-2">Corte de Cabelo</h3>
+                        <p class="text-gray-300 mb-4">Cortes modernos e clássicos, sempre seguindo as últimas tendências.</p>
+                        <span class="text-yellow-500 font-bold">A partir de R$ 30</span>
                     </div>
                 </div>
-               
-            @endforeach
-             </div>
+                
+                <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
+                            <img src="/images/Templates/Barbearias/Amizade/barba.jpg" class="w-full h-full object-cover" alt="Barba">
+                        </div>
+                        <h3 class="text-xl font-bold text-yellow-400 mb-2">Barba</h3>
+                        <p class="text-gray-300 mb-4">Aparar, modelar e definir sua barba com técnicas profissionais.</p>
+                        <span class="text-yellow-500 font-bold">A partir de R$ 25</span>
+                    </div>
+                </div>
+                
+                <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
+                            <img src="/images/Templates/Barbearias/Amizade/manicure.jpg" class="w-full h-full object-cover" alt="Manicure">
+                        </div>
+                        <h3 class="text-xl font-bold text-yellow-400 mb-2">Manicure</h3>
+                        <p class="text-gray-300 mb-4">Cuidados completos para suas mãos e unhas com produtos de qualidade.</p>
+                        <span class="text-yellow-500 font-bold">A partir de R$ 20</span>
+                    </div>
+                </div>
+                
+                <div class="service-card bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 mb-4 rounded-full overflow-hidden border-2 border-yellow-600 shadow">
+                            <img src="/images/Templates/Barbearias/Amizade/coloracao.jpg" class="w-full h-full object-cover" alt="Coloração">
+                        </div>
+                        <h3 class="text-xl font-bold text-yellow-400 mb-2">Coloração</h3>
+                        <p class="text-gray-300 mb-4">Mude seu visual com nossas colorações profissionais e produtos de alta qualidade.</p>
+                        <span class="text-yellow-500 font-bold">A partir de R$ 50</span>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <!-- Seção Sobre -->
@@ -273,7 +300,7 @@
                     PROMOÇÃO
                 </div>
                 <h2 class="text-3xl font-bold text-gray-900 mb-4">PROMOÇÃO DO MÊS</h2>
-                <p class="text-gray-900 text-xl font-bold mb-6">Corte + Barba por apenas R$ 79,90!</p>
+                <p class="text-gray-900 text-xl font-bold mb-6">Corte + Barba por apenas R$ 49,90!</p>
                 <p class="text-gray-800 mb-6">Aproveite esta oferta especial por tempo limitado para novos clientes. Agende seu horário agora mesmo!</p>
                 <a href="/login" class="bg-gray-900 text-yellow-400 px-6 py-3 rounded-full font-bold shadow hover:bg-gray-800 transition inline-block">Agendar Agora</a>
             </div>

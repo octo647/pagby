@@ -78,11 +78,14 @@
 
         <div class="flex flex-col sm:flex-row gap-3">
             @if($planoAtual && ($statusPagamento === 'RECEIVED' || $statusPagamento === 'CONFIRMED' || $statusPagamento === 'RECEIVED_IN_CASH'))
+                     <!--
                 <button 
+                    x-data="{}"
+                    x-on:click="$dispatch('open-planos-modal')"
                     class="flex-1 bg-white border border-green-500 text-green-600 hover:bg-green-50 font-bold py-2 px-4 rounded transition">
-                    <a href="https://pagby.com.br/#planos" target="_blank" rel="noopener noreferrer">Ver outros Planos</a>
+                    Ver outros Planos
                 </button>
-                <!--
+       
 
                 <button wire:click="cancelarAssinatura"
                     class="flex-1 bg-white border border-red-500 text-red-600 hover:bg-red-50 font-bold py-2 px-4 rounded transition">
@@ -92,10 +95,32 @@
             @endif
 
             @if(!$planoAtual || !in_array($statusPagamento, ['RECEIVED','CONFIRMED','RECEIVED_IN_CASH']))
-                <a href="https://pagby.com.br/#planos"
-                   class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition text-center">
+                <button 
+                    x-data="{}"
+                    x-on:click="$dispatch('open-planos-modal')"
+                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded transition text-center">
                     Ver Planos e Assinar
-                </a>
+                </button>
+                {{-- Modal de Plano Pagby (assinatura do sistema) --}}
+                <div 
+                    x-data="{ open: false }"
+                    x-on:open-planos-modal.window="open = true"
+                    x-on:keydown.escape.window="if(open){open=false;}"
+                    x-show="open"
+                    style="display: none;"
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+                    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+                        <button @click="open = false" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                        <div class="p-6">
+                            @livewire('proprietario.plano-pagby-modal', [], key('plano-pagby-modal'))
+                        </div>
+                    </div>
+                </div>
+
             @endif
         </div>
     </div>

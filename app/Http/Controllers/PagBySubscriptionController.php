@@ -85,15 +85,21 @@ class PagBySubscriptionController extends Controller
                 'tenant_id' => 'temp_' . $contact->id,
                 'contact_id' => $contact->id,
                 'mp_payment_id' => null,
-                'external_id' => $asaasResult['data']['id'] ?? null,
+                // Salva o paymentLink, id ou externalReference para facilitar busca pelo webhook
+                'external_id' => $asaasResult['data']['paymentLink'] ?? $asaasResult['data']['id'] ?? $asaasResult['data']['externalReference'] ?? null,
                 'asaas_payment_id' => null,
-                'asaas_subscription_id' => $asaasResult['data']['id'] ?? null,
+                'asaas_subscription_id' => $asaasResult['data']['subscription'] ?? $asaasResult['data']['id'] ?? null,
                 'amount' => $amount,
                 'status' => 'pending',
                 'employee_count' => $contact->employee_count ?? 1,
                 'type' => 'subscription',
                 'plan' => $planName,
                 'description' => $desc
+            ]);
+            \Log::info('📄 PagByPayment criado (assinar):', [
+                'payment_id' => $payment->id,
+                'external_id' => $payment->external_id,
+                'asaas_subscription_id' => $payment->asaas_subscription_id
             ]);
             // Redireciona o usuário para a página de espera do pagamento
             return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
@@ -175,8 +181,10 @@ class PagBySubscriptionController extends Controller
                     'tenant_id' => 'temp_' . uniqid(),
                     'contact_id' => $contact->id,
                     'mp_payment_id' => null,
-                    'external_id' => $asaasResult['data']['paymentLink'] ?? $asaasResult['data']['id'] ?? null,
+                    // Salva o paymentLink, id ou externalReference para facilitar busca pelo webhook
+                    'external_id' => $asaasResult['data']['paymentLink'] ?? $asaasResult['data']['id'] ?? $asaasResult['data']['externalReference'] ?? null,
                     'asaas_payment_id' => null, // Só será preenchido via webhook
+                    'asaas_subscription_id' => $asaasResult['data']['subscription'] ?? $asaasResult['data']['id'] ?? null,
                     'amount' => $amount,
                     'status' => 'pending',
                     'employee_count' => $contact->employee_count ?? 1,
@@ -184,8 +192,13 @@ class PagBySubscriptionController extends Controller
                     'plan' => $planName,
                     'description' => 'Checkout Asaas: ' . ($asaasResult['data']['url'] ?? '')
                 ]);
-            // Redireciona o usuário para o link seguro do Asaas
-            return redirect()->away($asaasResult['data']['url']);
+                \Log::info('📄 PagByPayment criado (processPayment):', [
+                    'payment_id' => $payment->id,
+                    'external_id' => $payment->external_id,
+                    'asaas_subscription_id' => $payment->asaas_subscription_id
+                ]);
+                // Redireciona o usuário para o link seguro do Asaas
+                return redirect()->away($asaasResult['data']['url']);
         } else {
             // Se falhar, redireciona para a página de erro ou exibe mensagem
             return redirect()->back()->with('error', 'Erro ao criar link de pagamento no Asaas.');
@@ -393,16 +406,19 @@ class PagBySubscriptionController extends Controller
             'tenant_id' => 'temp_' . $contact->id,
             'contact_id' => $contact->id,
             'mp_payment_id' => null,
+            // Não há dados do Asaas, mas pode receber external_id manual se necessário futuramente
             'external_id' => null,
+            'asaas_payment_id' => null,
+            'asaas_subscription_id' => null,
             'amount' => $amount,
             'status' => 'pending',
             'employee_count' => $employeeCount,
             'type' => 'subscription'
         ]);
-        Log::info('📄 PagByPayment criado:', [
+        Log::info('📄 PagByPayment criado (manual):', [
             'payment_id' => $payment->id,
-            'amount' => $payment->amount,
-            'employee_count' => $payment->employee_count
+            'external_id' => $payment->external_id,
+            'asaas_subscription_id' => $payment->asaas_subscription_id
         ]);
 
         // Redireciona para a página de espera (wait) com o paymentId
@@ -624,8 +640,20 @@ class PagBySubscriptionController extends Controller
     Log::info('Webhook Headers:', $request->headers->all());
     Log::info('Webhook Body:', $request->all());
 
-    // Webhook Asaas
+    // Webhook Asaas: eventos com payment (PAYMENT_CREATED, PAYMENT_RECEIVED, etc)
     if ($request->has('event') && $request->has('payment')) {
+            // Webhook Asaas: eventos com subscription (SUBSCRIPTION_CREATED, SUBSCRIPTION_CHANGED, etc)
+            if ($request->has('event') && $request->has('subscription')) {
+                $event = $request->input('event');
+                $subscriptionId = $request->input('subscription.id') ?? $request->input('subscription')['id'] ?? null;
+                \Log::info('Webhook Asaas (subscription only):', [
+                    'event' => $event,
+                    'subscription_id' => $subscriptionId,
+                    'body' => $request->all()
+                ]);
+                // Apenas loga e retorna 200 para não gerar erro 500
+                return response('IGNORED: SUBSCRIPTION EVENT', 200);
+            }
         $asaasPaymentId = $request->input('payment.id');
         $asaasStatus = $request->input('payment.status');
         $event = $request->input('event');
@@ -652,11 +680,15 @@ class PagBySubscriptionController extends Controller
                 $payment = PagByPayment::where('external_id', $request->input('payment.externalReference'))->first();
                 if ($payment) $payment->asaas_payment_id = $asaasPaymentId;
             }
-            // Try by subscription ID if still not found
+            // Tentar buscar por asaas_subscription_id (campo subscription do Asaas) se ainda não encontrou
             if (!$payment && $request->input('payment.subscription')) {
                 $payment = PagByPayment::where('asaas_subscription_id', $request->input('payment.subscription'))->first();
                 if ($payment) {
                     $payment->asaas_payment_id = $asaasPaymentId;
+                    \Log::info('Pagamento encontrado por asaas_subscription_id no webhook:', [
+                        'payment_id' => $payment->id,
+                        'asaas_subscription_id' => $payment->asaas_subscription_id
+                    ]);
                 }
             }
             // Atualiza description com o link se for PAYMENT_CREATED ou status PENDING

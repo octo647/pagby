@@ -82,6 +82,39 @@ Route::get('/api/social-auth/{token}', function ($token) {
             Route::get('/simulate-webhook/{paymentId}', [PagBySubscriptionController::class, 'simulateAsaasWebhook'])->name('simulate-webhook');
         });
 
+        // Rota para buscar invoice de um pagamento de tenant (funciona no domínio central)
+        Route::get('/tenant-assinatura/get-invoice/{paymentId}', function ($paymentId) {
+            $tenantId = request('tenant_id');
+            if (!$tenantId) {
+                return response()->json(['success' => false, 'message' => 'tenant_id ausente']);
+            }
+            $tenant = \App\Models\Tenant::where('id', $tenantId)->first();
+            if (!$tenant) {
+                return response()->json(['success' => false, 'message' => 'Tenant não encontrado']);
+            }
+            tenancy()->initialize($tenant);
+            $payment = \App\Models\TenantsPlansPayment::on('tenant')->find($paymentId);
+            if (!$payment || !$payment->asaas_subscription_id) {
+                return response()->json(['success' => false, 'message' => 'Pagamento não encontrado']);
+            }
+            $asaasService = new \App\Services\AsaasService();
+            try {
+                $subscriptionPayments = $asaasService->listarCobrancasAssinatura($payment->asaas_subscription_id);
+                if ($subscriptionPayments && isset($subscriptionPayments['data'][0])) {
+                    $invoiceUrl = $subscriptionPayments['data'][0]['invoiceUrl'] ?? null;
+                    $invoiceNumber = $subscriptionPayments['data'][0]['invoiceNumber'] ?? null;
+                    return response()->json([
+                        'success' => true,
+                        'invoiceUrl' => $invoiceUrl,
+                        'invoiceNumber' => $invoiceNumber
+                    ]);
+                }
+                return response()->json(['success' => false, 'message' => 'Cobrança ainda não disponível']);
+            } catch (\Exception $e) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()]);
+            }
+        });
+
         // Rotas para assinaturas de planos dos tenants
         Route::prefix('tenant-assinatura')->name('tenant-assinatura.')->group(function () {
            Route::get('/congrats', [SubscriptionController::class, 'congrats'])->name('congrats');

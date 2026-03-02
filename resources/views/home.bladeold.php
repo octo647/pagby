@@ -172,7 +172,7 @@
             </div>
             
             <button class="mt-8 bg-pink-600 text-white px-6 py-3 rounded-full font-bold shadow hover:bg-pink-700 transition">
-                <a href="{{ route('funcionalidades') }}">Ver todas as funcionalidades</a>
+                <a href="">Ver todas as funcionalidades</a>
             </button>
         </div>
         

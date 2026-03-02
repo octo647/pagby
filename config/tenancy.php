@@ -20,8 +20,8 @@ return [
         'localhost',
         '127.0.0.1',
         'pagby.com.br',
-        'www.pagby.com.br',
-    ],
+        'www.pagby.com.br',       
+        ],
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
      * Their responsibility is making Laravel features tenant-aware.
