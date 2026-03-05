@@ -65,12 +65,18 @@ class AsaasService {
     protected $apiUrl;
     protected $apiKey;
 
-    public function __construct()
+    /**
+     * Constructor do AsaasService.
+     * 
+     * @param string|null $apiKey API key customizada (para usar com subcontas)
+     */
+    public function __construct($apiKey = null)
     {
         $this->apiUrl = config('services.asaas.api_url', 'https://www.asaas.com/api/v3');
-        $this->apiKey = config('services.asaas.api_key');
+        $this->apiKey = $apiKey ?? config('services.asaas.api_key');
         \Log::info('[AsaasService] apiKey carregada', [
-            'apiKey' => $this->apiKey ? substr($this->apiKey, 0, 12) . '...' : null
+            'apiKey' => $this->apiKey ? substr($this->apiKey, 0, 12) . '...' : null,
+            'custom' => $apiKey !== null
         ]);
     }
 
@@ -376,5 +382,274 @@ class AsaasService {
             return $response->json();
         }
         return null;
+    }
+
+    /**
+     * Cria uma subconta Asaas COMPLETA e obtém sua API key.
+     * 
+     * IMPORTANTE: Diferente de criarSubconta() que cria apenas wallet para split,
+     * este método cria uma subconta que pode operar independentemente.
+     * Usado no modelo SEM SPLIT onde cada tenant recebe pagamentos diretos.
+     * 
+     * Documentação: https://docs.asaas.com/reference/criar-conta-filha
+     * 
+     * @param array $accountData Dados da subconta com campos obrigatórios:
+     *   - name: Nome completo/razão social
+     *   - email: Email válido
+     *   - cpfCnpj: CPF (11 dígitos) ou CNPJ (14 dígitos)
+     *   - mobilePhone: Telefone celular
+     *   - birthDate: Data nascimento (Y-m-d) - obrigatório para CPF
+     *   - companyType: Tipo empresa (MEI, LIMITED, etc) - obrigatório para CNPJ
+     *   - incomeValue: Renda/faturamento mensal estimado
+     * @return array ['success' => bool, 'data' => array, 'message' => string]
+     */
+    public function criarSubcontaCompleta(array $accountData)
+    {
+        try {
+            Log::info('[AsaasService] Criando subconta completa', [
+                'account_name' => $accountData['name'] ?? null,
+                'email' => $accountData['email'] ?? null
+            ]);
+
+            // 1. Criar a subconta
+            $response = Http::withHeaders([
+                'access_token' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->apiUrl . '/accounts', $accountData);
+
+            if (!$response->successful()) {
+                Log::error('[AsaasService] Erro ao criar subconta', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+                
+                return [
+                    'success' => false,
+                    'message' => 'Erro ao criar subconta',
+                    'errors' => $response->json()
+                ];
+            }
+
+            $accountCreated = $response->json();
+            $accountId = $accountCreated['id'];
+
+            Log::info('[AsaasService] Subconta criada', [
+                'account_id' => $accountId,
+                'wallet_id' => $accountCreated['walletId'] ?? null
+            ]);
+
+            // 2. Gerar API key para a subconta
+            $apiKeyResponse = Http::withHeaders([
+                'access_token' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
+
+            if (!$apiKeyResponse->successful()) {
+                Log::warning('[AsaasService] Subconta criada mas erro ao gerar API key', [
+                    'account_id' => $accountId,
+                    'error' => $apiKeyResponse->body()
+                ]);
+                
+                return [
+                    'success' => true, // Conta foi criada
+                    'partial' => true,
+                    'data' => $accountCreated,
+                    'message' => 'Subconta criada, mas erro ao gerar API key',
+                    'api_key_error' => $apiKeyResponse->json()
+                ];
+            }
+
+            $apiKeyData = $apiKeyResponse->json();
+            $apiKey = $apiKeyData['apiKey'] ?? null;
+
+            Log::info('[AsaasService] API key gerada', [
+                'account_id' => $accountId,
+                'api_key_preview' => $apiKey ? substr($apiKey, 0, 20) . '...' : null
+            ]);
+
+            return [
+                'success' => true,
+                'data' => [
+                    'account' => $accountCreated,
+                    'api_key' => $apiKey,
+                    'account_id' => $accountId,
+                    'wallet_id' => $accountCreated['walletId'] ?? null
+                ],
+                'message' => 'Subconta criada com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('[AsaasService] Exceção ao criar subconta completa', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return [
+                'success' => false,
+                'message' => 'Exceção ao criar subconta: ' . $e->getMessage(),
+                'errors' => []
+            ];
+        }
+    }
+
+    /**
+     * Recupera ou gera nova API key para uma subconta.
+     * 
+     * Tenta primeiro listar as API keys existentes e retornar uma ativa.
+     * Se não encontrar, gera uma nova.
+     * 
+     * @param string $accountId ID da subconta
+     * @return array ['success' => bool, 'api_key' => string|null, 'message' => string]
+     */
+    public function obterApiKeySubconta(string $accountId)
+    {
+        try {
+            Log::info('[AsaasService] Obtendo API key da subconta', [
+                'account_id' => $accountId
+            ]);
+
+            // Tentar recuperar API key existente
+            $response = Http::withHeaders([
+                'access_token' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->get($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
+
+            if ($response->successful()) {
+                $apiKeys = $response->json()['data'] ?? [];
+                
+                // Procurar primeira API key ativa
+                foreach ($apiKeys as $key) {
+                    if (isset($key['status']) && $key['status'] === 'ACTIVE') {
+                        Log::info('[AsaasService] API key existente encontrada', [
+                            'account_id' => $accountId
+                        ]);
+                        
+                        return [
+                            'success' => true,
+                            'api_key' => $key['apiKey'],
+                            'message' => 'API key existente recuperada'
+                        ];
+                    }
+                }
+            }
+
+            // Se não encontrou, gerar nova
+            Log::info('[AsaasService] Gerando nova API key', [
+                'account_id' => $accountId
+            ]);
+            
+            $createResponse = Http::withHeaders([
+                'access_token' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
+
+            if ($createResponse->successful()) {
+                $data = $createResponse->json();
+                $apiKey = $data['apiKey'] ?? null;
+                
+                Log::info('[AsaasService] Nova API key gerada', [
+                    'account_id' => $accountId,
+                    'api_key_preview' => $apiKey ? substr($apiKey, 0, 20) . '...' : null
+                ]);
+                
+                return [
+                    'success' => true,
+                    'api_key' => $apiKey,
+                    'message' => 'Nova API key gerada'
+                ];
+            }
+
+            Log::error('[AsaasService] Erro ao gerar API key', [
+                'account_id' => $accountId,
+                'error' => $createResponse->body()
+            ]);
+            
+            return [
+                'success' => false,
+                'api_key' => null,
+                'message' => 'Erro ao obter/gerar API key',
+                'errors' => $createResponse->json()
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('[AsaasService] Exceção ao obter API key', [
+                'account_id' => $accountId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'api_key' => null,
+                'message' => 'Exceção: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Consulta o status detalhado de uma subconta.
+     * 
+     * Retorna informações sobre aprovação e capacidade de receber pagamentos.
+     * 
+     * Status possíveis:
+     * - PENDING: Aguardando aprovação Asaas
+     * - ACTIVE: Ativa e pode receber pagamentos
+     * - REJECTED: Rejeitada pelo Asaas
+     * - DISABLED: Desabilitada
+     * 
+     * @param string $accountId ID da subconta
+     * @return array ['success' => bool, 'status' => string, 'data' => array]
+     */
+    public function consultarStatusSubconta(string $accountId)
+    {
+        try {
+            Log::info('[AsaasService] Consultando status da subconta', [
+                'account_id' => $accountId
+            ]);
+            
+            $response = Http::withHeaders([
+                'access_token' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->get($this->apiUrl . '/accounts/' . $accountId);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $status = $data['status'] ?? 'UNKNOWN';
+                
+                Log::info('[AsaasService] Status da subconta obtido', [
+                    'account_id' => $accountId,
+                    'status' => $status
+                ]);
+                
+                return [
+                    'success' => true,
+                    'status' => $status,
+                    'data' => $data,
+                    'can_receive_payments' => $status === 'ACTIVE'
+                ];
+            }
+
+            Log::error('[AsaasService] Erro ao consultar status da subconta', [
+                'account_id' => $accountId,
+                'error' => $response->body()
+            ]);
+            
+            return [
+                'success' => false,
+                'status' => 'ERROR',
+                'message' => 'Erro ao consultar subconta'
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('[AsaasService] Exceção ao consultar status', [
+                'account_id' => $accountId,
+                'error' => $e->getMessage()
+            ]);
+            
+            return [
+                'success' => false,
+                'status' => 'ERROR',
+                'message' => 'Exceção: ' . $e->getMessage()
+            ];
+        }
     }
 }
