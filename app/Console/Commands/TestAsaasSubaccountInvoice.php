@@ -1,0 +1,398 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use App\Models\Tenant;
+use App\Services\AsaasService;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
+
+class TestAsaasSubaccountInvoice extends Command
+{
+    /**
+     * The name and signature of the console command.
+     *
+     * @var string
+     */
+    protected $signature = 'asaas:test-subaccount-invoice 
+                            {--tenant= : ID do tenant para testar (opcional, cria tenant teste se não fornecido)}
+                            {--save-evidence : Salva evidências em arquivo markdown}';
+
+    /**
+     * The console command description.
+     *
+     * @var string
+     */
+    protected $description = '🧪 TESTE CRÍTICO: Valida se NF é emitida em nome da SUBCONTA (não do PagBy)';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $this->showBanner();
+        
+        $tenantId = $this->option('tenant');
+        $saveEvidence = $this->option('save-evidence');
+
+        // Validar que estamos em sandbox
+        $apiUrl = config('services.asaas.api_url');
+        if (!str_contains($apiUrl, 'sandbox')) {
+            $this->error("❌ ATENÇÃO: Você NÃO está em ambiente sandbox!");
+            $this->error("   URL atual: {$apiUrl}");
+            $this->newLine();
+            
+            if (!$this->confirm('Deseja realmente continuar em PRODUÇÃO? (NÃO RECOMENDADO)', false)) {
+                $this->warn("Teste cancelado. Configure ASAAS_API_URL=https://sandbox.asaas.com/api/v3");
+                return 1;
+            }
+        } else {
+            $this->info("✅ Ambiente: SANDBOX");
+            $this->line("   URL: {$apiUrl}");
+        }
+
+        $this->newLine();
+
+        // Iniciar log de evidências
+        $evidence = [
+            'timestamp' => now()->toDateTimeString(),
+            'environment' => str_contains($apiUrl, 'sandbox') ? 'sandbox' : 'production',
+            'api_url' => $apiUrl,
+        ];
+
+        // Etapa 1: Obter ou criar tenant de teste
+        $this->info("📋 ETAPA 1: Preparando tenant de teste");
+        $this->line(str_repeat("─", 60));
+
+        if ($tenantId) {
+            $tenant = Tenant::on('mysql')->find($tenantId);
+            if (!$tenant) {
+                $this->error("❌ Tenant {$tenantId} não encontrado.");
+                return 1;
+            }
+            $this->info("   Usando tenant existente: {$tenant->name}");
+        } else {
+            $tenant = $this->createTestTenant();
+        }
+
+        $evidence['tenant_id'] = $tenant->id;
+        $evidence['tenant_name'] = $tenant->name;
+
+        $this->newLine();
+
+        // Etapa 2: Criar subconta
+        $this->info("📋 ETAPA 2: Criando subconta Asaas");
+        $this->line(str_repeat("─", 60));
+
+        $asaasMaster = new AsaasService(); // API Master
+
+        if (!$tenant->asaas_account_id) {
+            $accountData = [
+                'name' => $tenant->name,
+                'email' => $tenant->email,
+                'cpfCnpj' => '24971563000198', // CNPJ fictício válido para testes
+                'mobilePhone' => '11987654321',
+                'companyType' => 'LIMITED',
+                'incomeValue' => 5000.00,
+            ];
+
+            $this->line("   Criando subconta...");
+            $result = $asaasMaster->criarSubcontaCompleta($accountData);
+
+            if (!$result['success']) {
+                $this->error("❌ Erro ao criar subconta: {$result['message']}");
+                if (isset($result['errors'])) {
+                    $this->error(json_encode($result['errors'], JSON_PRETTY_PRINT));
+                }
+                return 1;
+            }
+
+            $accountId = $result['data']['account_id'];
+            $apiKey = $result['data']['api_key'];
+            $walletId = $result['data']['wallet_id'] ?? null;
+
+            // Salvar no tenant
+            $tenant->asaas_account_id = $accountId;
+            $tenant->asaas_api_key = \Illuminate\Support\Facades\Crypt::encryptString($apiKey);
+            $tenant->asaas_wallet_id = $walletId;
+            $tenant->asaas_account_status = 'pending';
+            $tenant->save();
+
+            $this->info("   ✅ Subconta criada!");
+            $this->line("      Account ID: {$accountId}");
+            $this->line("      Wallet ID: {$walletId}");
+            $this->line("      API Key: " . substr($apiKey, 0, 25) . "...");
+
+            $evidence['subaccount_created'] = true;
+            $evidence['account_id'] = $accountId;
+            $evidence['wallet_id'] = $walletId;
+
+        } else {
+            $accountId = $tenant->asaas_account_id;
+            $apiKey = $tenant->asaas_api_key_decrypted;
+            
+            $this->info("   ✅ Subconta já existe");
+            $this->line("      Account ID: {$accountId}");
+            
+            $evidence['subaccount_created'] = false;
+            $evidence['account_id'] = $accountId;
+        }
+
+        $this->newLine();
+        $this->comment("   ⏳ Aguardando 3 segundos (processamento Asaas)...");
+        sleep(3);
+        $this->newLine();
+
+        // Etapa 3: Criar cobrança usando API da SUBCONTA
+        $this->info("📋 ETAPA 3: Criando cobrança usando API da SUBCONTA");
+        $this->line(str_repeat("─", 60));
+
+        $asaasSubconta = new AsaasService($apiKey); // API da SUBCONTA!
+
+        $this->line("   ⚠️  IMPORTANTE: Usando API KEY da SUBCONTA (não da master)");
+        $this->newLine();
+
+        // Criar customer
+        $this->line("   Criando customer (cliente teste)...");
+        $customerResult = $asaasSubconta->criarOuAtualizarCliente([
+            'name' => 'Cliente Teste - Validação NF',
+            'email' => 'cliente.teste.nf@example.com',
+            'cpfCnpj' => '12345678909', // CPF fictício
+            'mobilePhone' => '11987654321',
+        ]);
+
+        if (!$customerResult['success']) {
+            $this->error("❌ Erro ao criar customer");
+            return 1;
+        }
+
+        $customerId = $customerResult['id'];
+        $this->info("   ✅ Customer criado: {$customerId}");
+
+        $evidence['customer_id'] = $customerId;
+
+        // Criar cobrança
+        $this->line("   Criando cobrança de R$ 100,00...");
+        $paymentResult = $asaasSubconta->criarCobranca(
+            $customerId,
+            100.00,
+            now()->addDays(7),
+            'PIX',
+            'TESTE CRÍTICO: Validação de emissor da NF'
+        );
+
+        if (!$paymentResult['success']) {
+            $this->error("❌ Erro ao criar cobrança");
+            return 1;
+        }
+
+        $paymentId = $paymentResult['id'];
+        $this->info("   ✅ Cobrança criada: {$paymentId}");
+
+        $evidence['payment_id'] = $paymentId;
+
+        $this->newLine();
+
+        // Etapa 4: TESTE CRÍTICO - Verificar emissor
+        $this->info("🔍 ETAPA 4: TESTE CRÍTICO - Verificando emissor da cobrança");
+        $this->line(str_repeat("═", 60));
+
+        $paymentDetails = $asaasSubconta->consultarCobranca($paymentId);
+
+        if (!$paymentDetails) {
+            $this->error("❌ Erro ao consultar cobrança");
+            return 1;
+        }
+
+        $this->newLine();
+        $this->line("📄 DADOS DA COBRANÇA:");
+        $this->line(json_encode($paymentDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $this->newLine();
+
+        // VERIFICAÇÃO CRÍTICA
+        $this->line(str_repeat("═", 60));
+        $this->info("🎯 RESULTADO DO TESTE:");
+        $this->line(str_repeat("═", 60));
+
+        $paymentAccountId = $paymentDetails['account'] ?? null;
+
+        $this->newLine();
+        $this->line("   Subconta criada: {$accountId}");
+        $this->line("   Cobrança pertence: {$paymentAccountId}");
+        $this->newLine();
+
+        $evidence['payment_account_id'] = $paymentAccountId;
+        $evidence['test_passed'] = ($paymentAccountId === $accountId);
+
+        if ($paymentAccountId === $accountId) {
+            $this->info("✅✅✅ SUCESSO! ✅✅✅");
+            $this->info("   Cobrança pertence à SUBCONTA!");
+            $this->info("   Isso significa que a NF será emitida em nome do SALÃO!");
+            $this->newLine();
+            $this->line("   🎉 MODELO VALIDADO TECNICAMENTE!");
+            $this->line("   🎉 Pagamentos diretos (100%, sem split) FUNCIONA!");
+            $this->line("   🎉 NF será emitida em nome CORRETO!");
+            
+            $evidence['conclusion'] = 'SUCESSO - Modelo validado tecnicamente';
+            $evidence['invoice_issuer'] = 'SUBCONTA (salão) - CORRETO!';
+
+        } else {
+            $this->error("❌❌❌ PROBLEMA! ❌❌❌");
+            $this->error("   Cobrança NÃO pertence à subconta!");
+            $this->error("   NF será emitida em nome do PAGBY (master)!");
+            $this->newLine();
+            $this->error("   ⚠️  MODELO PRECISA AJUSTES!");
+            
+            $evidence['conclusion'] = 'FALHOU - Modelo precisa ajustes';
+            $evidence['invoice_issuer'] = 'MASTER (PagBy) - INCORRETO!';
+        }
+
+        $this->newLine();
+        $this->line(str_repeat("═", 60));
+
+        // Salvar evidências
+        if ($saveEvidence || $this->confirm('Deseja salvar evidências em arquivo?', true)) {
+            $this->saveEvidenceFile($evidence, $paymentDetails);
+        }
+
+        return 0;
+    }
+
+    /**
+     * Mostra banner do teste
+     */
+    private function showBanner()
+    {
+        $this->newLine();
+        $this->line(str_repeat("═", 60));
+        $this->info("🧪 TESTE CRÍTICO: VALIDAÇÃO DE NOTA FISCAL");
+        $this->line(str_repeat("═", 60));
+        $this->newLine();
+        $this->line("Objetivo: Verificar se a NF é emitida em nome da SUBCONTA");
+        $this->line("          (salão) e NÃO em nome do PagBy (master).");
+        $this->newLine();
+        $this->line("Método: Criar subconta → Criar cobrança → Verificar campo 'account'");
+        $this->newLine();
+        $this->line(str_repeat("═", 60));
+        $this->newLine();
+    }
+
+    /**
+     * Cria tenant de teste
+     */
+    private function createTestTenant()
+    {
+        $tenantId = 'teste' . now()->timestamp;
+        
+        $this->line("   Criando tenant de teste: {$tenantId}");
+        
+        $tenant = Tenant::create([
+            'id' => $tenantId,
+            'name' => 'Salão Teste Validação NF',
+            'email' => 'teste.nf.' . now()->timestamp . '@pagby.test',
+            'subscription_status' => 'trial',
+            'trial_started_at' => now(),
+            'trial_ends_at' => now()->addDays(30),
+        ]);
+
+        $tenant->domains()->create([
+            'domain' => $tenantId . '.localhost',
+        ]);
+
+        $this->info("   ✅ Tenant criado: {$tenant->id}");
+        
+        return $tenant;
+    }
+
+    /**
+     * Salva arquivo com evidências do teste
+     */
+    private function saveEvidenceFile($evidence, $paymentDetails)
+    {
+        $filename = 'EVIDENCIA_TESTE_SUBACCOUNT_' . now()->format('Y-m-d_His') . '.md';
+        
+        $content = "# 🧪 Evidência: Teste de Subconta Asaas\n\n";
+        $content .= "**Data/Hora:** " . $evidence['timestamp'] . "\n";
+        $content .= "**Ambiente:** " . strtoupper($evidence['environment']) . "\n";
+        $content .= "**API URL:** " . $evidence['api_url'] . "\n\n";
+        
+        $content .= "---\n\n";
+        $content .= "## 📋 Dados do Teste\n\n";
+        $content .= "- **Tenant ID:** " . $evidence['tenant_id'] . "\n";
+        $content .= "- **Tenant Nome:** " . $evidence['tenant_name'] . "\n";
+        $content .= "- **Account ID (Subconta):** " . $evidence['account_id'] . "\n";
+        
+        if (isset($evidence['wallet_id'])) {
+            $content .= "- **Wallet ID:** " . $evidence['wallet_id'] . "\n";
+        }
+        
+        $content .= "- **Customer ID:** " . $evidence['customer_id'] . "\n";
+        $content .= "- **Payment ID:** " . $evidence['payment_id'] . "\n\n";
+        
+        $content .= "---\n\n";
+        $content .= "## 🎯 RESULTADO DO TESTE\n\n";
+        
+        $content .= "### Campo 'account' da Cobrança\n\n";
+        $content .= "```\n";
+        $content .= "Subconta criada:     " . $evidence['account_id'] . "\n";
+        $content .= "Cobrança pertence a: " . $evidence['payment_account_id'] . "\n";
+        $content .= "```\n\n";
+        
+        if ($evidence['test_passed']) {
+            $content .= "### ✅✅✅ SUCESSO! ✅✅✅\n\n";
+            $content .= "**Cobrança pertence à SUBCONTA!**\n\n";
+            $content .= "Isso significa que:\n";
+            $content .= "- ✅ A Nota Fiscal será emitida em nome do SALÃO (subconta)\n";
+            $content .= "- ✅ NÃO será emitida em nome do PagBy (master)\n";
+            $content .= "- ✅ Modelo SEM SPLIT está TECNICAMENTE VALIDADO\n";
+            $content .= "- ✅ Cliente paga direto na conta do salão (100%)\n";
+            $content .= "- ✅ Fiscalmente CORRETO!\n\n";
+        } else {
+            $content .= "### ❌❌❌ TESTE FALHOU ❌❌❌\n\n";
+            $content .= "**Cobrança NÃO pertence à subconta!**\n\n";
+            $content .= "Isso significa que:\n";
+            $content .= "- ❌ A Nota Fiscal será emitida em nome do PAGBY (master)\n";
+            $content .= "- ❌ NÃO será emitida em nome do Salão\n";
+            $content .= "- ❌ Modelo precisa AJUSTES\n";
+            $content .= "- ❌ Contatar suporte Asaas\n\n";
+        }
+        
+        $content .= "---\n\n";
+        $content .= "## 📄 Dados Completos da Cobrança\n\n";
+        $content .= "```json\n";
+        $content .= json_encode($paymentDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        $content .= "\n```\n\n";
+        
+        $content .= "---\n\n";
+        $content .= "## 📊 Próximos Passos\n\n";
+        
+        if ($evidence['test_passed']) {
+            $content .= "### ✅ Teste Passou - Implementar em Produção\n\n";
+            $content .= "1. ✅ Modelo tecnicamente validado\n";
+            $content .= "2. Implementar código completo\n";
+            $content .= "3. Contratar contador COM EVIDÊNCIA (este documento)\n";
+            $content .= "4. Perguntar: \"A NF sai em nome correto. Está OK fiscalmente?\"\n";
+            $content .= "5. Consulta confirmatória (mais barata que exploratória)\n";
+            $content .= "6. Deploy em produção\n\n";
+        } else {
+            $content .= "### ❌ Teste Falhou - Buscar Solução\n\n";
+            $content .= "1. Contatar suporte Asaas\n";
+            $content .= "2. Perguntar: \"Como fazer NF sair em nome da subconta?\"\n";
+            $content .= "3. Avaliar modelo alternativo se não for possível\n";
+            $content .= "4. NÃO implementar em produção até resolver\n\n";
+        }
+        
+        $content .= "---\n\n";
+        $content .= "*Documento gerado automaticamente pelo comando:*\n";
+        $content .= "```bash\n";
+        $content .= "php artisan asaas:test-subaccount-invoice\n";
+        $content .= "```\n";
+        
+        File::put(base_path($filename), $content);
+        
+        $this->newLine();
+        $this->info("📄 Evidências salvas em: {$filename}");
+        $this->newLine();
+    }
+}
