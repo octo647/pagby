@@ -412,7 +412,7 @@ class AsaasService {
             ]);
 
             // 1. Criar a subconta
-            $response = Http::withHeaders([
+            $response = Http::timeout(30)->withHeaders([
                 'access_token' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->post($this->apiUrl . '/accounts', $accountData);
@@ -439,7 +439,7 @@ class AsaasService {
             ]);
 
             // 2. Gerar API key para a subconta
-            $apiKeyResponse = Http::withHeaders([
+            $apiKeyResponse = Http::timeout(30)->withHeaders([
                 'access_token' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->post($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
@@ -509,7 +509,7 @@ class AsaasService {
             ]);
 
             // Tentar recuperar API key existente
-            $response = Http::withHeaders([
+            $response = Http::timeout(30)->withHeaders([
                 'access_token' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->get($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
@@ -538,7 +538,7 @@ class AsaasService {
                 'account_id' => $accountId
             ]);
             
-            $createResponse = Http::withHeaders([
+            $createResponse = Http::timeout(30)->withHeaders([
                 'access_token' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->post($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
@@ -606,7 +606,7 @@ class AsaasService {
                 'account_id' => $accountId
             ]);
             
-            $response = Http::withHeaders([
+            $response = Http::timeout(30)->withHeaders([
                 'access_token' => $this->apiKey,
                 'Content-Type' => 'application/json',
             ])->get($this->apiUrl . '/accounts/' . $accountId);
