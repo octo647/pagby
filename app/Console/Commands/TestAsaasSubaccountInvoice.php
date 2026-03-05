@@ -36,19 +36,25 @@ class TestAsaasSubaccountInvoice extends Command
         $tenantId = $this->option('tenant');
         $saveEvidence = $this->option('save-evidence');
 
-        // Validar que estamos em sandbox
+        // Validar que estamos em ambiente de testes (sandbox ou homologação)
         $apiUrl = config('services.asaas.api_url');
-        if (!str_contains($apiUrl, 'sandbox')) {
-            $this->error("❌ ATENÇÃO: Você NÃO está em ambiente sandbox!");
-            $this->error("   URL atual: {$apiUrl}");
+        $apiKey = config('services.asaas.api_key');
+        $isSandbox = str_contains($apiUrl, 'sandbox');
+        $isHomologacao = str_contains($apiKey, '_hmlg_');
+        
+        if (!$isSandbox && !$isHomologacao) {
+            $this->error("❌ ATENÇÃO: Você está em ambiente de PRODUÇÃO!");
+            $this->error("   URL: {$apiUrl}");
+            $this->error("   API Key: " . (str_contains($apiKey, '_prod_') ? 'PRODUÇÃO' : 'DESCONHECIDA'));
             $this->newLine();
             
             if (!$this->confirm('Deseja realmente continuar em PRODUÇÃO? (NÃO RECOMENDADO)', false)) {
-                $this->warn("Teste cancelado. Configure ASAAS_API_URL=https://sandbox.asaas.com/api/v3");
+                $this->warn("Teste cancelado. Use chave de homologação (_hmlg_) ou configure sandbox.");
                 return 1;
             }
         } else {
-            $this->info("✅ Ambiente: SANDBOX");
+            $envName = $isSandbox ? 'SANDBOX' : 'HOMOLOGAÇÃO';
+            $this->info("✅ Ambiente: {$envName}");
             $this->line("   URL: {$apiUrl}");
         }
 
@@ -57,7 +63,7 @@ class TestAsaasSubaccountInvoice extends Command
         // Iniciar log de evidências
         $evidence = [
             'timestamp' => now()->toDateTimeString(),
-            'environment' => str_contains($apiUrl, 'sandbox') ? 'sandbox' : 'production',
+            'environment' => $isSandbox ? 'sandbox' : ($isHomologacao ? 'homologacao' : 'production'),
             'api_url' => $apiUrl,
         ];
 
@@ -289,6 +295,9 @@ class TestAsaasSubaccountInvoice extends Command
         
         $tenant = Tenant::create([
             'id' => $tenantId,
+            'type' => 'barbearia',
+            'template' => 'default',
+            'employee_count' => 1,
             'name' => 'Salão Teste Validação NF',
             'email' => 'teste.nf.' . now()->timestamp . '@pagby.test',
             'subscription_status' => 'trial',
