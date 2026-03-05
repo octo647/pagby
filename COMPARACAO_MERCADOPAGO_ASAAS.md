@@ -1,11 +1,28 @@
 # Comparação: MercadoPago vs Asaas - Sistema de Assinaturas PagBy
 
+---
+
+## ⚠️ AVISO IMPORTANTE - ATUALIZAÇÃO 05/03/2026
+
+**As informações sobre emissão de Nota Fiscal neste documento estão INCORRETAS.**
+
+Após confirmação com o suporte do Asaas, descobrimos que:
+- **O split do Asaas divide apenas o dinheiro, não a responsabilidade fiscal**
+- **Apenas UMA nota fiscal é emitida** (pelo prestador principal, sobre o valor total)
+- **A questão tributária dos valores repassados é contábil/jurídica entre as partes**
+
+📄 **Leia a documentação correta em**: [`SPLIT_NOTA_FISCAL_REALIDADE.md`](SPLIT_NOTA_FISCAL_REALIDADE.md)
+
+**⚠️ Consulte um contador antes de implementar split em produção!**
+
+---
+
 ## Resumo Executivo
 
 | Critério | MercadoPago | Asaas |
 |----------|-------------|-------|
 | **Split de Pagamentos** | ❌ Não suporta em assinaturas | ✅ Suporta nativamente |
-| **Complexidade Fiscal** | ⚠️ Alta (bitributação) | ✅ Simples (split automático) |
+| **Complexidade Fiscal** | ⚠️ Alta (bitributação) | ⚠️ Média (requer contador) |
 | **Status Legal** | ⚠️ Risco de caracterização irregular | ✅ Conforme legislação |
 | **Integração** | ✅ Implementada | 🆕 Nova (compatível) |
 | **Métodos de Pagamento** | Cartão, Boleto, PIX | Cartão, Boleto, PIX, Débito |
@@ -60,11 +77,11 @@ Vantagens:
 
 | Aspecto | MercadoPago (Manual) | Asaas (Split) |
 |---------|---------------------|---------------|
-| **Nota Fiscal** | PagBy emite 100%, depois repassa | Cada parte emite sua parcela |
-| **ISS** | Pago 2x (PagBy + Tenant) | Pago 1x (cada um sua parte) |
-| **IRPF/IRPJ** | Base de cálculo inflada | Base de cálculo real |
-| **Contabilidade** | Complexa (entrada + saída) | Simples (apenas entrada) |
-| **Risco Fiscal** | ⚠️ Alto | ✅ Baixo |
+| **Nota Fiscal** | PagBy emite 100%, depois repassa | ⚠️ Prestador emite 100% (split só divide $) |
+| **ISS** | Pago 2x (PagBy + Tenant) | ⚠️ Precisa definir com contador |
+| **IRPF/IRPJ** | Base de cálculo inflada | ⚠️ Questão contábil entre partes |
+| **Contabilidade** | Complexa (entrada + saída) | ⚠️ Requer definição jurídica |
+| **Risco Fiscal** | ⚠️ Alto | ⚠️ Médio (requer consultoria) |
 
 ### 3. Aspectos Legais
 
@@ -125,6 +142,8 @@ Segundo a Lei nº 12.865/2013 e Circular BCB nº 3.682/2013:
 ---
 
 ## Exemplo Numérico
+
+⚠️ **AVISO**: Este exemplo está DESATUALIZADO. Ver [`SPLIT_NOTA_FISCAL_REALIDADE.md`](SPLIT_NOTA_FISCAL_REALIDADE.md) para informações corretas.
 
 ### Cenário: Assinatura de R$ 100,00/mês
 
