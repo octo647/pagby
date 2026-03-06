@@ -195,43 +195,39 @@ class TestAsaasSubaccountInvoice extends Command
         $this->line("   ⚠️  IMPORTANTE: Usando API KEY da SUBCONTA (não da master)");
         $this->newLine();
 
-        // Criar customer
-        $this->line("   Criando customer (cliente teste)...");
-        $customerResult = $asaasSubconta->criarOuAtualizarCliente([
+        // Criar customer e cobrança (o método criarCobranca já cria/obtém o customer internamente)
+        $this->line("   Criando cobrança de R$ 100,00 com cliente teste...");
+        
+        $customerData = [
             'name' => 'Cliente Teste - Validação NF',
             'email' => 'cliente.teste.nf@example.com',
-            'cpfCnpj' => '12345678909', // CPF fictício
+            'cpfCnpj' => $this->generateValidCpf(), // CPF único
             'mobilePhone' => '11987654321',
-        ]);
-
-        if (!$customerResult['success']) {
-            $this->error("❌ Erro ao criar customer");
-            return 1;
-        }
-
-        $customerId = $customerResult['id'];
-        $this->info("   ✅ Customer criado: {$customerId}");
-
-        $evidence['customer_id'] = $customerId;
-
-        // Criar cobrança
-        $this->line("   Criando cobrança de R$ 100,00...");
-        $paymentResult = $asaasSubconta->criarCobranca(
-            $customerId,
-            100.00,
-            now()->addDays(7),
-            'PIX',
-            'TESTE CRÍTICO: Validação de emissor da NF'
-        );
+        ];
+        
+        $paymentData = [
+            'value' => 100.00,
+            'dueDate' => now()->addDays(7)->format('Y-m-d'),
+            'billingType' => 'PIX',
+            'description' => 'TESTE CRÍTICO: Validação de emissor da NF',
+        ];
+        
+        $paymentResult = $asaasSubconta->criarCobranca($customerData, $paymentData);
 
         if (!$paymentResult['success']) {
             $this->error("❌ Erro ao criar cobrança");
+            $this->error("   Detalhes: " . $paymentResult['message']);
             return 1;
         }
 
-        $paymentId = $paymentResult['id'];
+        $paymentData = $paymentResult['data'];
+        $paymentId = $paymentData['id'];
+        $customerId = $paymentData['customer'];
+        
         $this->info("   ✅ Cobrança criada: {$paymentId}");
+        $this->info("   ✅ Customer: {$customerId}");
 
+        $evidence['customer_id'] = $customerId;
         $evidence['payment_id'] = $paymentId;
 
         $this->newLine();
