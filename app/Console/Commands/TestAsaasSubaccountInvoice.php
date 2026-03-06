@@ -132,6 +132,13 @@ class TestAsaasSubaccountInvoice extends Command
                 return 1;
             }
 
+            // Debug: mostrar estrutura da resposta
+            if (!isset($result['data']['account_id'])) {
+                $this->error("❌ Resposta inválida do Asaas. Estrutura recebida:");
+                $this->error(json_encode($result, JSON_PRETTY_PRINT));
+                return 1;
+            }
+
             $accountId = $result['data']['account_id'];
             $apiKey = $result['data']['api_key'];
             $walletId = $result['data']['wallet_id'] ?? null;
