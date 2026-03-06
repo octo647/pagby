@@ -311,25 +311,34 @@ class TestAsaasSubaccountInvoice extends Command
         
         $this->line("   Criando tenant de teste: {$tenantId}");
         
-        $tenant = Tenant::create([
-            'id' => $tenantId,
-            'type' => 'barbearia',
-            'template' => 'default',
-            'employee_count' => 1,
-            'name' => 'Salão Teste Validação NF',
-            'email' => 'teste.nf.' . now()->timestamp . '@pagby.test',
-            'subscription_status' => 'trial',
-            'trial_started_at' => now(),
-            'trial_ends_at' => now()->addDays(30),
-        ]);
+        try {
+            $tenant = Tenant::create([
+                'id' => $tenantId,
+                'type' => 'barbearia',
+                'template' => 'default',
+                'employee_count' => 1,
+                'name' => 'Salão Teste Validação NF',
+                'email' => 'teste.nf.' . now()->timestamp . '@pagby.test',
+                'subscription_status' => 'trial',
+                'trial_started_at' => now(),
+                'trial_ends_at' => now()->addDays(30),
+            ]);
 
-        $tenant->domains()->create([
-            'domain' => $tenantId . '.localhost',
-        ]);
+            $this->comment("   ⏳ Criando domínio...");
+            
+            $tenant->domains()->create([
+                'domain' => $tenantId . '.localhost',
+            ]);
 
-        $this->info("   ✅ Tenant criado: {$tenant->id}");
-        
-        return $tenant;
+            $this->info("   ✅ Tenant criado: {$tenant->id}");
+            
+            return $tenant;
+            
+        } catch (\Exception $e) {
+            $this->error("   ❌ Erro ao criar tenant: " . $e->getMessage());
+            $this->error("   Arquivo: " . $e->getFile() . ":" . $e->getLine());
+            throw $e;
+        }
     }
 
     /**
