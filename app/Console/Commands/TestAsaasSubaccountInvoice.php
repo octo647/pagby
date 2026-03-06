@@ -333,9 +333,15 @@ class TestAsaasSubaccountInvoice extends Command
 
             $this->comment("   ⏳ Criando domínio...");
             
-            $tenant->domains()->create([
-                'domain' => $tenantId . '.localhost',
-            ]);
+            try {
+                $tenant->domains()->create([
+                    'domain' => $tenantId . '.localhost',
+                ]);
+                $this->comment("   ✓ Domínio criado");
+            } catch (\Exception $e) {
+                $this->warn("   ⚠ Não foi possível criar domínio (não afeta o teste)");
+                $this->comment("     " . $e->getMessage());
+            }
 
             $this->info("   ✅ Tenant criado: {$tenant->id}");
             
