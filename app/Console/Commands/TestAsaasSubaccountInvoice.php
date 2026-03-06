@@ -17,6 +17,7 @@ class TestAsaasSubaccountInvoice extends Command
      */
     protected $signature = 'asaas:test-subaccount-invoice 
                             {--tenant= : ID do tenant para testar (opcional, cria tenant teste se não fornecido)}
+                            {--cnpj= : CNPJ para a subconta (opcional, usa padrão se não fornecido)}
                             {--save-evidence : Salva evidências em arquivo markdown}';
 
     /**
@@ -34,6 +35,7 @@ class TestAsaasSubaccountInvoice extends Command
         $this->showBanner();
         
         $tenantId = $this->option('tenant');
+        $cnpjCustom = $this->option('cnpj');
         $saveEvidence = $this->option('save-evidence');
 
         // Validar que estamos em ambiente de testes (sandbox ou homologação)
@@ -94,16 +96,20 @@ class TestAsaasSubaccountInvoice extends Command
         $asaasMaster = new AsaasService(); // API Master
 
         if (!$tenant->asaas_account_id) {
+            // Gerar CNPJ único se não fornecido
+            $cnpj = $cnpjCustom ?: $this->generateValidCnpj();
+            
             $accountData = [
                 'name' => $tenant->name,
                 'email' => $tenant->email,
-                'cpfCnpj' => '24971563000198', // CNPJ fictício válido para testes
+                'cpfCnpj' => $cnpj,
                 'mobilePhone' => '11987654321',
                 'companyType' => 'LIMITED',
                 'incomeValue' => 5000.00,
             ];
 
             $this->line("   Criando subconta...");
+            $this->line("   CNPJ: {$cnpj}");
             $result = $asaasMaster->criarSubcontaCompleta($accountData);
 
             if (!$result['success']) {
@@ -403,5 +409,49 @@ class TestAsaasSubaccountInvoice extends Command
         $this->newLine();
         $this->info("📄 Evidências salvas em: {$filename}");
         $this->newLine();
+    }
+
+    /**
+     * Gera CNPJ válido único para teste
+     */
+    private function generateValidCnpj()
+    {
+        // Gerar 8 primeiros dígitos baseados no timestamp
+        $timestamp = time();
+        $base = substr(str_pad($timestamp, 8, '0'), 0, 8);
+        
+        // 4 dígitos do estabelecimento (0001)
+        $base .= '0001';
+        
+        // Calcular dígitos verificadores
+        $cnpj = $base . $this->calculateCnpjDigits($base);
+        
+        return $cnpj;
+    }
+
+    /**
+     * Calcula os 2 dígitos verificadores do CNPJ
+     */
+    private function calculateCnpjDigits($base)
+    {
+        $weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        $weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+        
+        // Primeiro dígito
+        $sum = 0;
+        for ($i = 0; $i < 12; $i++) {
+            $sum += $base[$i] * $weights1[$i];
+        }
+        $digit1 = $sum % 11 < 2 ? 0 : 11 - ($sum % 11);
+        
+        // Segundo dígito
+        $base .= $digit1;
+        $sum = 0;
+        for ($i = 0; $i < 13; $i++) {
+            $sum += $base[$i] * $weights2[$i];
+        }
+        $digit2 = $sum % 11 < 2 ? 0 : 11 - ($sum % 11);
+        
+        return $digit1 . $digit2;
     }
 }
