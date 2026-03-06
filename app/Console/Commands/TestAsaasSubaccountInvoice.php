@@ -236,24 +236,40 @@ class TestAsaasSubaccountInvoice extends Command
         $this->info("🔍 ETAPA 4: TESTE CRÍTICO - Verificando emissor da cobrança");
         $this->line(str_repeat("═", 60));
 
-        $paymentDetails = $asaasSubconta->consultarCobranca($paymentId);
+        // Consultar usando API da subconta
+        $this->line("   Consultando cobrança pela API da SUBCONTA...");
+        $paymentDetailsSubconta = $asaasSubconta->consultarCobranca($paymentId);
 
-        if (!$paymentDetails) {
-            $this->error("❌ Erro ao consultar cobrança");
+        if (!$paymentDetailsSubconta) {
+            $this->error("❌ Erro ao consultar cobrança pela subconta");
             return 1;
         }
 
         $this->newLine();
-        $this->line("📄 DADOS DA COBRANÇA:");
-        $this->line(json_encode($paymentDetails, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $this->line("📄 DADOS DA COBRANÇA (via API subconta):");
+        $this->line(json_encode($paymentDetailsSubconta, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
         $this->newLine();
 
-        // VERIFICAÇÃO CRÍTICA
+        // Consultar usando API MASTER para verificar campo 'account'
+        $this->line("   Consultando cobrança pela API MASTER...");
+        $paymentDetailsMaster = $asaasMaster->consultarCobranca($paymentId);
+
+        if (!$paymentDetailsMaster) {
+            $this->error("❌ Erro ao consultar cobrança pela master");
+            return 1;
+        }
+
+        $this->newLine();
+        $this->line("📄 DADOS DA COBRANÇA (via API master):");
+        $this->line(json_encode($paymentDetailsMaster, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        $this->newLine();
+
+        // VERIFICAÇÃO CRÍTICA - usar resposta da master que deve conter o campo 'account'
         $this->line(str_repeat("═", 60));
         $this->info("🎯 RESULTADO DO TESTE:");
         $this->line(str_repeat("═", 60));
 
-        $paymentAccountId = $paymentDetails['account'] ?? null;
+        $paymentAccountId = $paymentDetailsMaster['account'] ?? null;
 
         $this->newLine();
         $this->line("   Subconta criada: {$accountId}");
@@ -291,7 +307,9 @@ class TestAsaasSubaccountInvoice extends Command
 
         // Salvar evidências
         if ($saveEvidence || $this->confirm('Deseja salvar evidências em arquivo?', true)) {
-            $this->saveEvidenceFile($evidence, $paymentDetails);
+            $evidence['payment_details_subconta'] = $paymentDetailsSubconta;
+            $evidence['payment_details_master'] = $paymentDetailsMaster;
+            $this->saveEvidenceFile($evidence, $paymentDetailsMaster);
         }
 
         return 0;
