@@ -105,6 +105,7 @@ class TestAsaasSubaccountInvoice extends Command
                 'email' => $tenant->email,
                 'cpfCnpj' => $cpfCnpj,
                 'mobilePhone' => '11987654321',
+                'incomeValue' => 5000.00, // Obrigatório para CPF e CNPJ
             ];
             
             // Se for CPF, adicionar birthDate. Se CNPJ, adicionar companyType
@@ -112,7 +113,6 @@ class TestAsaasSubaccountInvoice extends Command
                 $accountData['birthDate'] = '1990-01-01';
             } else {
                 $accountData['companyType'] = 'LIMITED';
-                $accountData['incomeValue'] = 5000.00;
             }
 
             $this->line("   Criando subconta no Asaas...");
