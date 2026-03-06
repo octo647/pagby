@@ -17,7 +17,7 @@ class TestAsaasSubaccountInvoice extends Command
      */
     protected $signature = 'asaas:test-subaccount-invoice 
                             {--tenant= : ID do tenant para testar (opcional, cria tenant teste se não fornecido)}
-                            {--cnpj= : CNPJ para a subconta (opcional, usa padrão se não fornecido)}
+                            {--cnpj= : CPF/CNPJ para a subconta (opcional, gera CPF automático se não fornecido)}
                             {--save-evidence : Salva evidências em arquivo markdown}';
 
     /**
@@ -96,21 +96,33 @@ class TestAsaasSubaccountInvoice extends Command
         $asaasMaster = new AsaasService(); // API Master
 
         if (!$tenant->asaas_account_id) {
-            // Gerar CNPJ único se não fornecido
-            $cnpj = $cnpjCustom ?: $this->generateValidCnpj();
+            // Gerar CPF único se não fornecido (sandbox aceita melhor CPF)
+            $cpfCnpj = $cnpjCustom ?: $this->generateValidCpf();
+            $isCpf = strlen($cpfCnpj) == 11;
             
             $accountData = [
                 'name' => $tenant->name,
                 'email' => $tenant->email,
-                'cpfCnpj' => $cnpj,
+                'cpfCnpj' => $cpfCnpj,
                 'mobilePhone' => '11987654321',
-                'companyType' => 'LIMITED',
-                'incomeValue' => 5000.00,
             ];
+            
+            // Se for CPF, adicionar birthDate. Se CNPJ, adicionar companyType
+            if ($isCpf) {
+                $accountData['birthDate'] = '1990-01-01';
+            } else {
+                $accountData['companyType'] = 'LIMITED';
+                $accountData['incomeValue'] = 5000.00;
+            }
 
-            $this->line("   Criando subconta...");
-            $this->line("   CNPJ: {$cnpj}");
+            $this->line("   Criando subconta no Asaas...");
+            $this->line("   " . ($isCpf ? 'CPF' : 'CNPJ') . ": {$cpfCnpj}");
+            $this->line("   Email: {$tenant->email}");
+            $this->comment("   ⏳ Aguarde, isso pode levar até 60 segundos...");
+            
             $result = $asaasMaster->criarSubcontaCompleta($accountData);
+            
+            $this->line("   ✅ Requisição concluída!");
 
             if (!$result['success']) {
                 $this->error("❌ Erro ao criar subconta: {$result['message']}");
@@ -409,6 +421,44 @@ class TestAsaasSubaccountInvoice extends Command
         $this->newLine();
         $this->info("📄 Evidências salvas em: {$filename}");
         $this->newLine();
+    }
+
+    /**
+     * Gera CPF válido único para teste
+     */
+    private function generateValidCpf()
+    {
+        // Gerar 9 primeiros dígitos baseados no timestamp
+        $timestamp = time();
+        $base = substr(str_pad($timestamp, 9, '0'), 0, 9);
+        
+        // Calcular dígitos verificadores
+        $cpf = $base . $this->calculateCpfDigits($base);
+        
+        return $cpf;
+    }
+
+    /**
+     * Calcula os 2 dígitos verificadores do CPF
+     */
+    private function calculateCpfDigits($base)
+    {
+        // Primeiro dígito
+        $sum = 0;
+        for ($i = 0; $i < 9; $i++) {
+            $sum += $base[$i] * (10 - $i);
+        }
+        $digit1 = $sum % 11 < 2 ? 0 : 11 - ($sum % 11);
+        
+        // Segundo dígito
+        $base .= $digit1;
+        $sum = 0;
+        for ($i = 0; $i < 10; $i++) {
+            $sum += $base[$i] * (11 - $i);
+        }
+        $digit2 = $sum % 11 < 2 ? 0 : 11 - ($sum % 11);
+        
+        return $digit1 . $digit2;
     }
 
     /**
