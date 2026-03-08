@@ -56,7 +56,9 @@ class RegistrarWebhookSubconta extends Command
 
             if ($result['success']) {
                 $this->info("   ✅ Webhook registrado!");
-                $this->line("   Webhook ID: {$result['data']['id']}");
+                if (isset($result['data']['id'])) {
+                    $this->line("   Webhook ID: {$result['data']['id']}");
+                }
                 $success++;
             } else {
                 $this->error("   ❌ Falha: {$result['message']}");
