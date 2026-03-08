@@ -467,13 +467,25 @@ class AsaasService {
                 'api_key_preview' => $apiKey ? substr($apiKey, 0, 20) . '...' : null
             ]);
 
+            // 3. Registrar webhook para receber notificações de pagamentos
+            $webhookResult = $this->registrarWebhookSubconta($accountId);
+            
+            if (!$webhookResult['success']) {
+                Log::warning('[AsaasService] Subconta criada mas webhook não configurado', [
+                    'account_id' => $accountId,
+                    'webhook_error' => $webhookResult['message']
+                ]);
+                // Não falha a criação - webhook pode ser configurado depois
+            }
+
             return [
                 'success' => true,
                 'data' => [
                     'account' => $accountCreated,
                     'api_key' => $apiKey,
                     'account_id' => $accountId,
-                    'wallet_id' => $accountCreated['walletId'] ?? null
+                    'wallet_id' => $accountCreated['walletId'] ?? null,
+                    'webhook' => $webhookResult['data'] ?? null,
                 ],
                 'message' => 'Subconta criada com sucesso'
             ];
@@ -649,6 +661,87 @@ class AsaasService {
                 'success' => false,
                 'status' => 'ERROR',
                 'message' => 'Exceção: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Registra webhook para uma subconta receber notificações de pagamento.
+     * 
+     * IMPORTANTE: Usa header 'Asaas-Account' para configurar webhook DA subconta
+     * enquanto autentica com a API key MASTER.
+     * 
+     * @param string $accountId ID da subconta
+     * @return array ['success' => bool, 'data' => array|null, 'message' => string]
+     */
+    public function registrarWebhookSubconta(string $accountId)
+    {
+        try {
+            Log::info('[AsaasService] Registrando webhook para subconta', [
+                'account_id' => $accountId,
+                'webhook_url' => config('app.url') . '/api/subconta-webhook'
+            ]);
+
+            // Usar API MASTER com header especial para configurar webhook DA subconta
+            $response = Http::timeout(60)->withHeaders([
+                'access_token' => $this->apiKey, // Master key
+                'Content-Type' => 'application/json',
+                'Asaas-Account' => $accountId, // Configura webhook para esta subconta
+            ])->post($this->apiUrl . '/webhook', [
+                'name' => 'PagBy - Notificações de Pagamento',
+                'url' => config('app.url') . '/api/subconta-webhook',
+                'email' => config('mail.from.address', 'webhooks@pagby.com.br'),
+                'enabled' => true,
+                'interrupted' => false,
+                'events' => [
+                    'PAYMENT_CREATED',
+                    'PAYMENT_UPDATED',
+                    'PAYMENT_CONFIRMED',
+                    'PAYMENT_RECEIVED',
+                    'PAYMENT_OVERDUE',
+                    'PAYMENT_DELETED',
+                    'PAYMENT_REFUNDED',
+                    'PAYMENT_RECEIVED_IN_CASH',
+                ]
+            ]);
+
+            if ($response->successful()) {
+                $webhookData = $response->json();
+                
+                Log::info('[AsaasService] Webhook registrado com sucesso', [
+                    'account_id' => $accountId,
+                    'webhook_id' => $webhookData['id'] ?? null
+                ]);
+
+                return [
+                    'success' => true,
+                    'data' => $webhookData,
+                    'message' => 'Webhook registrado com sucesso'
+                ];
+            }
+
+            Log::warning('[AsaasService] Erro ao registrar webhook', [
+                'account_id' => $accountId,
+                'status' => $response->status(),
+                'error' => $response->body()
+            ]);
+
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => 'Erro ao registrar webhook: ' . $response->body()
+            ];
+
+        } catch (\Exception $e) {
+            Log::error('[AsaasService] Exceção ao registrar webhook', [
+                'account_id' => $accountId,
+                'error' => $e->getMessage()
+            ]);
+
+            return [
+                'success' => false,
+                'data' => null,
+                'message' => 'Exceção ao registrar webhook: ' . $e->getMessage()
             ];
         }
     }

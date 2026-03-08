@@ -15,6 +15,12 @@ use App\Http\Middleware\VerifyCsrfToken;
 // Todas as rotas devem estar dentro do loop central_domains para evitar conflitos com tenants
 
 require __DIR__.'/subscription.php';
+
+// Webhook da Subconta Asaas (sem CSRF - chamado externamente pelo Asaas)
+Route::post('/api/subconta-webhook', [\App\Http\Controllers\SubcontaWebhookController::class, 'handle'])
+    ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
+    ->name('api.subconta-webhook');
+
 foreach (config('tenancy.central_domains') as $domain) {
     // Endpoint API para social login (central)
 Route::get('/api/social-auth/{token}', function ($token) {
