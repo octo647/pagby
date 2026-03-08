@@ -211,19 +211,29 @@ class CreateAsaasAccountsForTenants extends Command
         try {
             $this->line("📤 Enviando dados para Asaas...");
             
-            $result = $this->asaasService->criarSubconta($accountData);
+            $result = $this->asaasService->criarSubcontaCompleta($accountData);
 
             if ($result['success']) {
-                $walletId = $result['data']['walletId'] ?? $result['data']['id'];
+                $accountId = $result['data']['account_id'];
+                $walletId = $result['data']['wallet_id'] ?? null;
+                $apiKey = $result['data']['api_key'] ?? null;
                 
+                $tenant->asaas_account_id = $accountId;
                 $tenant->asaas_wallet_id = $walletId;
-                $tenant->asaas_account_data = json_encode($result['data']);
+                
+                if ($apiKey) {
+                    $tenant->asaas_api_key = \Illuminate\Support\Facades\Crypt::encryptString($apiKey);
+                }
+                
                 $tenant->save();
 
-                $this->info("✅ Subconta criada com sucesso! Wallet ID: {$walletId}");
+                $this->info("✅ Subconta criada com sucesso!");
+                $this->line("   Account ID: {$accountId}");
+                $this->line("   Wallet ID: {$walletId}");
                 
                 Log::info('Subconta Asaas criada para tenant', [
                     'tenant_id' => $tenant->id,
+                    'account_id' => $accountId,
                     'wallet_id' => $walletId
                 ]);
             } else {
