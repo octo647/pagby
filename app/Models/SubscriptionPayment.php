@@ -10,6 +10,8 @@ class SubscriptionPayment extends Model
 {
     use HasFactory;
 
+    protected $table = 'subscriptions_payments';
+
     protected $fillable = [
         'subscription_id',
         'asaas_payment_id',
