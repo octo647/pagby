@@ -89,7 +89,7 @@ class CreateAsaasAccountsForTenants extends Command
                 ->table('users')
                 ->join('role_user', 'users.id', '=', 'role_user.user_id')
                 ->join('roles', 'role_user.role_id', '=', 'roles.id')
-                ->where('roles.name', 'Proprietário')
+                ->where('roles.role', 'Proprietário')
                 ->select('users.*')
                 ->first();
             
