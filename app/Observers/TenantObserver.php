@@ -108,27 +108,28 @@ class TenantObserver
             // Verificar se já existe customer com esse CPF/CNPJ no Asaas
             $customerExistenteId = $asaasService->buscarCustomerPorCpf($cpfCnpj);
             
+            // REGRA: Se CPF (11 dígitos) já é customer no Asaas, NÃO pode criar subconta
+            // Asaas não permite mesmo CPF ser customer E subconta simultaneamente
+            if (strlen($cpfCnpj) === 11 && $customerExistenteId) {
+                Log::warning('[TenantObserver] CPF já é customer Asaas, modelo SEM split não disponível', [
+                    'tenant_id' => $tenant->id,
+                    'customer_id' => $customerExistenteId,
+                    'message' => 'Tenant usará modelo COM split (conta PagBy master)'
+                ]);
+                return; // Não cria subconta, tenant usa modelo COM split
+            }
+            
             $accountData = [
                 'name' => $tenant->fantasy_name ?? $tenant->name ?? $tenant->id,
                 'email' => $tenant->email ?? $proprietario->email,
+                'cpfCnpj' => $cpfCnpj, // Sempre envia (obrigatório)
             ];
-
-            // Só adiciona cpfCnpj se:
-            // 1. For CNPJ (14 dígitos) OU
-            // 2. For CPF mas NÃO existe customer com esse CPF
-            if (strlen($cpfCnpj) === 14 || !$customerExistenteId) {
-                $accountData['cpfCnpj'] = $cpfCnpj;
-                Log::info('[TenantObserver] CPF/CNPJ adicionado à subconta', [
-                    'tenant_id' => $tenant->id,
-                    'tipo' => strlen($cpfCnpj) === 14 ? 'CNPJ' : 'CPF',
-                    'customer_existente' => $customerExistenteId ? 'sim' : 'não'
-                ]);
-            } else {
-                Log::info('[TenantObserver] CPF já é customer Asaas, criando subconta SEM cpfCnpj', [
-                    'tenant_id' => $tenant->id,
-                    'customer_id' => $customerExistenteId
-                ]);
-            }
+            
+            Log::info('[TenantObserver] Criando subconta para tenant', [
+                'tenant_id' => $tenant->id,
+                'tipo' => strlen($cpfCnpj) === 14 ? 'CNPJ' : 'CPF',
+                'customer_existente' => $customerExistenteId ? 'sim' : 'não'
+            ]);
 
             // Validar email
             if (empty($accountData['email'])) {

@@ -169,27 +169,30 @@ class PlanosDeAssinatura extends Component
                 return;
             }
 
-            // VALIDAÇÃO: Verificar se wallet_id é válido antes de criar assinatura
-            $walletIdInvalido = false;
+            // VALIDAÇÃO: Se wallet_id existe mas é inválido (customer ID em vez de wallet), bloqueia
             if (!empty($tenant->asaas_wallet_id) && str_starts_with($tenant->asaas_wallet_id, 'cus_')) {
-                $walletIdInvalido = true;
-                \Log::warning('⚠️ Tentativa de assinar plano com Wallet ID inválido', [
-                    'tenant_id' => $tenant->id,
-                    'asaas_wallet_id' => $tenant->asaas_wallet_id,
-                    'plano_id' => $planoId
-                ]);
-            }
-            
-            // Se wallet_id inválido OU não preenchido, NÃO PODE ASSINAR (proprietário precisa configurar)
-            if ($walletIdInvalido || empty($tenant->asaas_wallet_id)) {
-                \Log::error('❌ Bloqueando assinatura: wallet_id inválido ou não configurado', [
+                \Log::error('❌ Bloqueando assinatura: wallet_id inválido (customer ID)', [
                     'tenant_id' => $tenant->id,
                     'wallet_id' => $tenant->asaas_wallet_id,
-                    'user_role' => $user->roles->pluck('name'),
                 ]);
                 
-                session()->flash('error', 'Este salão ainda não está configurado para receber assinaturas. Por favor, entre em contato com o proprietário do salão.');
+                session()->flash('error', 'Configuração de pagamento inválida. Por favor, entre em contato com o suporte.');
                 return;
+            }
+            
+            // MODELO HÍBRIDO:
+            // - COM wallet_id (asaas_wallet_id) → modelo SEM split (subconta recebe direto)
+            // - SEM wallet_id → modelo COM split (conta PagBy master com split)
+            if (empty($tenant->asaas_wallet_id)) {
+                \Log::info('ℹ️ Tenant sem subconta Asaas - usando modelo COM split', [
+                    'tenant_id' => $tenant->id,
+                    'message' => 'Pagamentos serão processados pela conta PagBy master'
+                ]);
+            } else {
+                \Log::info('✅ Tenant com subconta Asaas - usando modelo SEM split', [
+                    'tenant_id' => $tenant->id,
+                    'wallet_id' => $tenant->asaas_wallet_id
+                ]);
             }
 
             // Verifica se o usuário tem CPF ou CNPJ cadastrado

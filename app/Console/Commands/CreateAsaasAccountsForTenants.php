@@ -132,21 +132,23 @@ class CreateAsaasAccountsForTenants extends Command
         // Verificar se já existe customer com esse CPF/CNPJ no Asaas
         $customerExistenteId = $this->asaasService->buscarCustomerPorCpf($cpfCnpjClean);
         
+        // REGRA: Se CPF (11 dígitos) já é customer no Asaas, NÃO pode criar subconta
+        // Asaas não permite mesmo CPF ser customer E subconta simultaneamente
+        if (strlen($cpfCnpjClean) === 11 && $customerExistenteId) {
+            $this->warn("⚠️ CPF já é customer Asaas (ID: {$customerExistenteId})");
+            $this->warn("   Modelo SEM split não disponível - tenant usará modelo COM split");
+            $this->line("   (Asaas não permite mesmo CPF ser customer E subconta)");
+            return; // Não cria subconta
+        }
+        
         // Preparar dados da conta
         $accountData = [
             'name' => $tenant->fantasy_name ?? $tenant->name,
             'email' => $email,
+            'cpfCnpj' => $cpfCnpjClean,
         ];
         
-        // Só adiciona cpfCnpj se:
-        // 1. For CNPJ (14 dígitos) OU
-        // 2. For CPF mas NÃO existe customer com esse CPF
-        if (strlen($cpfCnpjClean) === 14 || !$customerExistenteId) {
-            $accountData['cpfCnpj'] = $cpfCnpjClean;
-            $this->line("   CPF/CNPJ: " . substr($cpfCnpjClean, 0, 3) . "...***");
-        } else {
-            $this->info("   ℹ️ CPF já é customer Asaas (ID: {$customerExistenteId}), criando subconta SEM cpfCnpj");
-        }
+        $this->line("   CPF/CNPJ: " . substr($cpfCnpjClean, 0, 3) . "...***");
         
         // Adicionar telefone se disponível E VÁLIDO
         if ($phone && strlen($phone) >= 10 && strlen($phone) <= 11) {
