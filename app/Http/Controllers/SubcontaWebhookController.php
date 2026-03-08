@@ -51,10 +51,20 @@ class SubcontaWebhookController extends Controller
             $tenantModel = Tenant::find($tenant->id);
             tenancy()->initialize($tenantModel);
             
-            Log::info('[Webhook Subconta] Tenancy inicializada');
+            Log::info('[Webhook Subconta] Tenancy inicializada', [
+                'current_tenant' => tenant('id'),
+                'database_prefix' => config('tenancy.database.prefix')
+            ]);
+            
+            // Garantir que estamos usando a conexão do tenant
+            config(['database.default' => 'tenant']);
+            \DB::purge('tenant');
+            \DB::reconnect('tenant');
+            
+            Log::info('[Webhook Subconta] Conexão trocada para tenant');
             
             // Buscar payment no banco do tenant
-            $payment = Payment::where('asaas_payment_id', $paymentId)->first();
+            $payment = Payment::on('tenant')->where('asaas_payment_id', $paymentId)->first();
             
             if (!$payment) {
                 Log::warning('[Webhook Subconta] Payment não encontrado no tenant', [
