@@ -7,6 +7,26 @@ use Illuminate\Support\Facades\Log;
  
 class AsaasService {
     /**
+     * Busca customer existente no Asaas por CPF/CNPJ.
+     * @param string $cpfCnpj
+     * @return string|null ID do customer se encontrado
+     */
+    public function buscarCustomerPorCpf($cpfCnpj)
+    {
+        $response = Http::withHeaders([
+            'access_token' => $this->apiKey,
+            'Content-Type' => 'application/json',
+        ])->get($this->apiUrl . '/customers', [
+            'cpfCnpj' => $cpfCnpj
+        ]);
+        
+        if ($response->successful() && !empty($response['data'][0]['id'])) {
+            return $response['data'][0]['id'];
+        }
+        return null;
+    }
+
+    /**
      * Lista todas as cobranças em aberto para um cliente pelo CPF/CNPJ.
      * @param string $cpfCnpj
      * @return array|null
@@ -14,16 +34,10 @@ class AsaasService {
     public function listarCobrancasAbertasPorCpf($cpfCnpj)
     {
         // Buscar cliente pelo CPF/CNPJ
-        $response = Http::withHeaders([
-            'access_token' => $this->apiKey,
-            'Content-Type' => 'application/json',
-        ])->get($this->apiUrl . '/customers', [
-            'cpfCnpj' => $cpfCnpj
-        ]);
-        if (!$response->successful() || empty($response['data'][0]['id'])) {
+        $customerId = $this->buscarCustomerPorCpf($cpfCnpj);
+        if (!$customerId) {
             return null;
         }
-        $customerId = $response['data'][0]['id'];
 
         // Buscar cobranças em aberto para o cliente
         $payments = Http::withHeaders([

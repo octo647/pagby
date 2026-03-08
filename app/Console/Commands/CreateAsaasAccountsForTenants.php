@@ -129,12 +129,24 @@ class CreateAsaasAccountsForTenants extends Command
             return;
         }
 
+        // Verificar se já existe customer com esse CPF/CNPJ no Asaas
+        $customerExistenteId = $this->asaasService->buscarCustomerPorCpf($cpfCnpjClean);
+        
         // Preparar dados da conta
         $accountData = [
             'name' => $tenant->fantasy_name ?? $tenant->name,
             'email' => $email,
-            'cpfCnpj' => $cpfCnpjClean,
         ];
+        
+        // Só adiciona cpfCnpj se:
+        // 1. For CNPJ (14 dígitos) OU
+        // 2. For CPF mas NÃO existe customer com esse CPF
+        if (strlen($cpfCnpjClean) === 14 || !$customerExistenteId) {
+            $accountData['cpfCnpj'] = $cpfCnpjClean;
+            $this->line("   CPF/CNPJ: " . substr($cpfCnpjClean, 0, 3) . "...***");
+        } else {
+            $this->info("   ℹ️ CPF já é customer Asaas (ID: {$customerExistenteId}), criando subconta SEM cpfCnpj");
+        }
         
         // Adicionar telefone se disponível E VÁLIDO
         if ($phone && strlen($phone) >= 10 && strlen($phone) <= 11) {

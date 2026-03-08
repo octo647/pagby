@@ -105,11 +105,30 @@ class TenantObserver
                 return;
             }
 
+            // Verificar se já existe customer com esse CPF/CNPJ no Asaas
+            $customerExistenteId = $asaasService->buscarCustomerPorCpf($cpfCnpj);
+            
             $accountData = [
                 'name' => $tenant->fantasy_name ?? $tenant->name ?? $tenant->id,
                 'email' => $tenant->email ?? $proprietario->email,
-                'cpfCnpj' => $cpfCnpj,
             ];
+
+            // Só adiciona cpfCnpj se:
+            // 1. For CNPJ (14 dígitos) OU
+            // 2. For CPF mas NÃO existe customer com esse CPF
+            if (strlen($cpfCnpj) === 14 || !$customerExistenteId) {
+                $accountData['cpfCnpj'] = $cpfCnpj;
+                Log::info('[TenantObserver] CPF/CNPJ adicionado à subconta', [
+                    'tenant_id' => $tenant->id,
+                    'tipo' => strlen($cpfCnpj) === 14 ? 'CNPJ' : 'CPF',
+                    'customer_existente' => $customerExistenteId ? 'sim' : 'não'
+                ]);
+            } else {
+                Log::info('[TenantObserver] CPF já é customer Asaas, criando subconta SEM cpfCnpj', [
+                    'tenant_id' => $tenant->id,
+                    'customer_id' => $customerExistenteId
+                ]);
+            }
 
             // Validar email
             if (empty($accountData['email'])) {
