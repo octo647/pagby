@@ -124,26 +124,32 @@ class TenantObserver
             if ($phone) {
                 $phone = preg_replace('/[^0-9]/', '', $phone);
                 if (strlen($phone) >= 10 && strlen($phone) <= 11) {
-                    // Validar DDD (11-99)
-                    $ddd = substr($phone, 0, 2);
-                    if ($ddd >= 11 && $ddd <= 99) {
+                    // Validar DDD (apenas DDDs válidos do Brasil)
+                    $ddd = (int)substr($phone, 0, 2);
+                    $dddsValidos = [11, 12, 13, 14, 15, 16, 17, 18, 19, // SP
+                                    21, 22, 24, 27, 28, // RJ/ES
+                                    31, 32, 33, 34, 35, 37, 38, // MG
+                                    41, 42, 43, 44, 45, 46, // PR
+                                    47, 48, 49, // SC
+                                    51, 53, 54, 55, // RS
+                                    61, 62, 63, 64, 65, 66, 67, 68, 69, // Centro-Oeste
+                                    71, 73, 74, 75, 77, 79, // BA/SE
+                                    81, 82, 83, 84, 85, 86, 87, 88, 89, // Nordeste
+                                    91, 92, 93, 94, 95, 96, 97, 98, 99]; // Norte
+                    
+                    if (in_array($ddd, $dddsValidos)) {
                         $number = substr($phone, 2);
                         $accountData['mobilePhone'] = $ddd . $number;
-                        Log::info('[TenantObserver] Telefone adicionado', [
+                        Log::info('[TenantObserver] Telefone válido adicionado', [
                             'tenant_id' => $tenant->id,
-                            'phone' => $ddd . ' ' . $number
+                            'ddd' => $ddd
                         ]);
                     } else {
-                        Log::warning('[TenantObserver] Telefone com DDD inválido', [
+                        Log::warning('[TenantObserver] DDD inválido, criando subconta sem telefone', [
                             'tenant_id' => $tenant->id,
-                            'phone' => $phone
+                            'ddd' => $ddd
                         ]);
                     }
-                } else {
-                    Log::warning('[TenantObserver] Telefone com tamanho inválido', [
-                        'tenant_id' => $tenant->id,
-                        'phone_length' => strlen($phone)
-                    ]);
                 }
             }
 
