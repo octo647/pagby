@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Models\Appointment;
+use App\Models\Tenant;
 use App\Observers\AppointmentObserver;
+use App\Observers\TenantObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
@@ -27,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Registrar Observer para Appointments
         Appointment::observe(AppointmentObserver::class);
+        
+        // Registrar Observer para Tenants (cria subconta Asaas automática)
+        Tenant::observe(TenantObserver::class);
         
         // Configuração de regras de senha mais amigáveis
         Password::defaults(function () {

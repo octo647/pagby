@@ -581,8 +581,9 @@ class PlanosDeAssinatura extends Component
                 'duration_days' => $this->duracaoDias,
                 'active' => true,
             ]);
-            // Criar subconta Asaas se necessário
-            $this->criarSubcontaAsaasSeNecessario();
+            
+            // Verificar se subconta Asaas existe (já é criada automaticamente via Observer)
+            $this->verificarSubcontaAsaas();
         }
 
         // Atualiza a lista de planos
@@ -799,6 +800,40 @@ class PlanosDeAssinatura extends Component
         }
         
         return true;
+    }
+    
+    /**
+     * Verifica se subconta Asaas existe para o tenant
+     * Subconta é criada automaticamente via TenantObserver
+     */
+    private function verificarSubcontaAsaas()
+    {
+        $tenant = tenant();
+        
+        if (!$tenant) {
+            return;
+        }
+        
+        // Se já tem subconta, está ok
+        if ($tenant->asaas_account_id && $tenant->asaas_wallet_id) {
+            \Log::info('[PlanosDeAssinatura] Tenant possui subconta Asaas', [
+                'tenant_id' => $tenant->id,
+                'account_id' => $tenant->asaas_account_id,
+                'wallet_id' => $tenant->asaas_wallet_id
+            ]);
+            return;
+        }
+        
+        // Se não tem, logar aviso
+        \Log::warning('[PlanosDeAssinatura] ⚠️ Tenant sem subconta Asaas!', [
+            'tenant_id' => $tenant->id,
+            'name' => $tenant->name,
+            'message' => 'Subconta deve ser criada automaticamente pelo TenantObserver. Verifique se Observer está registrado.'
+        ]);
+        
+        // Opcional: tentar criar manualmente se falhou no observer
+        // Descomente apenas se precisar de fallback
+        // $this->criarSubcontaAsaas($tenant, auth()->user());
     }
     
     public function render()

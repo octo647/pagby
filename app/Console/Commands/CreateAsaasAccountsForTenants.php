@@ -80,41 +80,86 @@ class CreateAsaasAccountsForTenants extends Command
 
         $this->info("\n🔄 Processando tenant: {$tenant->id} - {$tenant->name}");
 
-        // Verificar se temos os dados necessários (usar email ou owner_email)
-        $email = $tenant->owner_email ?? $tenant->email;
-        
-        if (!$email) {
-            $this->warn("⚠️  Tenant {$tenant->id} não possui email. Pulando...");
+        // Buscar proprietário no banco do tenant
+        try {
+            tenancy()->initialize($tenant);
+            
+            // Buscar usuário proprietário no banco tenant
+            $proprietario = \DB::connection('tenant')
+                ->table('users')
+                ->join('role_user', 'users.id', '=', 'role_user.user_id')
+                ->join('roles', 'role_user.role_id', '=', 'roles.id')
+                ->where('roles.name', 'Proprietário')
+                ->select('users.*')
+                ->first();
+            
+            if (!$proprietario) {
+                $this->warn("⚠️  Tenant {$tenant->id} não possui usuário proprietário. Pulando...");
+                tenancy()->end();
+                return;
+            }
+            
+            $this->line("   Proprietário encontrado: {$proprietario->name} ({$proprietario->email})");
+            
+            // Limpar CPF/CNPJ
+            $cpfCnpj = $tenant->cnpj ?? $proprietario->cpf ?? null;
+            
+            if (!$cpfCnpj) {
+                $this->warn("⚠️  Tenant {$tenant->id} não possui CPF/CNPJ. Pulando...");
+                tenancy()->end();
+                return;
+            }
+            
+            $cpfCnpjClean = preg_replace('/\D/', '', $cpfCnpj);
+            
+            // Email
+            $email = $tenant->email ?? $proprietario->email;
+            
+            // Telefone
+            $phone = $tenant->phone ?? $proprietario->phone ?? null;
+            if ($phone) {
+                $phone = preg_replace('/\D/', '', $phone);
+            }
+            
+            tenancy()->end();
+            
+        } catch (\Exception $e) {
+            $this->error("❌ Erro ao buscar proprietário: " . $e->getMessage());
+            tenancy()->end();
             return;
         }
 
-        // Preparar dados da conta (adaptar aos campos disponíveis)
-        $cpfCnpj = $tenant->owner_cpf_cnpj ?? $tenant->cnpj ?? $this->ask("CPF/CNPJ para {$tenant->name}:");
-        $phone = $tenant->owner_phone ?? $tenant->phone ?? $tenant->whatsapp ?? $this->ask("Telefone para {$tenant->name}:");
-        
-        // Limpar CPF/CNPJ
-        $cpfCnpjClean = preg_replace('/\D/', '', $cpfCnpj);
-        
+        // Preparar dados da conta
         $accountData = [
-            'name' => $tenant->name,
+            'name' => $tenant->fantasy_name ?? $tenant->name,
             'email' => $email,
             'cpfCnpj' => $cpfCnpjClean,
-            'mobilePhone' => $phone,
         ];
+        
+        // Adicionar telefone se disponível
+        if ($phone && strlen($phone) >= 10) {
+            $ddd = substr($phone, 0, 2);
+            $number = substr($phone, 2);
+            $accountData['mobilePhone'] = $ddd . $number;
+        }
 
-        // Se for CNPJ (14 dígitos), adicionar dados da empresa
+        // Se for CNPJ (14 dígitos)
         if (strlen($cpfCnpjClean) === 14) {
-            $accountData['companyType'] = 'LIMITED'; // Pode ser MEI, LIMITED, INDIVIDUAL, ASSOCIATION
-            $incomeValue = $this->ask("Faturamento mensal estimado (ex: 5000.00) para {$tenant->name}:");
-            $accountData['incomeValue'] = (float) $incomeValue;
+            $accountData['companyType'] = 'MEI';
+            $accountData['incomeValue'] = 5000;
+            $this->line("   Tipo: CNPJ - Empresa");
         } 
-        // Se for CPF (11 dígitos), adicionar data de nascimento e renda
+        // Se for CPF (11 dígitos)
         elseif (strlen($cpfCnpjClean) === 11) {
-            $birthDate = $tenant->owner_birthdate ?? $this->ask("Data de nascimento (YYYY-MM-DD) para {$tenant->name}:");
+            // Usar birthdate do proprietário
+            $birthDate = $proprietario->birthdate ?? '1990-01-01';
+            if ($birthDate instanceof \DateTime || $birthDate instanceof \Carbon\Carbon) {
+                $birthDate = $birthDate->format('Y-m-d');
+            }
             $accountData['birthDate'] = $birthDate;
-            
-            $incomeValue = $this->ask("Renda mensal estimada (ex: 3000.00) para {$tenant->name}:");
-            $accountData['incomeValue'] = (float) $incomeValue;
+            $accountData['incomeValue'] = 3000;
+            $this->line("   Tipo: CPF - Pessoa Física");
+            $this->line("   Data nascimento: {$birthDate}");
         }
 
         try {
