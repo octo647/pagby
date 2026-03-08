@@ -16,46 +16,74 @@ class SubcontaWebhookController extends Controller
 {
     public function handle(Request $request)
     {
-        Log::info('[Webhook Subconta] Recebido', $request->all());
+        Log::info('[Webhook Subconta] ===== WEBHOOK RECEBIDO =====');
+        Log::info('[Webhook Subconta] Headers', $request->headers->all());
+        Log::info('[Webhook Subconta] Payload', $request->all());
         
-        $event = $request->input('event');
-        $accountId = $request->input('account'); // ID da subconta que disparou
-        $paymentId = $request->input('payment.id');
-        $paymentValue = $request->input('payment.value');
-        $paymentStatus = $request->input('payment.status');
-        
-        // Encontrar tenant pela subconta
-        $tenant = Tenant::on('mysql')
-            ->where('asaas_account_id', $accountId)
-            ->first();
-        
-        if (!$tenant) {
-            Log::warning('[Webhook Subconta] Tenant não encontrado', [
-                'account_id' => $accountId
-            ]);
-            return response()->json(['ok' => true], 200);
-        }
-        
-        // Inicializar tenancy para acessar banco do tenant
-        tenancy()->initialize($tenant);
-        
-        // Buscar payment no banco do tenant
-        $payment = Payment::where('asaas_payment_id', $paymentId)->first();
-        
-        if (!$payment) {
-            Log::warning('[Webhook Subconta] Payment não encontrado no tenant', [
+        try {
+            $event = $request->input('event');
+            $accountId = $request->input('account'); // ID da subconta que disparou
+            $paymentId = $request->input('payment.id');
+            $paymentValue = $request->input('payment.value');
+            $paymentStatus = $request->input('payment.status');
+            
+            Log::info('[Webhook Subconta] Buscando tenant', ['account_id' => $accountId]);
+            
+            // Encontrar tenant pela subconta (usando conexão central)
+            $tenant = \DB::connection('mysql')
+                ->table('tenants')
+                ->where('asaas_account_id', $accountId)
+                ->first();
+            
+            if (!$tenant) {
+                Log::warning('[Webhook Subconta] Tenant não encontrado', [
+                    'account_id' => $accountId
+                ]);
+                return response()->json(['ok' => true, 'message' => 'Tenant not found'], 200);
+            }
+            
+            Log::info('[Webhook Subconta] Tenant encontrado', [
                 'tenant_id' => $tenant->id,
-                'payment_id' => $paymentId
+                'tenant_name' => $tenant->name ?? 'N/A'
             ]);
             
-            // Pode ser um pagamento criado fora do sistema
-            return response()->json(['ok' => true], 200);
+            // Inicializar tenancy para acessar banco do tenant
+            $tenantModel = Tenant::find($tenant->id);
+            tenancy()->initialize($tenantModel);
+            
+            Log::info('[Webhook Subconta] Tenancy inicializada');
+            
+            // Buscar payment no banco do tenant
+            $payment = Payment::where('asaas_payment_id', $paymentId)->first();
+            
+            if (!$payment) {
+                Log::warning('[Webhook Subconta] Payment não encontrado no tenant', [
+                    'tenant_id' => $tenant->id,
+                    'payment_id' => $paymentId
+                ]);
+                
+                // Pode ser um pagamento criado fora do sistema
+                return response()->json(['ok' => true, 'message' => 'Payment not found in tenant'], 200);
+            }
+            
+            // Processar evento
+            $this->processarEvento($event, $payment, $request->all());
+            
+            Log::info('[Webhook Subconta] Processado com sucesso');
+            
+            return response()->json(['ok' => true, 'message' => 'Processed'], 200);
+            
+        } catch (\Exception $e) {
+            Log::error('[Webhook Subconta] ERRO', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Retornar 200 para não fazer o Asaas reenviar
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 200);
         }
-        
-        // Processar evento
-        $this->processarEvento($event, $payment, $request->all());
-        
-        return response()->json(['ok' => true], 200);
     }
     
     private function processarEvento($event, Payment $payment, array $data)
