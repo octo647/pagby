@@ -14,14 +14,23 @@ class TenantObserver
 {
     /**
      * Handle the Tenant "created" event.
-     * Cria subconta Asaas automaticamente após criar tenant
+     * 
+     * ESTRATÉGIA ATUAL:
+     * - Registro: Proprietário paga assinatura PagBy com CPF (vira customer)
+     * - Criar plano: Exige CNPJ do salão (cria subconta para receber dos clientes)
+     * 
+     * Subconta NÃO é criada automaticamente no registro para evitar conflito:
+     * CPF proprietário pode já ser customer PagBy (pagou assinatura)
      */
     public function created(Tenant $tenant): void
     {
-        // Executar em background para não travar o registro
-        dispatch(function () use ($tenant) {
-            $this->criarSubcontaAsaas($tenant);
-        })->afterResponse();
+        Log::info('[TenantObserver] Tenant criado - subconta será criada ao configurar planos', [
+            'tenant_id' => $tenant->id,
+            'name' => $tenant->name
+        ]);
+        
+        // Subconta será criada quando proprietário tentar criar primeiro plano
+        // (via PlanosDeAssinatura - exigirá CNPJ)
     }
 
     /**
