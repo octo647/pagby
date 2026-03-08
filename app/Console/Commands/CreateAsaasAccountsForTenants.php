@@ -136,11 +136,19 @@ class CreateAsaasAccountsForTenants extends Command
             'cpfCnpj' => $cpfCnpjClean,
         ];
         
-        // Adicionar telefone se disponível
-        if ($phone && strlen($phone) >= 10) {
+        // Adicionar telefone se disponível E VÁLIDO
+        if ($phone && strlen($phone) >= 10 && strlen($phone) <= 11) {
+            // Validar se começa com DDD válido (11-99)
             $ddd = substr($phone, 0, 2);
-            $number = substr($phone, 2);
-            $accountData['mobilePhone'] = $ddd . $number;
+            if ($ddd >= 11 && $ddd <= 99) {
+                $number = substr($phone, 2);
+                $accountData['mobilePhone'] = $ddd . $number;
+                $this->line("   Telefone: {$ddd} {$number}");
+            } else {
+                $this->warn("   ⚠️ Telefone com DDD inválido, não enviando para Asaas");
+            }
+        } else {
+            $this->warn("   ⚠️ Telefone inválido ou ausente, não enviando para Asaas");
         }
 
         // Se for CNPJ (14 dígitos)

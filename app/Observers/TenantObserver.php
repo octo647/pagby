@@ -119,14 +119,31 @@ class TenantObserver
                 return;
             }
 
-            // Adicionar telefone se disponível
+            // Adicionar telefone se disponível E VÁLIDO
             $phone = $tenant->phone ?? $proprietario->phone ?? null;
             if ($phone) {
                 $phone = preg_replace('/[^0-9]/', '', $phone);
-                if (strlen($phone) >= 10) {
+                if (strlen($phone) >= 10 && strlen($phone) <= 11) {
+                    // Validar DDD (11-99)
                     $ddd = substr($phone, 0, 2);
-                    $number = substr($phone, 2);
-                    $accountData['mobilePhone'] = $ddd . $number;
+                    if ($ddd >= 11 && $ddd <= 99) {
+                        $number = substr($phone, 2);
+                        $accountData['mobilePhone'] = $ddd . $number;
+                        Log::info('[TenantObserver] Telefone adicionado', [
+                            'tenant_id' => $tenant->id,
+                            'phone' => $ddd . ' ' . $number
+                        ]);
+                    } else {
+                        Log::warning('[TenantObserver] Telefone com DDD inválido', [
+                            'tenant_id' => $tenant->id,
+                            'phone' => $phone
+                        ]);
+                    }
+                } else {
+                    Log::warning('[TenantObserver] Telefone com tamanho inválido', [
+                        'tenant_id' => $tenant->id,
+                        'phone_length' => strlen($phone)
+                    ]);
                 }
             }
 
