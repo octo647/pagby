@@ -691,6 +691,7 @@ class AsaasService {
                 'name' => 'PagBy - Notificações de Pagamento',
                 'url' => config('app.url') . '/api/subconta-webhook',
                 'email' => config('mail.from.address', 'webhooks@pagby.com.br'),
+                'apiVersion' => 3,
                 'enabled' => true,
                 'interrupted' => false,
                 'events' => [
