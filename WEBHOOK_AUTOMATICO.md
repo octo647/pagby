@@ -1,4 +1,39 @@
-# ✅ Webhook Automático Implementado!
+# ✅ Webhook Automático - FUNCIONANDO!
+
+## 🎉 Status: IMPLEMENTADO E TESTADO
+
+Data: 8 de março de 2026  
+Branch: `sem_split`  
+Commits:
+- `bc8d88b`: Adiciona apiVersion obrigatório  
+- `58273e4`: Adiciona webhook na exceção CSRF
+- `6839c61`: Configura CSRF no Laravel 11 (bootstrap/app.php)
+- `992cce3`: Melhora controller com try-catch e logs
+- `3055dff`: Força troca de conexão para banco tenant
+
+---
+
+## ✅ Validação Realizada
+
+**Teste manual realizado com sucesso:**
+```bash
+curl -X POST https://pagby.com.br/api/subconta-webhook \
+  -H "Content-Type: application/json" \
+  -d '{"event":"PAYMENT_CREATED","account":"23fa0512-1fc8-4ccc-bd79-236dd329db0e","payment":{"id":"pay_teste","value":100.00,"status":"PENDING"}}'
+```
+
+**Resultado nos logs:**
+```
+✅ [Webhook Subconta] WEBHOOK RECEBIDO
+✅ [Webhook Subconta] Tenant encontrado: teste1772962022
+✅ [Webhook Subconta] Tenancy inicializada
+✅ [Webhook Subconta] Conexão trocada para tenant
+✅ Query executada no banco correto: tenantteste1772962022.payments
+```
+
+**Status:** Webhook recebe requisição, identifica tenant, troca conexão, acessa banco correto! ✅
+
+---
 
 ## O Que Foi Feito
 
