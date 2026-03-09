@@ -697,11 +697,7 @@ class AsaasService {
             ]);
 
             // Usar API MASTER com header especial para configurar webhook DA subconta
-            $response = Http::timeout(60)->withHeaders([
-                'access_token' => $this->apiKey, // Master key
-                'Content-Type' => 'application/json',
-                'Asaas-Account' => $accountId, // Configura webhook para esta subconta
-            ])->post($this->apiUrl . '/webhook', [
+            $webhookData = [
                 'name' => 'PagBy - Notificações de Pagamento',
                 'url' => config('app.url') . '/api/subconta-webhook',
                 'email' => config('mail.from.address', 'webhooks@pagby.com.br'),
@@ -718,7 +714,20 @@ class AsaasService {
                     'PAYMENT_REFUNDED',
                     'PAYMENT_RECEIVED_IN_CASH',
                 ]
-            ]);
+            ];
+            
+            // Adicionar token de autenticação se configurado
+            $webhookToken = config('services.asaas.webhook_token');
+            if ($webhookToken) {
+                $webhookData['authToken'] = $webhookToken;
+                Log::info('[AsaasService] Token de webhook configurado');
+            }
+            
+            $response = Http::timeout(60)->withHeaders([
+                'access_token' => $this->apiKey, // Master key
+                'Content-Type' => 'application/json',
+                'Asaas-Account' => $accountId, // Configura webhook para esta subconta
+            ])->post($this->apiUrl . '/webhook', $webhookData);
 
             if ($response->successful()) {
                 $webhookData = $response->json();

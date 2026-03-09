@@ -28,6 +28,22 @@ class SubcontaWebhookController extends Controller
         Log::info('[Webhook Subconta] Headers', $request->headers->all());
         Log::info('[Webhook Subconta] Payload', $request->all());
         
+        // Validar token de autenticação do webhook
+        $expectedToken = config('services.asaas.webhook_token');
+        if ($expectedToken) {
+            $receivedToken = $request->header('asaas-access-token');
+            
+            if ($receivedToken !== $expectedToken) {
+                Log::warning('[Webhook Subconta] Token inválido', [
+                    'expected' => substr($expectedToken, 0, 10) . '...',
+                    'received' => $receivedToken ? substr($receivedToken, 0, 10) . '...' : 'null'
+                ]);
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            Log::info('[Webhook Subconta] Token válido');
+        }
+        
         try {
             $event = $request->input('event');
             $accountId = $request->input('account'); // ID da subconta que disparou
