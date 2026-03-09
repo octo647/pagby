@@ -105,40 +105,58 @@ class SubscriptionController extends Controller
         ];
 
         // SubscriptionController gerencia APENAS planos DOS TENANTS (Corte, Barba, etc)
-        // SEMPRE aplicar split: 95% para o salão, 5% para PagBy
+        // 
+        // MODELO HÍBRIDO:
+        // - COM asaas_account_id → Modelo SEM split (subconta recebe pagamento direto)
+        // - SEM asaas_account_id mas COM wallet_id → Modelo COM split (95% tenant, 5% PagBy)
+        // - SEM nenhum → Erro (tenant precisa configurar)
         
-        Log::info('🔍 Verificando split', [
-            'tenant_exists' => $tenant ? true : false,
+        Log::info('🔍 Verificando modelo de pagamento', [
             'tenant_id' => $tenant?->id,
+            'asaas_account_id' => $tenant?->asaas_account_id,
             'asaas_wallet_id' => $tenant?->asaas_wallet_id,
-            'condition' => ($tenant && $tenant->asaas_wallet_id) ? 'PASS' : 'FAIL'
         ]);
         
         $splitData = null;
-        if ($tenant && $tenant->asaas_wallet_id) {
+        $accountId = null;
+        
+        if ($tenant && $tenant->asaas_account_id) {
+            // MODELO SEM SPLIT: Tenant tem subconta completa
+            $accountId = $tenant->asaas_account_id;
+            Log::info('✅ Modelo SEM SPLIT: Pagamento vai direto para subconta', [
+                'account_id' => $accountId,
+                'plan_name' => $plan->name,
+                'message' => 'Assinatura será criada diretamente na subconta (sem split)'
+            ]);
+        } elseif ($tenant && $tenant->asaas_wallet_id) {
+            // MODELO COM SPLIT: Tenant tem apenas wallet_id (modelo antigo)
             $splitData = [
                 [
-                    'walletId' => $tenant->asaas_wallet_id, // Percentual para o salão
+                    'walletId' => $tenant->asaas_wallet_id,
                     'percentualValue' => 95
                 ]
             ];
-            Log::info('💰 Split configurado: percentual para tenant, restante fica na conta principal (PagBy)', [
+            Log::info('💰 Modelo COM SPLIT: 95% tenant, 5% PagBy', [
                 'tenant_wallet' => $tenant->asaas_wallet_id,
-                'pagby_wallet_producao' => '8e4cb619-654e-4c24-9b3f-5803a9c011c8',
                 'percentualValue' => 95,
                 'plan_name' => $plan->name
             ]);
         } else {
-            Log::warning('⚠️ Tenant sem subconta Asaas - split NÃO aplicado!', [
+            Log::error('❌ Tenant sem configuração Asaas', [
                 'tenant_id' => $tenant?->id,
                 'plan_name' => $plan->name,
-                'message' => 'É necessário criar subconta para este tenant'
+                'message' => 'Tenant precisa criar subconta ou configurar wallet_id'
             ]);
+            
+            return redirect()->away(
+                "https://{$tenantId}.pagby.com.br/tenant-assinatura/failure"
+                . "?message=" . urlencode('Este salão ainda não está configurado para receber pagamentos. Entre em contato com o suporte.')
+            );
         }
 
         try {
             // Criar assinatura no Asaas
-            $result = $this->asaasService->criarAssinatura($customerData, $subscriptionData, $splitData);
+            $result = $this->asaasService->criarAssinatura($customerData, $subscriptionData, $splitData, $accountId);
 
             if (!$result['success']) {
                 Log::error('❌ Erro ao criar assinatura:', $result);

@@ -145,30 +145,39 @@ class AsaasService {
      * @param array $customerData
      * @return string|null
      */
-    public function getOrCreateCustomer(array $customerData)
+    public function getOrCreateCustomer(array $customerData, ?string $accountId = null)
     {
-        // Buscar cliente por CPF/email
-        $response = Http::withHeaders([
+        $headers = [
             'access_token' => $this->apiKey,
             'Content-Type' => 'application/json',
-        ])->get($this->apiUrl . '/customers', [
+        ];
+        
+        // Se accountId fornecido, adicionar header para operar na subconta
+        if ($accountId) {
+            $headers['Asaas-Account'] = $accountId;
+            Log::info('🏢 Buscando/criando customer na subconta', ['account_id' => $accountId]);
+        }
+        
+        // Buscar cliente por CPF/email
+        $response = Http::withHeaders($headers)->get($this->apiUrl . '/customers', [
             'cpfCnpj' => $customerData['cpfCnpj'] ?? null,
             'email' => $customerData['email'] ?? null,
         ]);
 
         if ($response->successful() && !empty($response['data'])) {
-            return $response['data'][0]['id'] ?? null;
+            $customerId = $response['data'][0]['id'] ?? null;
+            Log::info('✅ Customer existente encontrado', ['customer_id' => $customerId]);
+            return $customerId;
         }
 
         // Criar cliente se não existir
-        $create = Http::withHeaders([
-            'access_token' => $this->apiKey,
-            'Content-Type' => 'application/json',
-        ])->post($this->apiUrl . '/customers', $customerData);
+        $create = Http::withHeaders($headers)->post($this->apiUrl . '/customers', $customerData);
 
         if ($create->successful()) {
             $responseData = $create->json();
-            return $responseData['id'] ?? null;
+            $customerId = $responseData['id'] ?? null;
+            Log::info('✅ Novo customer criado', ['customer_id' => $customerId]);
+            return $customerId;
         }
         // Retornar mensagem de erro detalhada do Asaas
         if ($create->status() >= 400) {
@@ -212,10 +221,10 @@ class AsaasService {
      *   - fixedValue: Valor fixo para o tenant (alternativa ao percentual)
      * @return array
      */
-    public function criarAssinatura(array $customerData, array $subscriptionData, ?array $splitData = null)
+    public function criarAssinatura(array $customerData, array $subscriptionData, ?array $splitData = null, ?string $accountId = null)
     {
         // 1. Criar/obter cliente no Asaas
-        $customerId = $this->getOrCreateCustomer($customerData);
+        $customerId = $this->getOrCreateCustomer($customerData, $accountId);
         if (!$customerId) {
             return ['success' => false, 'message' => 'Erro ao criar cliente no Asaas.'];
         }
@@ -231,29 +240,46 @@ class AsaasService {
             'externalReference' => $subscriptionData['externalReference'] ?? null,
         ];
 
-        // Adicionar configuração de split se fornecida (array de múltiplos beneficiários)
-        if ($splitData && is_array($splitData) && count($splitData) > 0) {
-            $payload['split'] = $splitData;
-            Log::info('✅ Split adicionado ao payload', [
-                'split' => $splitData
+        // MODELO SEM SPLIT: Se accountId foi fornecido, usar header Asaas-Account (sem split)
+        // MODELO COM SPLIT: Se accountId não fornecido, usar split
+        if ($accountId) {
+            Log::info('🏢 Modelo SEM SPLIT: Criando assinatura diretamente na subconta', [
+                'account_id' => $accountId,
+                'customer_id' => $customerId
             ]);
+            
+            // Criar assinatura DIRETAMENTE na subconta (sem split)
+            $response = Http::withHeaders([
+                'access_token' => $this->apiKey, // Master key
+                'Content-Type' => 'application/json',
+                'Asaas-Account' => $accountId, // Cria na subconta
+            ])->post($this->apiUrl . '/subscriptions', $payload);
+            
         } else {
-            Log::warning('❌ Split NÃO adicionado', [
-                'splitData' => $splitData,
-                'is_array' => is_array($splitData),
-                'count' => $splitData ? count($splitData) : 0
+            // Adicionar configuração de split se fornecida (array de múltiplos beneficiários)
+            if ($splitData && is_array($splitData) && count($splitData) > 0) {
+                $payload['split'] = $splitData;
+                Log::info('✅ Modelo COM SPLIT: Split adicionado ao payload', [
+                    'split' => $splitData
+                ]);
+            } else {
+                Log::warning('❌ Split NÃO adicionado', [
+                    'splitData' => $splitData,
+                    'is_array' => is_array($splitData),
+                    'count' => $splitData ? count($splitData) : 0
+                ]);
+            }
+
+            Log::info('📤 Payload completo para Asaas', [
+                'payload' => $payload
             ]);
+
+            // 3. Criar assinatura
+            $response = Http::withHeaders([
+                'access_token' => $this->apiKey,
+                'Content-Type' => 'application/json',
+            ])->post($this->apiUrl . '/subscriptions', $payload);
         }
-
-        Log::info('📤 Payload completo para Asaas', [
-            'payload' => $payload
-        ]);
-
-        // 3. Criar assinatura
-        $response = Http::withHeaders([
-            'access_token' => $this->apiKey,
-            'Content-Type' => 'application/json',
-        ])->post($this->apiUrl . '/subscriptions', $payload);
 
         if ($response->successful()) {
             return ['success' => true, 'data' => $response->json()];
