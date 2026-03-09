@@ -467,7 +467,13 @@ class AsaasService {
                 return [
                     'success' => true, // Conta foi criada
                     'partial' => true,
-                    'data' => $accountCreated,
+                    'data' => [
+                        'account' => $accountCreated,
+                        'api_key' => null,
+                        'account_id' => $accountId,
+                        'wallet_id' => $accountCreated['walletId'] ?? null,
+                        'webhook' => null,
+                    ],
                     'message' => 'Subconta criada, mas erro ao gerar API key',
                     'api_key_error' => $apiKeyResponse->json()
                 ];
