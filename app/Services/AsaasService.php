@@ -154,8 +154,11 @@ class AsaasService {
         
         // Se accountId fornecido, adicionar header para operar na subconta
         if ($accountId) {
-            $headers['Asaas-Account'] = $accountId;
-            Log::info('🏢 Buscando/criando customer na subconta', ['account_id' => $accountId]);
+            $headers['asaas-account'] = $accountId; // Header case-sensitive: minúsculo
+            Log::info('🏢 Buscando/criando customer na subconta', [
+                'account_id' => $accountId,
+                'headers' => array_keys($headers)
+            ]);
         }
         
         // Buscar cliente por CPF/email
@@ -245,15 +248,23 @@ class AsaasService {
         if ($accountId) {
             Log::info('🏢 Modelo SEM SPLIT: Criando assinatura diretamente na subconta', [
                 'account_id' => $accountId,
-                'customer_id' => $customerId
+                'customer_id' => $customerId,
+                'api_url' => $this->apiUrl . '/subscriptions',
+                'payload' => $payload
             ]);
             
             // Criar assinatura DIRETAMENTE na subconta (sem split)
             $response = Http::withHeaders([
                 'access_token' => $this->apiKey, // Master key
                 'Content-Type' => 'application/json',
-                'Asaas-Account' => $accountId, // Cria na subconta
+                'asaas-account' => $accountId, // Header case-sensitive: deve ser minúsculo
             ])->post($this->apiUrl . '/subscriptions', $payload);
+            
+            Log::info('📥 Resposta Asaas - Modelo SEM SPLIT', [
+                'status' => $response->status(),
+                'success' => $response->successful(),
+                'body' => $response->json()
+            ]);
             
         } else {
             // Adicionar configuração de split se fornecida (array de múltiplos beneficiários)
@@ -758,7 +769,7 @@ class AsaasService {
             $response = Http::timeout(60)->withHeaders([
                 'access_token' => $this->apiKey, // Master key
                 'Content-Type' => 'application/json',
-                'Asaas-Account' => $accountId, // Configura webhook para esta subconta
+                'asaas-account' => $accountId, // Configura webhook para esta subconta
             ])->post($this->apiUrl . '/webhook', $webhookData);
 
             if ($response->successful()) {
