@@ -106,46 +106,62 @@ class SubscriptionController extends Controller
 
         // SubscriptionController gerencia APENAS planos DOS TENANTS (Corte, Barba, etc)
         // 
-        // MODELO HÍBRIDO:
-        // - COM asaas_account_id → Modelo SEM split (subconta recebe pagamento direto)
-        // - SEM asaas_account_id mas COM wallet_id → Modelo COM split (95% tenant, 5% PagBy)
-        // - SEM nenhum → Erro (tenant precisa configurar)
+        // MODELO SEM SPLIT (preferencial):
+        // - Tenant tem asaas_account_id + asaas_api_key → Usa API key da subconta (pagamento 100% na subconta)
+        // 
+        // MODELO COM SPLIT (fallback):
+        // - Tenant tem apenas asaas_wallet_id → Usa split 95% tenant, 5% PagBy
         
         Log::info('🔍 Verificando modelo de pagamento', [
             'tenant_id' => $tenant?->id,
             'asaas_account_id' => $tenant?->asaas_account_id,
             'asaas_wallet_id' => $tenant?->asaas_wallet_id,
+            'asaas_api_key' => $tenant?->asaas_api_key ? 'PRESENTE' : 'AUSENTE'
         ]);
         
         $splitData = null;
-        $accountId = null;
+        $accountApiKey = null;
         
-        if ($tenant && $tenant->asaas_account_id) {
-            // MODELO SEM SPLIT: Tenant tem subconta completa
-            $accountId = $tenant->asaas_account_id;
-            Log::info('✅ Modelo SEM SPLIT: Pagamento vai direto para subconta', [
-                'account_id' => $accountId,
-                'plan_name' => $plan->name,
-                'message' => 'Assinatura será criada diretamente na subconta (sem split)'
-            ]);
-        } elseif ($tenant && $tenant->asaas_wallet_id) {
-            // MODELO COM SPLIT: Tenant tem apenas wallet_id (modelo antigo)
+        // MODELO SEM SPLIT: Tenant tem API key própria
+        if ($tenant && $tenant->asaas_account_id && $tenant->asaas_api_key) {
+            try {
+                $accountApiKey = \Illuminate\Support\Facades\Crypt::decryptString($tenant->asaas_api_key);
+                Log::info('✅ Modelo SEM SPLIT: Usando API key da subconta', [
+                    'account_id' => $tenant->asaas_account_id,
+                    'plan_name' => $plan->name,
+                    'api_key_preview' => substr($accountApiKey, 0, 20) . '...',
+                    'message' => 'Pagamento vai 100% para subconta (sem split)'
+                ]);
+            } catch (\Exception $e) {
+                Log::error('❌ Erro ao descriptografar API key', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $e->getMessage()
+                ]);
+                $accountApiKey = null;
+            }
+        }
+        
+        // MODELO COM SPLIT: Se não tem API key, usar split com wallet_id
+        if (!$accountApiKey && $tenant && $tenant->asaas_wallet_id) {
             $splitData = [
                 [
                     'walletId' => $tenant->asaas_wallet_id,
                     'percentualValue' => 95
                 ]
             ];
-            Log::info('💰 Modelo COM SPLIT: 95% tenant, 5% PagBy', [
+            Log::info('💰 Modelo COM SPLIT: 95% para subconta do tenant', [
                 'tenant_wallet' => $tenant->asaas_wallet_id,
                 'percentualValue' => 95,
                 'plan_name' => $plan->name
             ]);
-        } else {
+        }
+        
+        // Se não tem nem API key nem wallet_id
+        if (!$accountApiKey && !$tenant->asaas_wallet_id) {
             Log::error('❌ Tenant sem configuração Asaas', [
                 'tenant_id' => $tenant?->id,
                 'plan_name' => $plan->name,
-                'message' => 'Tenant precisa criar subconta ou configurar wallet_id'
+                'message' => 'Tenant precisa ter API key ou wallet_id configurado'
             ]);
             
             return redirect()->away(
@@ -155,8 +171,13 @@ class SubscriptionController extends Controller
         }
 
         try {
+            // Criar AsaasService com API key customizada se disponível
+            $asaasService = $accountApiKey 
+                ? new AsaasService($accountApiKey)
+                : $this->asaasService;
+            
             // Criar assinatura no Asaas
-            $result = $this->asaasService->criarAssinatura($customerData, $subscriptionData, $splitData, $accountId);
+            $result = $asaasService->criarAssinatura($customerData, $subscriptionData, $splitData, null);
 
             if (!$result['success']) {
                 Log::error('❌ Erro ao criar assinatura:', $result);

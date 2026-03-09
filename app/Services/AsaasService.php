@@ -483,45 +483,54 @@ class AsaasService {
 
             $accountCreated = $response->json();
             $accountId = $accountCreated['id'];
+            
+            // A resposta da criação JÁ inclui apiKey e accessToken
+            $apiKey = $accountCreated['apiKey'] ?? $accountCreated['accessToken'] ?? null;
 
             Log::info('[AsaasService] Subconta criada', [
                 'account_id' => $accountId,
-                'wallet_id' => $accountCreated['walletId'] ?? null
+                'wallet_id' => $accountCreated['walletId'] ?? null,
+                'api_key_included' => !empty($apiKey)
             ]);
 
-            // 2. Gerar API key para a subconta
-            $apiKeyResponse = Http::timeout(60)->withHeaders([
-                'access_token' => $this->apiKey,
-                'Content-Type' => 'application/json',
-            ])->post($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
-
-            if (!$apiKeyResponse->successful()) {
-                Log::warning('[AsaasService] Subconta criada mas erro ao gerar API key', [
-                    'account_id' => $accountId,
-                    'error' => $apiKeyResponse->body()
-                ]);
+            // 2. Se API key não veio na resposta, tentar gerar
+            if (!$apiKey) {
+                Log::info('[AsaasService] Tentando gerar API key separadamente');
                 
-                return [
-                    'success' => true, // Conta foi criada
-                    'partial' => true,
-                    'data' => [
-                        'account' => $accountCreated,
-                        'api_key' => null,
+                $apiKeyResponse = Http::timeout(60)->withHeaders([
+                    'access_token' => $this->apiKey,
+                    'Content-Type' => 'application/json',
+                ])->post($this->apiUrl . '/accounts/' . $accountId . '/apiKeys');
+
+                if (!$apiKeyResponse->successful()) {
+                    Log::warning('[AsaasService] Subconta criada mas erro ao gerar API key', [
                         'account_id' => $accountId,
-                        'wallet_id' => $accountCreated['walletId'] ?? null,
-                        'webhook' => null,
-                    ],
-                    'message' => 'Subconta criada, mas erro ao gerar API key',
-                    'api_key_error' => $apiKeyResponse->json()
-                ];
+                        'error' => $apiKeyResponse->body()
+                    ]);
+                    
+                    return [
+                        'success' => true, // Conta foi criada
+                        'partial' => true,
+                        'data' => [
+                            'account' => $accountCreated,
+                            'api_key' => null,
+                            'account_id' => $accountId,
+                            'wallet_id' => $accountCreated['walletId'] ?? null,
+                            'webhook' => null,
+                        ],
+                        'message' => 'Subconta criada, mas erro ao gerar API key',
+                        'api_key_error' => $apiKeyResponse->json()
+                    ];
+                }
+
+                $apiKeyData = $apiKeyResponse->json();
+                $apiKey = $apiKeyData['apiKey'] ?? null;
             }
 
-            $apiKeyData = $apiKeyResponse->json();
-            $apiKey = $apiKeyData['apiKey'] ?? null;
-
-            Log::info('[AsaasService] API key gerada', [
+            Log::info('[AsaasService] API key disponível', [
                 'account_id' => $accountId,
-                'api_key_preview' => $apiKey ? substr($apiKey, 0, 20) . '...' : null
+                'api_key_preview' => $apiKey ? substr($apiKey, 0, 20) . '...' : null,
+                'api_key_length' => $apiKey ? strlen($apiKey) : 0
             ]);
 
             // 3. Registrar webhook para receber notificações de pagamentos
