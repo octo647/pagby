@@ -99,25 +99,31 @@ class PlanosDeAssinatura extends Component
         $this->assinaturaAtivaId = null;
         
         if ($user && tenant()) {
-            // Usar SubscriptionPayment (banco do tenant) em vez de TenantsPlansPayment (central)
-            $assinatura = \App\Models\SubscriptionPayment::query()
-                ->where('customer_email', $user->email)
-                ->whereIn('status', ['ACTIVE', 'RECEIVED', 'CONFIRMED', 'approved', 'authorized'])
-                ->where(function($query) {
-                    $query->whereNull('expires_at')
-                          ->orWhere('expires_at', '>', now());
-                })
+            // Buscar Subscription do usuário logado
+            $subscription = \App\Models\Subscription::where('user_id', $user->id)
+                ->whereIn('status', ['Ativo'])
+                ->where('end_date', '>=', now())
                 ->latest()
                 ->first();
             
-            if ($assinatura) {
-                $this->assinaturaAtivaId = $assinatura->id;
-                \Log::info('[PlanosDeAssinatura] Assinatura ativa encontrada', [
-                    'user_email' => $user->email,
-                    'subscription_id' => $assinatura->id,
-                    'status' => $assinatura->status,
-                    'plan_name' => $assinatura->plan_name
-                ]);
+            if ($subscription) {
+                // Buscar último pagamento dessa subscription
+                $assinatura = \App\Models\SubscriptionPayment::query()
+                    ->where('subscription_id', $subscription->id)
+                    ->whereIn('status', ['received', 'confirmed', 'pending'])
+                    ->latest()
+                    ->first();
+                
+                if ($assinatura) {
+                    $this->assinaturaAtivaId = $assinatura->id;
+                    \Log::info('[PlanosDeAssinatura] Assinatura ativa encontrada', [
+                        'user_id' => $user->id,
+                        'subscription_id' => $subscription->id,
+                        'payment_id' => $assinatura->id,
+                        'status' => $assinatura->status,
+                        'subscription_status' => $subscription->status
+                    ]);
+                }
             }
         }
     
