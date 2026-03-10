@@ -94,20 +94,30 @@ class PlanosDeAssinatura extends Component
         $planos = Plan::with('services', 'additionalServices')->get();    
         $this->todosServicos = \App\Models\Service::all();
 
-        // Defina o ID da assinatura ativa do usuário autenticado (salva apenas o ID, não o objeto)
+        // Buscar assinatura ativa do usuário no banco do TENANT
         $user = Auth::user();
-        $tenantId = tenant() ? tenant()->id : null;
         $this->assinaturaAtivaId = null;
-        if ($user && $tenantId) {
-            $assinatura = \App\Models\TenantsPlansPayment::on('mysql')
-                ->where('tenant_id', $tenantId)
-                ->where('payer_data', 'like', '%'.$user->email.'%')
-                ->whereIn('status', ['authorized', 'active', 'approved', 'RECEIVED'])
+        
+        if ($user && tenant()) {
+            // Usar SubscriptionPayment (banco do tenant) em vez de TenantsPlansPayment (central)
+            $assinatura = \App\Models\SubscriptionPayment::query()
+                ->where('customer_email', $user->email)
+                ->whereIn('status', ['ACTIVE', 'RECEIVED', 'CONFIRMED', 'approved', 'authorized'])
+                ->where(function($query) {
+                    $query->whereNull('expires_at')
+                          ->orWhere('expires_at', '>', now());
+                })
                 ->latest()
                 ->first();
             
             if ($assinatura) {
                 $this->assinaturaAtivaId = $assinatura->id;
+                \Log::info('[PlanosDeAssinatura] Assinatura ativa encontrada', [
+                    'user_email' => $user->email,
+                    'subscription_id' => $assinatura->id,
+                    'status' => $assinatura->status,
+                    'plan_name' => $assinatura->plan_name
+                ]);
             }
         }
     
@@ -140,7 +150,8 @@ class PlanosDeAssinatura extends Component
             return null;
         }
         
-        return \App\Models\TenantsPlansPayment::on('mysql')->find($this->assinaturaAtivaId);
+        // Buscar no modelo correto: SubscriptionPayment (banco do tenant)
+        return \App\Models\SubscriptionPayment::find($this->assinaturaAtivaId);
     }
     
     public function allowedDays()
