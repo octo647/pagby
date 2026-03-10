@@ -534,15 +534,21 @@ class AsaasService {
             ]);
 
             // 3. Registrar webhook para receber notificações de pagamentos
-            $webhookResult = $this->registrarWebhookSubconta($accountId);
+            // DESABILITADO TEMPORARIAMENTE: Webhooks causando penalizações (10/03/2026)
+            // $webhookResult = $this->registrarWebhookSubconta($accountId);
             
-            if (!$webhookResult['success']) {
-                Log::warning('[AsaasService] Subconta criada mas webhook não configurado', [
-                    'account_id' => $accountId,
-                    'webhook_error' => $webhookResult['message']
-                ]);
-                // Não falha a criação - webhook pode ser configurado depois
-            }
+            // if (!$webhookResult['success']) {
+            //     Log::warning('[AsaasService] Subconta criada mas webhook não configurado', [
+            //         'account_id' => $accountId,
+            //         'webhook_error' => $webhookResult['message']
+            //     ]);
+            //     // Não falha a criação - webhook pode ser configurado depois
+            // }
+
+            Log::info('[AsaasService] ⚠️  Registro de webhook desabilitado temporariamente', [
+                'account_id' => $accountId,
+                'reason' => 'Evitar penalizações no Asaas'
+            ]);
 
             return [
                 'success' => true,
@@ -551,7 +557,7 @@ class AsaasService {
                     'api_key' => $apiKey,
                     'account_id' => $accountId,
                     'wallet_id' => $accountCreated['walletId'] ?? null,
-                    'webhook' => $webhookResult['data'] ?? null,
+                    'webhook' => null, // Desabilitado temporariamente
                 ],
                 'message' => 'Subconta criada com sucesso'
             ];
@@ -743,15 +749,27 @@ class AsaasService {
     public function registrarWebhookSubconta(string $accountId)
     {
         try {
+            // Garantir HTTPS em produção (nunca usar HTTP, causa 301 e penalizações)
+            $baseUrl = config('app.url');
+            $isLocal = str_contains($baseUrl, 'localhost') || str_contains($baseUrl, '127.0.0.1');
+            
+            // Forçar HTTPS se não for localhost
+            if (!$isLocal && !str_starts_with($baseUrl, 'https://')) {
+                $baseUrl = str_replace('http://', 'https://', $baseUrl);
+            }
+            
+            $webhookUrl = $baseUrl . '/api/subconta-webhook';
+            
             Log::info('[AsaasService] Registrando webhook para subconta', [
                 'account_id' => $accountId,
-                'webhook_url' => config('app.url') . '/api/subconta-webhook'
+                'webhook_url' => $webhookUrl,
+                'forced_https' => !$isLocal && str_starts_with($webhookUrl, 'https://')
             ]);
 
             // Usar API MASTER com header especial para configurar webhook DA subconta
             $webhookData = [
                 'name' => 'PagBy - Notificações de Pagamento',
-                'url' => config('app.url') . '/api/subconta-webhook',
+                'url' => $webhookUrl,
                 'email' => config('mail.from.address', 'webhooks@pagby.com.br'),
                 'apiVersion' => 3,
                 'enabled' => true,
