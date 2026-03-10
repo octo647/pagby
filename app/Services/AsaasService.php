@@ -534,21 +534,16 @@ class AsaasService {
             ]);
 
             // 3. Registrar webhook para receber notificações de pagamentos
-            // DESABILITADO TEMPORARIAMENTE: Webhooks causando penalizações (10/03/2026)
-            // $webhookResult = $this->registrarWebhookSubconta($accountId);
+            // CORRIGIDO: Agora usa HTTPS corretamente (não causa mais 301 redirect)
+            $webhookResult = $this->registrarWebhookSubconta($accountId);
             
-            // if (!$webhookResult['success']) {
-            //     Log::warning('[AsaasService] Subconta criada mas webhook não configurado', [
-            //         'account_id' => $accountId,
-            //         'webhook_error' => $webhookResult['message']
-            //     ]);
-            //     // Não falha a criação - webhook pode ser configurado depois
-            // }
-
-            Log::info('[AsaasService] ⚠️  Registro de webhook desabilitado temporariamente', [
-                'account_id' => $accountId,
-                'reason' => 'Evitar penalizações no Asaas'
-            ]);
+            if (!$webhookResult['success']) {
+                Log::warning('[AsaasService] Subconta criada mas webhook não configurado', [
+                    'account_id' => $accountId,
+                    'webhook_error' => $webhookResult['message']
+                ]);
+                // Não falha a criação - webhook pode ser configurado depois
+            }
 
             return [
                 'success' => true,
@@ -557,7 +552,7 @@ class AsaasService {
                     'api_key' => $apiKey,
                     'account_id' => $accountId,
                     'wallet_id' => $accountCreated['walletId'] ?? null,
-                    'webhook' => null, // Desabilitado temporariamente
+                    'webhook' => $webhookResult['data'] ?? null,
                 ],
                 'message' => 'Subconta criada com sucesso'
             ];
