@@ -51,19 +51,86 @@ class PlanosDeAssinatura extends Component
     protected function criarSubcontaAsaasSeNecessario()
     {
         $tenant = tenant();
-        if (!$tenant || $tenant->asaas_wallet_id) {
-            return;
-        }
-        // Verifica se a conta Pagby é filha (subconta) e evita criar subconta se for
-        $asaasService = new \App\Services\AsaasService();
-        if (str_starts_with($asaasService->apiKey ?? '', '$aact_')) { // Exemplo: prefixo de apiKey de subconta
-            \Log::warning('Conta Pagby é subconta no Asaas. Não é permitido criar subcontas filhas. Ignorando criação de subconta para o tenant.', [
-                'tenant_id' => $tenant->id,
-                'apiKey' => $asaasService->apiKey
+        
+        // Verificar se já tem subconta
+        if (!$tenant || $tenant->asaas_account_id) {
+            \Log::info('[criarSubcontaAsaas] Tenant já tem subconta ou não identificado', [
+                'tenant_id' => $tenant ? $tenant->id : null,
+                'has_account' => $tenant ? (bool)$tenant->asaas_account_id : false
             ]);
             return;
         }
-        // ...existing code para criar subconta se permitido...
+        
+        // Verificar se tem CNPJ
+        if (!$tenant->cnpj) {
+            \Log::warning('[criarSubcontaAsaas] Tenant sem CNPJ - não pode criar subconta', [
+                'tenant_id' => $tenant->id
+            ]);
+            session()->flash('warning', 'Por favor, cadastre o CNPJ do salão nas configurações para habilitar pagamentos.');
+            return;
+        }
+        
+        try {
+            \Log::info('[criarSubcontaAsaas] Iniciando criação de subconta', [
+                'tenant_id' => $tenant->id,
+                'cnpj' => $tenant->cnpj
+            ]);
+            
+            $asaasService = new \App\Services\AsaasService();
+            
+            // Preparar dados da conta
+            $accountData = [
+                'name' => $tenant->name,
+                'email' => $tenant->email,
+                'cpfCnpj' => preg_replace('/[^0-9]/', '', $tenant->cnpj),
+                'companyType' => 'MEI', // ou outro tipo conforme necessário
+                'phone' => preg_replace('/[^0-9]/', '', $tenant->phone ?? ''),
+                'mobilePhone' => preg_replace('/[^0-9]/', '', $tenant->whatsapp ?? $tenant->phone ?? ''),
+                'address' => $tenant->address ?? '',
+                'addressNumber' => $tenant->number ?? 'S/N',
+                'province' => $tenant->neighborhood ?? '',
+                'postalCode' => preg_replace('/[^0-9]/', '', $tenant->cep ?? '')
+            ];
+            
+            $result = $asaasService->criarSubcontaCompleta($accountData);
+            
+            if ($result['success']) {
+                // Atualizar tenant com dados da subconta
+                $tenant->asaas_account_id = $result['data']['account_id'];
+                $tenant->asaas_wallet_id = $result['data']['wallet_id'];
+                
+                if (!empty($result['data']['api_key'])) {
+                    $tenant->asaas_api_key = \Illuminate\Support\Facades\Crypt::encryptString($result['data']['api_key']);
+                }
+                
+                $tenant->asaas_account_status = 'active';
+                $tenant->asaas_account_activated_at = now();
+                $tenant->save();
+                
+                \Log::info('[criarSubcontaAsaas] ✅ Subconta criada com sucesso', [
+                    'tenant_id' => $tenant->id,
+                    'account_id' => $tenant->asaas_account_id,
+                    'wallet_id' => $tenant->asaas_wallet_id
+                ]);
+                
+                session()->flash('message', 'Subconta Asaas criada com sucesso!');
+            } else {
+                \Log::error('[criarSubcontaAsaas] ❌ Falha ao criar subconta', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $result['message'] ?? 'Erro desconhecido'
+                ]);
+                
+                session()->flash('error', 'Erro ao criar subconta Asaas: ' . ($result['message'] ?? 'Erro desconhecido'));
+            }
+        } catch (\Exception $e) {
+            \Log::error('[criarSubcontaAsaas] ❌ Exceção ao criar subconta', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            session()->flash('error', 'Erro ao criar subconta: ' . $e->getMessage());
+        }
     }
     
     // Listener para atualizar descontos quando serviços adicionais mudarem
@@ -660,8 +727,8 @@ class PlanosDeAssinatura extends Component
                 'active' => true,
             ]);
             
-            // Verificar se subconta Asaas existe (já é criada automaticamente via Observer)
-            $this->verificarSubcontaAsaas();
+            // Criar subconta Asaas se necessário
+            $this->criarSubcontaAsaasSeNecessario();
         }
 
         // Atualiza a lista de planos
