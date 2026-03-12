@@ -101,14 +101,36 @@ class AsaasService {
      */
     public function consultarCobranca($asaasPaymentId)
     {
+        Log::info('🔍 [consultarCobranca] Consultando pagamento na Asaas', [
+            'payment_id' => $asaasPaymentId,
+            'full_url' => $this->apiUrl . '/payments/' . $asaasPaymentId,
+            'api_url_base' => $this->apiUrl,
+            'api_key_prefix' => substr($this->apiKey, 0, 20) . '...'
+        ]);
+
         $response = Http::withHeaders([
             'access_token' => $this->apiKey,
             'Content-Type' => 'application/json',
         ])->get($this->apiUrl . '/payments/' . $asaasPaymentId);
 
+        Log::info('📥 [consultarCobranca] Resposta da Asaas', [
+            'status' => $response->status(),
+            'successful' => $response->successful(),
+            'has_body' => !empty($response->body()),
+            'body_length' => strlen($response->body()),
+            'body' => $response->body(),
+            'json' => $response->json()
+        ]);
+
         if ($response->successful()) {
             return $response->json();
         }
+        
+        Log::warning('⚠️ [consultarCobranca] Consulta de pagamento falhou', [
+            'status' => $response->status(),
+            'error' => $response->body()
+        ]);
+        
         return null;
     }
 
@@ -306,14 +328,31 @@ class AsaasService {
      */
     public function consultarAssinatura($subscriptionId)
     {
+        Log::info('🔍 [consultarAssinatura] Consultando na Asaas', [
+            'subscription_id' => $subscriptionId,
+            'api_url' => $this->apiUrl . '/subscriptions/' . $subscriptionId
+        ]);
+        
         $response = Http::withHeaders([
             'access_token' => $this->apiKey,
             'Content-Type' => 'application/json',
         ])->get($this->apiUrl . '/subscriptions/' . $subscriptionId);
 
+        Log::info('📥 [consultarAssinatura] Resposta da Asaas', [
+            'status' => $response->status(),
+            'successful' => $response->successful(),
+            'body' => $response->json()
+        ]);
+
         if ($response->successful()) {
             return $response->json();
         }
+        
+        Log::warning('⚠️ [consultarAssinatura] Consulta falhou', [
+            'status' => $response->status(),
+            'body' => $response->body()
+        ]);
+        
         return null;
     }
 
@@ -322,18 +361,27 @@ class AsaasService {
      * @param string $subscriptionId
      * @return array
      */
-    public function cancelarAssinatura($subscriptionId)
+    public function cancelarAssinatura($subscriptionId, $accountId = null)
     {
         Log::info('🔴 Cancelando assinatura Asaas', [
             'subscription_id' => $subscriptionId,
+            'account_id' => $accountId,
             'api_url' => $this->apiUrl,
             'api_key_prefix' => substr($this->apiKey, 0, 20) . '...'
         ]);
 
-        $response = Http::withHeaders([
+        $headers = [
             'access_token' => $this->apiKey,
             'Content-Type' => 'application/json',
-        ])->delete($this->apiUrl . '/subscriptions/' . $subscriptionId);
+        ];
+
+        // Se accountId fornecido, adiciona header para acessar subconta
+        if ($accountId) {
+            $headers['asaas-account'] = $accountId;
+        }
+
+        $response = Http::withHeaders($headers)
+            ->delete($this->apiUrl . '/subscriptions/' . $subscriptionId);
 
         Log::info('📡 Resposta Asaas DELETE', [
             'status' => $response->status(),
