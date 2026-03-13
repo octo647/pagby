@@ -49,6 +49,15 @@ class PagBySubscriptionController extends Controller
     
         $amount = $pagbyService->calcularValorPlano($employeeCount, $planName);
         
+        // Mapear periodicidade para ciclo Asaas
+        $cycles = [
+            'mensal' => 'MONTHLY',
+            'trimestral' => 'QUARTERLY',
+            'semestral' => 'SEMIANNUALLY',
+            'anual' => 'YEARLY',
+        ];
+        $cycle = $cycles[$planName] ?? 'MONTHLY';
+        
         $customerData = [
             'name' => $contact->tenant_name ?? $contact->owner_name,
             'email' => $contact->email,
@@ -63,7 +72,7 @@ class PagBySubscriptionController extends Controller
        
      
         $subscriptionData = [
-            'cycle' => 'MONTHLY',
+            'cycle' => $cycle,
             'value' => $amount,
             'billingType' => 'UNDEFINED', // Cliente escolhe forma de pagamento
             'description' => 'Assinatura PagBy - ' . ucfirst($planName),

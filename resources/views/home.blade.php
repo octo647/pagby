@@ -257,14 +257,14 @@
                     <label for="numFuncionarios" class="block font-bold mb-3 text-white text-lg">
                         Quantos funcionários?
                     </label>
-                    <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="10" value="1" 
+                    <input type="number" id="numFuncionarios" name="numFuncionarios" min="1" max="20" value="1" 
                            class="w-24 px-4 py-3 rounded-xl border-2 border-pink-500 text-gray-800 bg-white focus:ring-2 focus:ring-pink-500 focus:border-transparent text-xl font-bold text-center" />
                   
                 </div>
                 
                 <div id="avisoFuncionarios" class="hidden text-yellow-300 text-lg font-semibold mb-4 bg-yellow-900/30 rounded-xl p-4 max-w-2xl mx-auto">
                     <i class="fas fa-info-circle mr-2"></i>
-                    Para mais de 7 funcionários, consulte valores pelo WhatsApp 
+                    Para mais de 20 funcionários, consulte valores pelo WhatsApp 
                     <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-300 hover:text-green-200" target="_blank">
                         {{ config('pagby.whatsapp_display') }}
                     </a>
@@ -272,7 +272,7 @@
             </div>
 
             <!-- Grid de Planos -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 <!-- Plano Mensal -->
                 <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
                     <div class="text-center">
@@ -280,9 +280,9 @@
                         <p class="text-gray-600 text-sm mb-6">Pagamento mensal</p>
                         
                         <div class="mb-6">
-                            <div class="text-gray-500 text-sm mb-1">A partir de</div>
+                            
                             <div class="text-5xl font-bold text-pink-600" data-plan="mensal">
-                                R$ <span class="valor-mensal">60</span>
+                                R$ <span class="valor-mensal">30</span>
                             </div>
                             <div class="text-gray-600 text-sm mt-1">/mês</div>
                         </div>
@@ -294,44 +294,17 @@
                         
                         <div class="mt-4 text-gray-700 text-sm">
                             <div class="font-semibold mb-2">Pagamento:</div>
-                            <div class="valor-total" data-plan="mensal">R$ 60,00 no total</div>
+                            <div class="valor-total" data-plan="mensal">R$ 30,00 no total</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Plano Trimestral -->
-                <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
-                    <div class="absolute top-4 right-4 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        20% OFF
-                    </div>
-                    <div class="text-center">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Trimestral</h3>
-                        <p class="text-gray-600 text-sm mb-6">3 meses</p>
-                        
-                        <div class="mb-6">
-                            <div class="text-gray-500 text-sm mb-1">Equivalente a</div>
-                            <div class="text-5xl font-bold text-pink-600" data-plan="trimestral">
-                                R$ <span class="valor-mensal">48</span>
-                            </div>
-                            <div class="text-gray-600 text-sm mt-1">/mês</div>
-                        </div>
-                        
-                        <button onclick="selecionarPlano('trimestral')" 
-                                class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
-                            Escolher plano
-                        </button>
-                        
-                        <div class="mt-4 text-gray-700 text-sm">
-                            <div class="font-semibold mb-2">Pagamento trimestral:</div>
-                            <div class="valor-total" data-plan="trimestral">R$ 144,00 no total</div>
-                        </div>
-                    </div>
-                </div>
+                
 
                 <!-- Plano Semestral -->
                 <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
                     <div class="absolute top-4 right-4 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
-                        30% OFF
+                        10% OFF
                     </div>
                     <div class="text-center">
                         <h3 class="text-2xl font-bold text-gray-800 mb-2">Semestral</h3>
@@ -340,7 +313,7 @@
                         <div class="mb-6">
                             <div class="text-gray-500 text-sm mb-1">Equivalente a</div>
                             <div class="text-5xl font-bold text-pink-600" data-plan="semestral">
-                                R$ <span class="valor-mensal">42</span>
+                                R$ <span class="valor-mensal">27</span>
                             </div>
                             <div class="text-gray-600 text-sm mt-1">/mês</div>
                         </div>
@@ -352,7 +325,7 @@
                         
                         <div class="mt-4 text-gray-700 text-sm">
                             <div class="font-semibold mb-2">Pagamento semestral:</div>
-                            <div class="valor-total" data-plan="semestral">R$ 252,00 no total</div>
+                            <div class="valor-total" data-plan="semestral">R$ 54,00 no total</div>
                         </div>
                     </div>
                 </div>
@@ -365,7 +338,7 @@
                         <i class="fas fa-crown text-gray-900"></i>
                     </div>
                     <div class="absolute top-12 right-4 bg-yellow-400 text-gray-900 text-xs font-bold px-3 py-1 rounded-full">
-                        40% OFF
+                        15% OFF
                     </div>
                     <div class="text-center mt-8">
                         <h3 class="text-2xl font-bold text-white mb-2">Anual</h3>
@@ -374,7 +347,7 @@
                         <div class="mb-6">
                             <div class="text-white/80 text-sm mb-1">Equivalente a</div>
                             <div class="text-5xl font-bold text-white" data-plan="anual">
-                                R$ <span class="valor-mensal">36</span>
+                                R$ <span class="valor-mensal">25,50</span>
                             </div>
                             <div class="text-white/90 text-sm mt-1">/mês</div>
                         </div>
@@ -386,9 +359,9 @@
                         
                         <div class="mt-4 text-white text-sm">
                             <div class="font-semibold mb-2">Pagamento anual:</div>
-                            <div class="valor-total" data-plan="anual">R$ 432,00 no total</div>
-                            <div class="text-xs text-yellow-200 mt-2">
-                                💰 Economize R$ 288,00 no ano!
+                            <div class="valor-total" data-plan="anual">R$ 306,00 no total</div>
+                            <div id="economia-anual" class="text-xs text-yellow-200 mt-2">
+                                💰 Economize R$ 126,00 no ano!
                             </div>
                         </div>
                     </div>
@@ -570,16 +543,14 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const valorBase = {{ config('pricing.base_price_per_employee') }};
-        const acrescimoFuncionario = 0.30;
+        const acrescimoFuncionario = 1;
         const descontos = {
             'mensal': 0,
-            'trimestral': 0.20,
-            'semestral': 0.30,
-            'anual': 0.40
+            'semestral': 0.10,
+            'anual': 0.15
         };
         const meses = {
             'mensal': 1,
-            'trimestral': 3,
             'semestral': 6,
             'anual': 12
         };
@@ -601,25 +572,25 @@
             let numFuncionarios = parseInt(numFuncionariosInput.value) || 1;
             const aviso = document.getElementById('avisoFuncionarios');
 
-            // Limita o máximo a 7 funcionários
-            if (numFuncionarios > 7) {
-                numFuncionariosInput.value = 7;
-                numFuncionarios = 7;
+            // Limita o máximo a 20 funcionários
+            if (numFuncionarios > 20) {
+                numFuncionariosInput.value = 20;
+                numFuncionarios = 20;
                 aviso.classList.remove('hidden');
             } else {
                 aviso.classList.add('hidden');
             }
 
             // Atualiza valores para cada plano
-            ['mensal', 'trimestral', 'semestral', 'anual'].forEach(periodicidade => {
+            ['mensal', 'semestral', 'anual'].forEach(periodicidade => {
                 const valores = calcularPlano(numFuncionarios, periodicidade);
                 
                 // Atualiza valor mensal
                 const valorMensalElement = document.querySelector(`[data-plan="${periodicidade}"] .valor-mensal`);
                 if (valorMensalElement) {
                     valorMensalElement.textContent = valores.mensal.toLocaleString('pt-BR', {
-                        minimumFractionDigits: 0,
-                        maximumFractionDigits: 0
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
                     });
                 }
                 
@@ -637,8 +608,8 @@
             const valorMensal = calcularPlano(numFuncionarios, 'mensal');
             const valorAnual = calcularPlano(numFuncionarios, 'anual');
             const economia = (valorMensal.mensal * 12) - valorAnual.total;
-            
-            const economiaElement = document.querySelector('[data-plan="anual"]').parentElement.querySelector('.text-yellow-200');
+           
+            const economiaElement = document.getElementById('economia-anual');
             if (economiaElement) {
                 economiaElement.textContent = `💰 Economize R$ ${economia.toLocaleString('pt-BR', {
                     minimumFractionDigits: 2,
