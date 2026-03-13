@@ -4,9 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Subscription;
+use App\Models\SubscriptionPayment;
 use Illuminate\Support\Facades\Auth;
-use App\Models\TenantPlan;
-use App\Models\TenantsPlansPayment;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Log;
@@ -28,54 +27,26 @@ class AsaasSubscriptionController extends Controller
     {
         Log::info('=== Asaas Success Route Acessada ===');
         Log::info('Success Request:', $request->all());
-        Log::info('Host:', ['host' => $request->getHost()]);
         
-        $host = $request->getHost();
-        $isCentral = in_array($host, ['www.pagby.com.br', 'pagby.com.br', 'localhost']);
-        
-        // Se está no CENTRAL, redireciona para o tenant
-        if ($isCentral) {
-            $payment_id = $request->query('payment_id');
-            $subscriptionId = $request->query('subscription_id');
-            
-            $payment = null;
-            
-            if ($payment_id) {
-                $payment = TenantsPlansPayment::on('mysql')->find($payment_id);
-            } elseif ($subscriptionId) {
-                $payment = TenantsPlansPayment::on('mysql')
-                    ->where('asaas_subscription_id', $subscriptionId)
-                    ->first();
-            }
-            
-            if ($payment && $payment->tenant_id) {
-                $tenantDomain = "{$payment->tenant_id}.pagby.com.br";
-                $successUrl = "https://{$tenantDomain}/tenant-assinatura/success"
-                    . "?payment_id={$payment->id}"
-                    . "&plan_name=" . urlencode($payment->plan)
-                    . "&price=" . urlencode(number_format($payment->amount, 2, ',', '.'));
-                
-                Log::info('Redirecionando para tenant:', ['url' => $successUrl]);
-                return redirect()->away($successUrl);
-            }
-            
-            Log::error('Pagamento não encontrado no central', [
-                'payment_id' => $payment_id,
-                'subscription_id' => $subscriptionId
-            ]);
-            return redirect()->route('home')->with('error', 'Pagamento não encontrado');
-        }
-        
-        // Se está no TENANT, exibe a página de sucesso
         $payment_id = $request->query('payment_id');
         $plan_name = $request->query('plan_name');
         $price = $request->query('price');
         
-        if ($payment_id) {
-            $payment = TenantsPlansPayment::on('mysql')->find($payment_id);
-            if ($payment) {
-                $plan_name = $payment->plan;
-                $price = number_format($payment->amount, 2, ',', '.');
+        //  Se veio payment_id, buscar dados do SubscriptionPayment NO TENANT
+        if ($payment_id && tenant()) {
+            try {
+                $subscriptionPayment = SubscriptionPayment::find($payment_id);
+                if ($subscriptionPayment && $subscriptionPayment->subscription) {
+                    $subscription = $subscriptionPayment->subscription;
+                    $plan = $subscription->plan;
+                    $plan_name = $plan->name ?? 'Plano';
+                    $price = number_format($subscriptionPayment->amount, 2, ',', '.');
+                }
+            } catch (\Exception $e) {
+                Log::error('Erro ao buscar subscription payment:', [
+                    'payment_id' => $payment_id,
+                    'error' => $e->getMessage()
+                ]);
             }
         }
         
@@ -102,12 +73,11 @@ class AsaasSubscriptionController extends Controller
         $message = $request->query('message', 'Não foi possível processar sua assinatura.');
         $tenantId = $request->query('tenant_id');    
         $planId = $request->query('plan_id');
+        $plan = null;
 
-        if ($planId) {
-            $plan = TenantPlan::find($planId);
-            if ($plan && $plan->tenant) {
-                $tenantId = $plan->tenant_id;
-            }
+        if ($planId && tenant()) {
+            // Buscar plano na base do TENANT (não na central)
+            $plan = \App\Models\Plan::find($planId);
         }
 
         return view('tenant-assinatura.failure', [
@@ -143,95 +113,147 @@ class AsaasSubscriptionController extends Controller
             'user_email' => $userEmail
         ]);
 
-        // Busca o plano do tenant no central
-        $plan = TenantPlan::on('mysql')
-            ->where('tenant_id', $tenantId)
-            ->where('plan_id', $planId)
-            ->first();
-
-        if (!$plan) {
-            return redirect()->away("https://{$tenantId}.pagby.com.br/assinatura/failure?message=Plano não encontrado");
-        }
-
         // Buscar tenant para obter wallet_id (subconta Asaas)
         $tenant = Tenant::on('mysql')->find($tenantId);
         
-        // Cria registro local do pagamento (status pending) NA BASE CENTRAL
-        $payment = TenantsPlansPayment::on('mysql')->create([
-            'external_id' => 'asaas-subscription-' . uniqid(),
-            'tenant_id' => $tenantId,
-            'plan_id' => $planId,
-            'plan' => $plan->name,
-            'amount' => $plan->price,
-            'status' => 'PENDING',
-            'payer_data' => json_encode([
-                'email' => $userEmail,
-                'name' => $userName,
-                'cpfCnpj' => $cpfCnpj
-            ]),
-        ]);
-
-        Log::info('💰 Pagamento criado na base central:', [
-            'payment_id' => $payment->id,
-            'tenant_id' => $tenantId,
-        ]);
-
-        // Preparar dados do cliente
-        $customerData = [
-            'name' => $userName,
-            'email' => $userEmail,
-            'cpfCnpj' => $cpfCnpj,
-        ];
-
-        // Preparar dados da assinatura
-        $tenantName = $tenant->name ?? $tenant->fantasy_name ?? $tenantId;
-        $subscriptionData = [
-            'cycle' => 'MONTHLY',
-            'value' => floatval($plan->price),
-            'billingType' => 'UNDEFINED', // Cliente escolhe na hora de pagar
-            'description' => "Assinatura {$plan->name} - {$tenantName}",
-            'nextDueDate' => now()->format('Y-m-d'), // Gera cobrança imediatamente
-            'externalReference' => $payment->external_id,
-        ];
-
-        // SPLIT: Planos de tenants (tabela tenants_plans) SEMPRE têm split 95% salão / 5% PagBy
-        $splitData = null;
-        if ($tenant && $tenant->asaas_wallet_id) {
-            // Tenant tem subconta configurada: aplicar split
-            $splitData = [
-                [
-                    'walletId' => $tenant->asaas_wallet_id, // 95% para o salão
-                    'percentualValue' => 95
-                ],
-                [
-                    'walletId' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7', // 5% para PagBy
-                    'percentualValue' => 5
-                ]
-            ];
-            Log::info('💰 Plano do Tenant com split: 95% salão, 5% PagBy', [
-                'tenant_wallet' => $tenant->asaas_wallet_id,
-                'pagby_wallet' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7',
-                'tenant_id' => $tenantId,
-                'plan' => $plan->name
-            ]);
-        } else {
-            Log::warning('⚠️ Tenant sem subconta Asaas - split NÃO aplicado!', [
-                'tenant_id' => $tenantId,
-                'plan' => $plan->name,
-                'message' => 'É necessário criar subconta para este tenant'
-            ]);
+        if (!$tenant) {
+            return redirect()->away("https://{$tenantId}.pagby.com.br/assinatura/failure?message=Salão não encontrado");
         }
 
         try {
+            // Inicializar contexto do tenant
+            tenancy()->initialize($tenant);
+            
+            // Buscar plano na base do TENANT
+            $plan = \App\Models\Plan::find($planId);
+            
+            if (!$plan) {
+                return redirect()->away("https://{$tenantId}.pagby.com.br/assinatura/failure?message=Plano não encontrado");
+            }
+            
+            // Buscar usuário no tenant
+            $user = User::where('email', $userEmail)->first();
+            
+            if (!$user) {
+                Log::error('❌ Usuário não encontrado no tenant:', [
+                    'email' => $userEmail,
+                    'tenant_id' => $tenantId
+                ]);
+                return redirect()->away("https://{$tenantId}.pagby.com.br/assinatura/failure?message=Usuário não encontrado");
+            }
+            
+            // Criar ou buscar assinatura existente no tenant
+            $subscription = Subscription::where('user_id', $user->id)
+                ->where('plan_id', $plan->id)
+                ->first();
+            
+            if (!$subscription) {
+                $subscription = Subscription::create([
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id,
+                    'start_date' => now(),
+                    'end_date' => now()->addMonth(),
+                    'status' => 'Pendente',
+                    'created_by' => $user->id,
+                    'updated_by' => $user->id,
+                ]);
+                
+                Log::info('✨ Nova assinatura criada no tenant (aguardando pagamento):', [
+                    'subscription_id' => $subscription->id,
+                    'user_id' => $user->id,
+                    'plan_id' => $plan->id
+                ]);
+            }
+            
+            // Criar referência única para o pagamento
+            $externalReference = 'asaas-sub-' . $tenantId . '-' . uniqid();
+            
+            // Criar registro de pagamento no tenant (PENDING até webhook confirmar)
+            $subscriptionPayment = \App\Models\SubscriptionPayment::create([
+                'subscription_id' => $subscription->id,
+                'asaas_payment_id' => $externalReference, // Será atualizado pelo webhook
+                'amount' => $plan->price,
+                'billing_type' => 'UNDEFINED',
+                'due_date' => now(),
+                'status' => 'pending',
+                'asaas_data' => json_encode([
+                    'tenant_id' => $tenantId,
+                    'user_email' => $userEmail,
+                    'user_name' => $userName,
+                    'cpf_cnpj' => $cpfCnpj,
+                    'external_reference' => $externalReference
+                ]),
+            ]);
+
+            Log::info('💰 Pagamento criado na base do TENANT:', [
+                'subscription_payment_id' => $subscriptionPayment->id,
+                'subscription_id' => $subscription->id,
+                'tenant_id' => $tenantId,
+            ]);
+
+            // Preparar dados do cliente
+            $customerData = [
+                'name' => $userName,
+                'email' => $userEmail,
+                'cpfCnpj' => $cpfCnpj,
+            ];
+
+            // Preparar dados da assinatura
+            $tenantName = $tenant->name ?? $tenant->fantasy_name ?? $tenantId;
+            $subscriptionData = [
+                'cycle' => 'MONTHLY',
+                'value' => floatval($plan->price),
+                'billingType' => 'UNDEFINED', // Cliente escolhe na hora de pagar
+                'description' => "Assinatura {$plan->name} - {$tenantName}",
+                'nextDueDate' => now()->format('Y-m-d'), // Gera cobrança imediatamente
+                'externalReference' => $externalReference,
+            ];
+
+            // SPLIT: Planos de tenants SEMPRE têm split 95% salão / 5% PagBy
+            $splitData = null;
+            if ($tenant && $tenant->asaas_wallet_id) {
+                // Tenant tem subconta configurada: aplicar split
+                $splitData = [
+                    [
+                        'walletId' => $tenant->asaas_wallet_id, // 95% para o salão
+                        'percentualValue' => 95
+                    ],
+                    [
+                        'walletId' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7', // 5% para PagBy
+                        'percentualValue' => 5
+                    ]
+                ];
+                Log::info('💰 Assinatura com split: 95% salão, 5% PagBy', [
+                    'tenant_wallet' => $tenant->asaas_wallet_id,
+                    'pagby_wallet' => '2dd7ca51-c51d-410e-b0f5-6fee73aed5c7',
+                    'tenant_id' => $tenantId,
+                    'plan' => $plan->name
+                ]);
+            } else {
+                Log::warning('⚠️ Tenant sem subconta Asaas - split NÃO aplicado!', [
+                    'tenant_id' => $tenantId,
+                    'plan' => $plan->name,
+                    'message' => 'É necessário criar subconta para este tenant'
+                ]);
+            }
+
             // Criar assinatura no Asaas
             $result = $this->asaasService->criarAssinatura($customerData, $subscriptionData, $splitData);
 
             if (!$result['success']) {
                 Log::error('❌ Erro ao criar assinatura Asaas:', $result);
                 
-                $payment->status = 'ERROR';
-                $payment->asaas_data = json_encode($result);
-                $payment->save();
+                // Atualizar status do pagamento no tenant
+                $subscriptionPayment->status = 'error';
+                $subscriptionPayment->asaas_data = json_encode(array_merge(
+                    json_decode($subscriptionPayment->asaas_data, true),
+                    ['error' => $result]
+                ));
+                $subscriptionPayment->save();
+                
+                // Atualizar status da assinatura
+                $subscription->status = 'Erro';
+                $subscription->save();
                 
                 $centralDomains = config('tenancy.central_domains');
                 $centralDomain = collect($centralDomains)
@@ -249,26 +271,30 @@ class AsaasSubscriptionController extends Controller
             $asaasSubscription = $result['data'];
 
             // Atualizar o registro local com os dados do Asaas
-            $payment->asaas_subscription_id = $asaasSubscription['id'];
-            $payment->asaas_data = json_encode($asaasSubscription);
-            // Manter como PENDING até webhook confirmar pagamento
-            $payment->status = 'PENDING';
-            $payment->save();
+            $subscriptionPayment->asaas_payment_id = $asaasSubscription['id'];
+            $subscriptionPayment->asaas_invoice_url = $asaasSubscription['invoiceUrl'] ?? null;
+            $subscriptionPayment->asaas_data = json_encode($asaasSubscription);
+            // Manter como pending até webhook confirmar pagamento
+            $subscriptionPayment->status = 'pending';
+            $subscriptionPayment->save();
+            
+            // Atualizar referência na Subscription
+            $subscription->mp_payment_id = $asaasSubscription['id'];
+            $subscription->save();
 
-            Log::info('✅ Assinatura Asaas criada:', [
-                'payment_id' => $payment->id,
+            Log::info('✅ Assinatura Asaas criada com sucesso:', [
+                'subscription_payment_id' => $subscriptionPayment->id,
+                'subscription_id' => $subscription->id,
                 'asaas_subscription_id' => $asaasSubscription['id'],
-                'status' => 'PENDING (aguardando pagamento)'
+                'status' => 'pending (aguardando pagamento)'
             ]);
-
-            // NÃO ativar aqui - só webhook deve ativar após confirmar pagamento
 
             // Obter link de pagamento (invoice URL) se disponível
             $invoiceUrl = $asaasSubscription['invoiceUrl'] ?? null;
             
             // Redirecionar para página de aguarde no domínio do tenant
             $waitUrl = "https://{$tenantId}.pagby.com.br/assinatura/wait?"
-                . "payment_id={$payment->id}"
+                . "payment_id={$subscriptionPayment->id}"
                 . "&subscription_id={$asaasSubscription['id']}";
             
             if ($invoiceUrl) {
@@ -283,9 +309,21 @@ class AsaasSubscriptionController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $payment->status = 'ERROR';
-            $payment->asaas_data = json_encode(['error' => $e->getMessage()]);
-            $payment->save();
+            // Atualizar status se o pagamento foi criado
+            if (isset($subscriptionPayment)) {
+                $subscriptionPayment->status = 'error';
+                $subscriptionPayment->asaas_data = json_encode(array_merge(
+                    json_decode($subscriptionPayment->asaas_data, true) ?? [],
+                    ['exception' => $e->getMessage()]
+                ));
+                $subscriptionPayment->save();
+            }
+            
+            // Atualizar status da assinatura se foi criada
+            if (isset($subscription)) {
+                $subscription->status = 'Erro';
+                $subscription->save();
+            }
 
             $centralDomains = config('tenancy.central_domains');
             $centralDomain = collect($centralDomains)
@@ -297,6 +335,9 @@ class AsaasSubscriptionController extends Controller
                 . "?message=" . urlencode('Erro ao processar assinatura: ' . $e->getMessage())
                 . "&tenant_id={$tenantId}"
             );
+        } finally {
+            // Sempre limpar o contexto do tenant
+            tenancy()->end();
         }
     }
 
@@ -343,38 +384,79 @@ class AsaasSubscriptionController extends Controller
      */
     private function handlePaymentApproved($paymentData)
     {
-        $subscriptionId = $paymentData['subscription'] ?? null;
+        $asaasSubscriptionId = $paymentData['subscription'] ?? $paymentData['id'] ?? null;
         
-        if (!$subscriptionId) {
-            Log::warning('Pagamento sem subscription_id', $paymentData);
+        if (!$asaasSubscriptionId) {
+            Log::warning('❌ Webhook: Pagamento sem ID', $paymentData);
             return;
         }
 
-        // Buscar pagamento local pela subscription_id
-        $payment = TenantsPlansPayment::on('mysql')
-            ->where('asaas_subscription_id', $subscriptionId)
-            ->first();
-
-        if (!$payment) {
-            Log::warning('Pagamento local não encontrado', [
-                'subscription_id' => $subscriptionId
-            ]);
-            return;
-        }
-
-        $oldStatus = $payment->status;
-        $payment->status = 'ACTIVE';
-        $payment->asaas_data = json_encode($paymentData);
-        $payment->save();
-
-        Log::info('✅ Pagamento atualizado via webhook:', [
-            'payment_id' => $payment->id,
-            'old_status' => $oldStatus,
-            'new_status' => 'ACTIVE'
+        Log::info('🔍 Webhook: Buscando pagamento por asaas_payment_id:', [
+            'asaas_subscription_id' => $asaasSubscriptionId
         ]);
 
-        // Ativar assinatura do tenant
-        $this->activateTenantSubscription($payment);
+        // Buscar em todos os tenants qual tem este asaas_payment_id
+        $tenants = Tenant::on('mysql')->get();
+        
+        foreach ($tenants as $tenant) {
+            try {
+                tenancy()->initialize($tenant);
+                
+                // Buscar pelo asaas_payment_id
+                $subscriptionPayment = \App\Models\SubscriptionPayment::where('asaas_payment_id', $asaasSubscriptionId)->first();
+                
+                if ($subscriptionPayment) {
+                    Log::info('✅ Webhook: Pagamento encontrado no tenant:', [
+                        'tenant_id' => $tenant->id,
+                        'subscription_payment_id' => $subscriptionPayment->id
+                    ]);
+                    
+                    $oldStatus = $subscriptionPayment->status;
+                    $subscriptionPayment->status = 'received';
+                    $subscriptionPayment->payment_date = now();
+                    $subscriptionPayment->received_at = now();
+                    $subscriptionPayment->confirmed_at = now();
+                    $subscriptionPayment->asaas_data = json_encode($paymentData);
+                    $subscriptionPayment->save();
+
+                    Log::info('✅ Webhook: Pagamento atualizado:', [
+                        'subscription_payment_id' => $subscriptionPayment->id,
+                        'old_status' => $oldStatus,
+                        'new_status' => 'received'
+                    ]);
+
+                    // Ativar assinatura
+                    $subscription = $subscriptionPayment->subscription;
+                    if ($subscription) {
+                        $subscription->status = 'Ativo';
+                        $subscription->start_date = now();
+                        $subscription->end_date = now()->addMonth();
+                        $subscription->save();
+                        
+                        Log::info('✅ Webhook: Assinatura ativada:', [
+                            'subscription_id' => $subscription->id,
+                            'status' => 'Ativo',
+                            'end_date' => $subscription->end_date
+                        ]);
+                    }
+                    
+                    tenancy()->end();
+                    return;
+                }
+                
+                tenancy()->end();
+            } catch (\Exception $e) {
+                tenancy()->end();
+                Log::error('❌ Webhook: Erro ao verificar tenant:', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        Log::warning('⚠️ Webhook: Pagamento não encontrado em nenhum tenant:', [
+            'asaas_subscription_id' => $asaasSubscriptionId
+        ]);
     }
 
     /**
@@ -382,31 +464,65 @@ class AsaasSubscriptionController extends Controller
      */
     private function handlePaymentFailed($paymentData)
     {
-        $subscriptionId = $paymentData['subscription'] ?? null;
+        $asaasSubscriptionId = $paymentData['subscription'] ?? $paymentData['id'] ?? null;
         
-        if (!$subscriptionId) {
+        if (!$asaasSubscriptionId) {
+            Log::warning('❌ Webhook Failed: Pagamento sem ID', $paymentData);
             return;
         }
 
-        $payment = TenantsPlansPayment::on('mysql')
-            ->where('asaas_subscription_id', $subscriptionId)
-            ->first();
-
-        if (!$payment) {
-            return;
-        }
-
-        $payment->status = 'OVERDUE';
-        $payment->asaas_data = json_encode($paymentData);
-        $payment->save();
-
-        Log::info('⚠️ Pagamento vencido via webhook:', [
-            'payment_id' => $payment->id,
-            'status' => 'OVERDUE'
+        Log::info('🔍 Webhook Failed: Buscando pagamento:', [
+            'asaas_subscription_id' => $asaasSubscriptionId
         ]);
 
-        // Desativar assinatura do tenant
-        $this->inactivateTenantSubscription($payment);
+        // Buscar em todos os tenants
+        $tenants = Tenant::on('mysql')->get();
+        
+        foreach ($tenants as $tenant) {
+            try {
+                tenancy()->initialize($tenant);
+                
+                $subscriptionPayment = \App\Models\SubscriptionPayment::where('asaas_payment_id', $asaasSubscriptionId)->first();
+                
+                if ($subscriptionPayment) {
+                    Log::info('✅ Webhook Failed: Pagamento encontrado:', [
+                        'tenant_id' => $tenant->id,
+                        'subscription_payment_id' => $subscriptionPayment->id
+                    ]);
+                    
+                    $subscriptionPayment->status = 'overdue';
+                    $subscriptionPayment->asaas_data = json_encode($paymentData);
+                    $subscriptionPayment->save();
+
+                    // Desativar assinatura
+                    $subscription = $subscriptionPayment->subscription;
+                    if ($subscription) {
+                        $subscription->status = 'Cancelado';
+                        $subscription->save();
+                        
+                        Log::info('⚠️ Webhook: Assinatura cancelada:', [
+                            'subscription_id' => $subscription->id,
+                            'status' => 'Cancelado'
+                        ]);
+                    }
+                    
+                    tenancy()->end();
+                    return;
+                }
+                
+                tenancy()->end();
+            } catch (\Exception $e) {
+                tenancy()->end();
+                Log::error('❌ Webhook Failed: Erro ao verificar tenant:', [
+                    'tenant_id' => $tenant->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+        
+        Log::warning('⚠️ Webhook Failed: Pagamento não encontrado:', [
+            'asaas_subscription_id' => $asaasSubscriptionId
+        ]);
     }
 
     /**
@@ -419,247 +535,5 @@ class AsaasSubscriptionController extends Controller
             'subscription_id' => $paymentData['subscription'] ?? null,
             'value' => $paymentData['value'] ?? null
         ]);
-    }
-
-    /**
-     * Ativa assinatura do tenant
-     */
-    private function activateTenantSubscription($payment)
-    {
-        if (in_array($payment->status, ['ACTIVE', 'APPROVED'])) {
-            // Ativar o plano do tenant no central
-            $tenantPlan = TenantPlan::on('mysql')
-                ->where('tenant_id', $payment->tenant_id)
-                ->where('name', $payment->plan)
-                ->first();
-            
-            if ($tenantPlan) {
-                $tenantPlan->active = true;
-                $tenantPlan->save();
-                
-                Log::info('✅ Plano do tenant ativado:', [
-                    'tenant_id' => $payment->tenant_id,
-                    'name' => $tenantPlan->name
-                ]);
-            }
-
-            // Inserir/atualizar assinatura na tabela subscriptions na base do tenant    
-            $tenant = Tenant::on('mysql')->find($payment->tenant_id);
-        
-            if ($tenant) {
-                $tenant->run(function () use ($payment, $tenantPlan) {
-                    $payerData = is_array($payment->payer_data) 
-                        ? $payment->payer_data 
-                        : json_decode($payment->payer_data, true);
-                    
-                    $email = $payerData['email'] ?? null;
-                    $user_id = null;
-
-                    if ($email) {
-                        $user_id = User::where('email', $email)->first()?->id;
-                    }
-
-                    $existing = Subscription::where('user_id', $user_id)
-                        ->where('plan_id', $tenantPlan->plan_id)
-                        ->first();
-
-                    if ($existing) {
-                        $existing->status = 'Ativo';
-                        $existing->start_date = now();
-                        $existing->end_date = now()->addMonth();
-                        $existing->updated_by = $user_id;
-                        $existing->save();
-                        
-                        Log::info('🔄 Assinatura atualizada no tenant');
-                    } else {
-                        Subscription::create([
-                            'user_id' => $user_id,
-                            'plan_id' => $tenantPlan->plan_id,
-                            'mp_payment_id' => $payment->asaas_subscription_id,
-                            'start_date' => now(),
-                            'end_date' => now()->addMonth(),
-                            'status' => 'Ativo',
-                            'created_by' => $user_id,
-                            'updated_by' => $user_id,
-                        ]);
-                        
-                        Log::info('✨ Nova assinatura criada no tenant');
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Desativa assinatura do tenant
-     */
-    private function inactivateTenantSubscription($payment)
-    {
-        if (in_array($payment->status, ['OVERDUE', 'CANCELLED', 'EXPIRED'])) {
-            $tenantPlan = TenantPlan::on('mysql')
-                ->where('tenant_id', $payment->tenant_id)
-                ->where('name', $payment->plan)
-                ->first();
-            
-            if ($tenantPlan) {
-                $tenantPlan->active = false;
-                $tenantPlan->save();
-            }
-
-            // Mudar o status da assinatura na base do tenant    
-            $tenant = Tenant::on('mysql')->find($payment->tenant_id);
-        
-            if ($tenant) {
-                $tenant->run(function () use ($payment, $tenantPlan) {
-                    $payerData = is_array($payment->payer_data) 
-                        ? $payment->payer_data 
-                        : json_decode($payment->payer_data, true);
-                    
-                    $email = $payerData['email'] ?? null;
-                    $user_id = null;
-
-                    if ($email) {
-                        $user_id = User::where('email', $email)->first()?->id;
-                    }
-
-                    $existing = Subscription::where('user_id', $user_id)
-                        ->where('plan_id', $tenantPlan->plan_id)
-                        ->first();
-
-                    if ($existing) {
-                        $existing->status = 'Cancelado';
-                        $existing->updated_by = $user_id;
-                        $existing->save();
-
-                        Log::info('🚫 Assinatura cancelada no tenant:', [
-                            'user_id' => $user_id,
-                            'plan_id' => $existing->plan_id,
-                            'tenant_id' => $payment->tenant_id,
-                        ]);
-                    }
-                });
-            }
-        }
-    }
-
-    /**
-     * Cancela assinatura
-     */
-    public function cancelarAssinatura(Request $request)
-    {
-        $paymentId = $request->input('payment_id');
-        $payment = TenantsPlansPayment::on('mysql')->find($paymentId);
-
-        if (!$payment || !$payment->asaas_subscription_id) {
-            return response()->json([
-                'success' => false, 
-                'message' => 'Assinatura não encontrada.'
-            ]);
-        }
-
-        try {
-            $result = $this->asaasService->cancelarAssinatura($payment->asaas_subscription_id);
-
-            if ($result['success']) {
-                $payment->status = 'CANCELLED';
-                $payment->save();
-                
-                $this->inactivateTenantSubscription($payment);
-                
-                $tenantDomain = "{$payment->tenant_id}.pagby.com.br";
-                return redirect()->away(
-                    "https://{$tenantDomain}/dashboard?tabelaAtiva=planos-de-assinatura&cancel=1"
-                    . "&message=" . urlencode('Assinatura cancelada com sucesso!')
-                );
-            } else {
-                return redirect()->back()->with('warning', 'Erro ao cancelar no Asaas.');
-            }
-        } catch (\Exception $e) {
-            Log::error('Erro ao cancelar assinatura:', [
-                'error' => $e->getMessage()
-            ]);
-            
-            return redirect()->back()->with('error', 'Erro ao cancelar assinatura.');
-        }
-    }
-
-    /**
-     * Verifica status da assinatura
-     */
-    public function checkStatus($paymentId)
-    {
-        $payment = TenantsPlansPayment::on('mysql')->find($paymentId);
-
-        if (!$payment) {
-            return response()->json(['error' => 'Payment not found'], 404);
-        }
-
-        if (!$payment->asaas_subscription_id) {
-            return response()->json([
-                'status' => $payment->status,
-                'message' => 'Aguardando criação da assinatura'
-            ]);
-        }
-
-        try {
-            $asaasSubscription = $this->asaasService->consultarAssinatura($payment->asaas_subscription_id);
-
-            if ($asaasSubscription) {
-                // Apenas salvar os dados da assinatura, NÃO atualizar status do payment
-                // O status da ASSINATURA (ACTIVE) é diferente do status do PAGAMENTO (PENDING/RECEIVED)
-                $payment->asaas_data = json_encode($asaasSubscription);
-                $payment->save();
-
-                Log::info('✅ Dados da assinatura atualizados (status do payment mantido):', [
-                    'payment_id' => $payment->id,
-                    'payment_status' => $payment->status, // mantém PENDING
-                    'subscription_status' => $asaasSubscription['status'] ?? 'unknown' // pode ser ACTIVE
-                ]);
-
-                // NÃO ativar aqui - só webhook deve ativar após confirmar PAGAMENTO
-            }
-        } catch (\Exception $e) {
-            Log::error('Erro ao consultar status Asaas:', [
-                'error' => $e->getMessage()
-            ]);
-        }
-
-        return response()->json([
-            'status' => $payment->status,
-            'subscription_id' => $payment->asaas_subscription_id,
-            'payment_id' => $payment->id,
-            'updated_at' => $payment->updated_at->toISOString()
-        ]);
-    }
-
-    /**
-     * Debug de pagamento
-     */
-    public function debugPayment($paymentId)
-    {
-        $payment = TenantsPlansPayment::on('mysql')->find($paymentId);
-        
-        if (!$payment) {
-            return response()->json(['error' => 'Payment not found'], 404);
-        }
-
-        $debugInfo = [
-            'payment' => [
-                'id' => $payment->id,
-                'tenant_id' => $payment->tenant_id,
-                'external_id' => $payment->external_id,
-                'asaas_subscription_id' => $payment->asaas_subscription_id,
-                'status' => $payment->status,
-                'plan' => $payment->plan,
-                'amount' => $payment->amount,
-                'created_at' => $payment->created_at,
-                'updated_at' => $payment->updated_at
-            ],
-            'asaas_data' => $payment->asaas_data ? json_decode($payment->asaas_data, true) : null
-        ];
-
-        Log::info('🔧 Debug Asaas Payment Info:', $debugInfo);
-
-        return response()->json($debugInfo);
     }
 }

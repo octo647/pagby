@@ -4,84 +4,136 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * Pagamentos avulsos via Asaas (TENANT)
+ * Modelo SEM split - subconta do salão
+ * Cliente paga serviço único (não assinatura)
+ */
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
-    // Especificar a tabela explicitamente
-    protected $table = 'payments';
-
-    // Especificar conexão central explicitamente
-    protected $connection = 'mysql';
-
-    // IMPORTANTE: Adicionar todos os campos necessários
     protected $fillable = [
-        'external_id',
-        'preference_id', 
-        'contact_id',
-        'tenant_id',
-        'plan',
+        'comanda_id',
+        'appointment_id',
+        'customer_id',
+        'asaas_payment_id',
+        'asaas_customer_id',
+        'asaas_invoice_url',
+        'asaas_invoice_number',
         'amount',
-        'currency',
+        'net_value',
+        'billing_type',
+        'description',
+        'due_date',
+        'payment_date',
+        'estimated_credit_date',
         'status',
-        'status_detail',
-        'payment_method',
-        'payment_type',
-        'payer_data',
-        'mercadopago_data',
-        'approved_at',
-        'expires_at',
+        'asaas_data',
+        'external_reference',
+        'paid_at',
     ];
 
     protected $casts = [
-        'payer_data' => 'array',
-        'mercadopago_data' => 'array',
-        'approved_at' => 'datetime',
-        'expires_at' => 'datetime',
+        'amount' => 'decimal:2',
+        'net_value' => 'decimal:2',
+        'due_date' => 'date',
+        'payment_date' => 'date',
+        'estimated_credit_date' => 'date',
+        'paid_at' => 'datetime',
+        'asaas_data' => 'array',
     ];
 
     // Relacionamentos
-    public function contact()
+    public function comanda(): BelongsTo
     {
-        return $this->belongsTo(Contact::class);
+        return $this->belongsTo(Comanda::class);
+    }
+
+    public function appointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class);
+    }
+
+    // Métodos auxiliares
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isReceived(): bool
+    {
+        return in_array($this->status, ['received', 'received_in_cash']);
+    }
+
+    public function isOverdue(): bool
+    {
+        return $this->status === 'overdue';
+    }
+
+    public function markAsReceived(array $additionalData = []): void
+    {
+        $this->update(array_merge([
+            'status' => 'received',
+            'payment_date' => now(),
+            'paid_at' => now(),
+        ], $additionalData));
+    }
+
+    public function markAsOverdue(): void
+    {
+        $this->update(['status' => 'overdue']);
     }
 
     // Scopes
-    public function scopeApproved($query)
-    {
-        return $query->where('status', 'approved');
-    }
-
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
-    public function scopeByPlan($query, $plan)
+    public function scopeReceived($query)
     {
-        return $query->where('plan', $plan);
+        return $query->whereIn('status', ['received', 'received_in_cash']);
+    }
+
+    public function scopeOverdue($query)
+    {
+        return $query->where('status', 'overdue');
     }
 
     // Accessors
-    public function getIsApprovedAttribute()
-    {
-        return $this->status === 'approved';
-    }
-
-    public function getIsPendingAttribute()
-    {
-        return $this->status === 'pending';
-    }
-
-    public function getFormattedAmountAttribute()
+    public function getFormattedAmountAttribute(): string
     {
         return 'R$ ' . number_format($this->amount, 2, ',', '.');
     }
 
-    public function getPlanNameAttribute()
+    public function getStatusNameAttribute(): string
     {
-        return $this->plan === 'basico' ? 'Básico' : 'Premium';
+        return match($this->status) {
+            'pending' => 'Pendente',
+            'confirmed' => 'Confirmado',
+            'received' => 'Recebido',
+            'received_in_cash' => 'Recebido em Dinheiro',
+            'overdue' => 'Vencido',
+            'refunded' => 'Estornado',
+            'deleted' => 'Deletado',
+            'cancelled' => 'Cancelado',
+            default => 'Desconhecido'
+        };
+    }
+
+    public function getBillingTypeNameAttribute(): string
+    {
+        return match($this->billing_type) {
+            'PIX' => 'PIX',
+            'BOLETO' => 'Boleto',
+            'CREDIT_CARD' => 'Cartão de Crédito',
+            'DEBIT_CARD' => 'Cartão de Débito',
+            'UNDEFINED' => 'Não Definido',
+            default => $this->billing_type
+        };
     }
 }

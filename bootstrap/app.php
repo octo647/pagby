@@ -27,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'http://www.pagby.com.br/tenant-assinatura/webhook',
             'http://www.pagby.com.br/pagby-subscription/webhook',
             'subscription/select',
+            'api/subconta-webhook',
             
         ]);
 

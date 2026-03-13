@@ -183,7 +183,7 @@
             checkCount++;
             document.getElementById('status-check').style.display = 'block';
            
-            fetch('/tenant-assinatura/check-status/{{ $payment->id }}')
+            fetch('/tenant-assinatura/check-status/{{ $payment->id }}?tenant_id={{ $tenant_id }}')
            
                 .then(response => response.json())
                 .then(data => {
@@ -200,7 +200,13 @@
                         document.getElementById('success-message').style.display = 'block';
                         
                         setTimeout(() => {
+                            @if(isset($tenant_domain) && $tenant_domain)
+                            console.log('🌐 Redirecionando para domínio do tenant:', '{{ $tenant_domain }}');
+                            window.location.href = 'https://{{ $tenant_domain }}/tenant-assinatura/success?payment_id=' + data.payment_id;
+                            @else
+                            console.log('⚠️ Tenant domain não definido, usando rota relativa');
                             window.location.href = '/tenant-assinatura/success?payment_id=' + data.payment_id;
+                            @endif
                         }, 2000);
                         
                     } else if (data.status === 'rejected') {

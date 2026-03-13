@@ -17,5 +17,6 @@ class VerifyCsrfToken extends Middleware
         'http://www.pagby.com.br/pagby-subscription/*',
         'http://www.pagby.com.br/tenant-assinatura/*',
         '/pagby-subscription/webhook',
+        '/api/subconta-webhook',
     ];
 }

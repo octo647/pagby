@@ -80,59 +80,162 @@ class CreateAsaasAccountsForTenants extends Command
 
         $this->info("\n🔄 Processando tenant: {$tenant->id} - {$tenant->name}");
 
-        // Verificar se temos os dados necessários (usar email ou owner_email)
-        $email = $tenant->owner_email ?? $tenant->email;
-        
-        if (!$email) {
-            $this->warn("⚠️  Tenant {$tenant->id} não possui email. Pulando...");
+        // Buscar proprietário no banco do tenant
+        try {
+            tenancy()->initialize($tenant);
+            
+            // Buscar usuário proprietário no banco tenant
+            $proprietario = \DB::connection('tenant')
+                ->table('users')
+                ->join('role_user', 'users.id', '=', 'role_user.user_id')
+                ->join('roles', 'role_user.role_id', '=', 'roles.id')
+                ->where('roles.role', 'Proprietário')
+                ->select('users.*')
+                ->first();
+            
+            if (!$proprietario) {
+                $this->warn("⚠️  Tenant {$tenant->id} não possui usuário proprietário. Pulando...");
+                tenancy()->end();
+                return;
+            }
+            
+            $this->line("   Proprietário encontrado: {$proprietario->name} ({$proprietario->email})");
+            
+            // Limpar CPF/CNPJ
+            $cpfCnpj = $tenant->cnpj ?? $proprietario->cpf ?? null;
+            
+            if (!$cpfCnpj) {
+                $this->warn("⚠️  Tenant {$tenant->id} não possui CPF/CNPJ. Pulando...");
+                tenancy()->end();
+                return;
+            }
+            
+            $cpfCnpjClean = preg_replace('/\D/', '', $cpfCnpj);
+            
+            // Email
+            $email = $tenant->email ?? $proprietario->email;
+            
+            // Telefone
+            $phone = $tenant->phone ?? $proprietario->phone ?? null;
+            if ($phone) {
+                $phone = preg_replace('/\D/', '', $phone);
+            }
+            
+            tenancy()->end();
+            
+        } catch (\Exception $e) {
+            $this->error("❌ Erro ao buscar proprietário: " . $e->getMessage());
+            tenancy()->end();
             return;
         }
 
-        // Preparar dados da conta (adaptar aos campos disponíveis)
-        $cpfCnpj = $tenant->owner_cpf_cnpj ?? $tenant->cnpj ?? $this->ask("CPF/CNPJ para {$tenant->name}:");
-        $phone = $tenant->owner_phone ?? $tenant->phone ?? $tenant->whatsapp ?? $this->ask("Telefone para {$tenant->name}:");
+        // Verificar se já existe customer com esse CPF/CNPJ no Asaas
+        $customerExistenteId = $this->asaasService->buscarCustomerPorCpf($cpfCnpjClean);
         
-        // Limpar CPF/CNPJ
-        $cpfCnpjClean = preg_replace('/\D/', '', $cpfCnpj);
+        // REGRA: Se CPF (11 dígitos) já é customer no Asaas, NÃO pode criar subconta
+        // Asaas não permite mesmo CPF ser customer E subconta simultaneamente
+        if (strlen($cpfCnpjClean) === 11 && $customerExistenteId) {
+            $this->warn("⚠️ CPF já é customer Asaas (ID: {$customerExistenteId})");
+            $this->warn("   Modelo SEM split não disponível - tenant usará modelo COM split");
+            $this->line("   (Asaas não permite mesmo CPF ser customer E subconta)");
+            return; // Não cria subconta
+        }
         
+        // Preparar dados da conta
         $accountData = [
-            'name' => $tenant->name,
+            'name' => $tenant->fantasy_name ?? $tenant->name,
             'email' => $email,
             'cpfCnpj' => $cpfCnpjClean,
-            'mobilePhone' => $phone,
         ];
-
-        // Se for CNPJ (14 dígitos), adicionar dados da empresa
-        if (strlen($cpfCnpjClean) === 14) {
-            $accountData['companyType'] = 'LIMITED'; // Pode ser MEI, LIMITED, INDIVIDUAL, ASSOCIATION
-            $incomeValue = $this->ask("Faturamento mensal estimado (ex: 5000.00) para {$tenant->name}:");
-            $accountData['incomeValue'] = (float) $incomeValue;
-        } 
-        // Se for CPF (11 dígitos), adicionar data de nascimento e renda
-        elseif (strlen($cpfCnpjClean) === 11) {
-            $birthDate = $tenant->owner_birthdate ?? $this->ask("Data de nascimento (YYYY-MM-DD) para {$tenant->name}:");
-            $accountData['birthDate'] = $birthDate;
+        
+        $this->line("   CPF/CNPJ: " . substr($cpfCnpjClean, 0, 3) . "...***");
+        
+        // Adicionar telefone se disponível E VÁLIDO
+        if ($phone && strlen($phone) >= 10 && strlen($phone) <= 11) {
+            // Validar se começa com DDD válido (apenas DDDs reais do Brasil)
+            $ddd = (int)substr($phone, 0, 2);
+            $dddsValidos = [11, 12, 13, 14, 15, 16, 17, 18, 19, // SP
+                            21, 22, 24, 27, 28, // RJ/ES
+                            31, 32, 33, 34, 35, 37, 38, // MG
+                            41, 42, 43, 44, 45, 46, // PR
+                            47, 48, 49, // SC
+                            51, 53, 54, 55, // RS
+                            61, // DF
+                            62, 64, // GO
+                            63, // TO
+                            65, 66, // MT
+                            67, // MS
+                            68, 69, // AC/RO
+                            71, 73, 74, 75, 77, // BA
+                            79, // SE
+                            81, 87, // PE
+                            82, // AL
+                            83, // PB
+                            84, // RN
+                            85, 88, // CE
+                            86, 89, // PI
+                            91, 93, 94, // PA
+                            92, 97, // AM
+                            95, // RR
+                            96, // AP
+                            98, 99]; // MA
             
-            $incomeValue = $this->ask("Renda mensal estimada (ex: 3000.00) para {$tenant->name}:");
-            $accountData['incomeValue'] = (float) $incomeValue;
+            if (in_array($ddd, $dddsValidos)) {
+                $number = substr($phone, 2);
+                $accountData['mobilePhone'] = $ddd . $number;
+                $this->line("   Telefone: {$ddd} {$number}");
+            } else {
+                $this->warn("   ⚠️ DDD {$ddd} inválido, criando subconta SEM telefone");
+            }
+        } else {
+            $this->warn("   ⚠️ Telefone ausente ou inválido, criando subconta SEM telefone");
+        }
+
+        // Se for CNPJ (14 dígitos)
+        if (strlen($cpfCnpjClean) === 14) {
+            $accountData['companyType'] = 'MEI';
+            $accountData['incomeValue'] = 5000;
+            $this->line("   Tipo: CNPJ - Empresa");
+        } 
+        // Se for CPF (11 dígitos)
+        elseif (strlen($cpfCnpjClean) === 11) {
+            // Usar birthdate do proprietário
+            $birthDate = $proprietario->birthdate ?? '1990-01-01';
+            if ($birthDate instanceof \DateTime || $birthDate instanceof \Carbon\Carbon) {
+                $birthDate = $birthDate->format('Y-m-d');
+            }
+            $accountData['birthDate'] = $birthDate;
+            $accountData['incomeValue'] = 3000;
+            $this->line("   Tipo: CPF - Pessoa Física");
+            $this->line("   Data nascimento: {$birthDate}");
         }
 
         try {
             $this->line("📤 Enviando dados para Asaas...");
             
-            $result = $this->asaasService->criarSubconta($accountData);
+            $result = $this->asaasService->criarSubcontaCompleta($accountData);
 
             if ($result['success']) {
-                $walletId = $result['data']['walletId'] ?? $result['data']['id'];
+                $accountId = $result['data']['account_id'];
+                $walletId = $result['data']['wallet_id'] ?? null;
+                $apiKey = $result['data']['api_key'] ?? null;
                 
+                $tenant->asaas_account_id = $accountId;
                 $tenant->asaas_wallet_id = $walletId;
-                $tenant->asaas_account_data = json_encode($result['data']);
+                
+                if ($apiKey) {
+                    $tenant->asaas_api_key = \Illuminate\Support\Facades\Crypt::encryptString($apiKey);
+                }
+                
                 $tenant->save();
 
-                $this->info("✅ Subconta criada com sucesso! Wallet ID: {$walletId}");
+                $this->info("✅ Subconta criada com sucesso!");
+                $this->line("   Account ID: {$accountId}");
+                $this->line("   Wallet ID: {$walletId}");
                 
                 Log::info('Subconta Asaas criada para tenant', [
                     'tenant_id' => $tenant->id,
+                    'account_id' => $accountId,
                     'wallet_id' => $walletId
                 ]);
             } else {

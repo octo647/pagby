@@ -1,0 +1,484 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\Tenant;
+use App\Models\Payment;
+use App\Models\SubscriptionPayment;
+use App\Models\Appointment;
+use Illuminate\Support\Facades\Log;
+
+/**
+ * Recebe webhooks das SUBCONTAS (não da master)
+ * URL: https://pagby.com.br/api/subconta-webhook
+ * 
+ * Modelo SEM SPLIT - Asaas Subcontas
+ * Processa 2 tipos de pagamento:
+ * 1. Assinaturas de planos (subscription) → tenant{id}.subscriptions_payments
+ * 2. Pagamentos avulsos → tenant{id}.payments
+ * 
+ * Ambos salvos no banco do TENANT (não central)
+ */
+class SubcontaWebhookController extends Controller
+{
+    public function handle(Request $request)
+    {
+        Log::info('[Webhook Subconta] ===== WEBHOOK RECEBIDO =====');
+        Log::info('[Webhook Subconta] Headers', $request->headers->all());
+        Log::info('[Webhook Subconta] Payload', $request->all());
+        
+        // Validar token de autenticação do webhook
+        $expectedToken = config('services.asaas.webhook_token');
+        if ($expectedToken) {
+            $receivedToken = $request->header('asaas-access-token');
+            
+            if ($receivedToken !== $expectedToken) {
+                Log::warning('[Webhook Subconta] Token inválido', [
+                    'expected' => substr($expectedToken, 0, 10) . '...',
+                    'received' => $receivedToken ? substr($receivedToken, 0, 10) . '...' : 'null'
+                ]);
+                return response()->json(['error' => 'Unauthorized'], 401);
+            }
+            
+            Log::info('[Webhook Subconta] Token válido');
+        }
+        
+        try {
+            $event = $request->input('event');
+            $accountId = $request->input('account'); // ID da subconta que disparou
+            $paymentId = $request->input('payment.id');
+            $subscriptionId = $request->input('payment.subscription') ?? $request->input('subscription');
+            $externalReference = $request->input('payment.externalReference');
+            
+            Log::info('[Webhook Subconta] Identificando tipo', [
+                'payment_id' => $paymentId,
+                'subscription_id' => $subscriptionId,
+                'external_reference' => $externalReference,
+                'is_subscription' => !empty($subscriptionId)
+            ]);
+            
+            // Encontrar tenant pela subconta (usando conexão central)
+            $tenant = \DB::connection('mysql')
+                ->table('tenants')
+                ->where('asaas_account_id', $accountId)
+                ->first();
+            
+            if (!$tenant) {
+                Log::warning('[Webhook Subconta] Tenant não encontrado', [
+                    'account_id' => $accountId
+                ]);
+                return response()->json(['ok' => true, 'message' => 'Tenant not found'], 200);
+            }
+            
+            Log::info('[Webhook Subconta] Tenant encontrado', [
+                'tenant_id' => $tenant->id,
+                'tenant_name' => $tenant->name ?? 'N/A'
+            ]);
+            
+            // CRITICAL: Distinguish between PagBy payments and client payments
+            // External reference starting with "pagby-contact-" = SALÃO paying PAGBY (central DB)
+            // Other references = CLIENTE paying SALÃO (tenant DB)
+            $isPagByPayment = $externalReference && str_starts_with($externalReference, 'pagby-contact-');
+            
+            if ($isPagByPayment) {
+                // Pagamento do SALÃO para o PAGBY → banco CENTRAL
+                Log::info('[Webhook Subconta] Tipo: PAGAMENTO PAGBY (salão → PagBy)', [
+                    'external_reference' => $externalReference
+                ]);
+                return $this->processarPagamentoPagBy($request, $tenant, $event);
+            } elseif (!empty($subscriptionId)) {
+                // Pagamento de assinatura de CLIENTE → banco TENANT
+                Log::info('[Webhook Subconta] Tipo: ASSINATURA CLIENTE (cliente → salão)');
+                return $this->processarPagamentoAssinatura($request, $tenant, $event);
+            } else {
+                // Pagamento avulso de CLIENTE → banco TENANT
+                Log::info('[Webhook Subconta] Tipo: PAGAMENTO AVULSO (cliente → salão)');
+                return $this->processarPagamentoAvulso($request, $tenant, $event);
+            }
+            
+        } catch (\Exception $e) {
+            Log::error('[Webhook Subconta] ERRO', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            // Retornar 200 para não fazer o Asaas reenviar
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 200);
+        }
+    }
+    
+    /**
+     * Processa pagamento de SALÃO para PAGBY (assinatura mensal do salão)
+     * Salva em: pagby_payments (banco CENTRAL)
+     */
+    private function processarPagamentoPagBy(Request $request, $tenant, string $event)
+    {
+        $paymentId = $request->input('payment.id');
+        $externalReference = $request->input('payment.externalReference');
+        
+        Log::info('[Webhook Subconta] Processando PAGAMENTO PAGBY (salão → PagBy)', [
+            'tenant_id' => $tenant->id,
+            'payment_id' => $paymentId,
+            'external_reference' => $externalReference
+        ]);
+        
+        // Buscar no banco CENTRAL (mysql)
+        $payment = \App\Models\PagByPayment::on('mysql')
+            ->where('asaas_payment_id', $paymentId)
+            ->orWhere('external_id', $externalReference)
+            ->first();
+        
+        if (!$payment) {
+            Log::warning('[Webhook Subconta] Pagamento PagBy não encontrado no banco CENTRAL', [
+                'tenant_id' => $tenant->id,
+                'payment_id' => $paymentId,
+                'external_reference' => $externalReference
+            ]);
+            return response()->json(['ok' => true, 'message' => 'PagBy payment not found'], 200);
+        }
+        
+        // Processar evento do pagamento PagBy
+        $this->processarEventoPagByPayment($event, $payment, $request->all());
+        
+        Log::info('[Webhook Subconta] Pagamento PagBy processado com sucesso (banco CENTRAL)');
+        
+        return response()->json(['ok' => true, 'message' => 'PagBy payment processed'], 200);
+    }
+    
+    /**
+     * Processa pagamento de assinatura de plano
+     * Modelo SEM SPLIT - Salva em: tenant{id}.subscriptions_payments (banco do tenant)
+     */
+    private function processarPagamentoAssinatura(Request $request, $tenant, string $event)
+    {
+        $paymentId = $request->input('payment.id');
+        $subscriptionId = $request->input('payment.subscription') ?? $request->input('subscription');
+        
+        Log::info('[Webhook Subconta] Processando ASSINATURA', [
+            'tenant_id' => $tenant->id,
+            'subscription_id' => $subscriptionId,
+            'payment_id' => $paymentId
+        ]);
+        
+        // Inicializar tenancy (mesmo para assinaturas agora)
+        $tenantModel = Tenant::find($tenant->id);
+        tenancy()->initialize($tenantModel);
+        
+        // Garantir conexão do tenant
+        config(['database.default' => 'tenant']);
+        \DB::purge('tenant');
+        \DB::reconnect('tenant');
+        
+        Log::info('[Webhook Subconta] Conexão trocada para tenant (assinatura)');
+        
+        // Buscar no banco do tenant
+        $payment = SubscriptionPayment::on('tenant')
+            ->where('asaas_payment_id', $paymentId)
+            ->first();
+        
+        if (!$payment) {
+            Log::warning('[Webhook Subconta] Pagamento de assinatura não encontrado', [
+                'tenant_id' => $tenant->id,
+                'payment_id' => $paymentId,
+                'subscription_id' => $subscriptionId
+            ]);
+            return response()->json(['ok' => true, 'message' => 'Subscription payment not found'], 200);
+        }
+        
+        // Processar evento da assinatura
+        $this->processarEventoAssinatura($event, $payment, $request->all());
+        
+        Log::info('[Webhook Subconta] Assinatura processada com sucesso');
+        
+        return response()->json(['ok' => true, 'message' => 'Subscription processed'], 200);
+    }
+    
+    /**
+     * Processa pagamento avulso de serviço
+     * Salva em: tenant{id}.payments (banco do tenant)
+     */
+    private function processarPagamentoAvulso(Request $request, $tenant, string $event)
+    {
+        $paymentId = $request->input('payment.id');
+        
+        Log::info('[Webhook Subconta] Processando pagamento AVULSO', [
+            'tenant_id' => $tenant->id,
+            'payment_id' => $paymentId
+        ]);
+        
+        // Inicializar tenancy
+        $tenantModel = Tenant::find($tenant->id);
+        tenancy()->initialize($tenantModel);
+        
+        // Garantir conexão do tenant
+        config(['database.default' => 'tenant']);
+        \DB::purge('tenant');
+        \DB::reconnect('tenant');
+        
+        Log::info('[Webhook Subconta] Conexão trocada para tenant');
+        
+        // Buscar no banco do tenant
+        $payment = Payment::on('tenant')
+            ->where('asaas_payment_id', $paymentId)
+            ->first();
+        
+        if (!$payment) {
+            Log::warning('[Webhook Subconta] Pagamento avulso não encontrado', [
+                'tenant_id' => $tenant->id,
+                'payment_id' => $paymentId
+            ]);
+            return response()->json(['ok' => true, 'message' => 'Payment not found'], 200);
+        }
+        
+        // Processar evento avulso
+        $this->processarEventoAvulso($event, $payment, $request->all());
+        
+        Log::info('[Webhook Subconta] Pagamento avulso processado com sucesso');
+        
+        return response()->json(['ok' => true, 'message' => 'Payment processed'], 200);
+    }
+    
+    /**
+     * Processa eventos de pagamentos de ASSINATURA
+     * Modelo SEM SPLIT - Atualiza: tenant{id}.subscriptions_payments
+     */
+    private function processarEventoAssinatura(string $event, SubscriptionPayment $payment, array $data)
+    {
+        Log::info('[Webhook Subconta] Processando evento ASSINATURA', [
+            'event' => $event,
+            'payment_id' => $payment->id,
+            'subscription_id' => $payment->subscription_id
+        ]);
+        
+        switch ($event) {
+            case 'PAYMENT_CREATED':
+                $payment->status = 'pending';
+                $payment->save();
+                break;
+                
+            case 'PAYMENT_RECEIVED':
+            case 'PAYMENT_CONFIRMED':
+                // Pagamento de assinatura confirmado ✅
+                $payment->markAsReceived([
+                    'confirmed_at' => now(),
+                    'received_at' => now()
+                ]);
+                
+                // Atualizar subscription também
+                if ($payment->subscription) {
+                    $payment->subscription->status = 'Ativo';
+                    $payment->subscription->save();
+                }
+                
+                Log::info('[Webhook Subconta] Assinatura paga', [
+                    'payment_id' => $payment->id,
+                    'subscription_id' => $payment->subscription_id,
+                    'amount' => $payment->amount
+                ]);
+                break;
+                
+            case 'PAYMENT_OVERDUE':
+                // Assinatura vencida - notificar cliente
+                $payment->markAsOverdue();
+                
+                // Atualizar subscription
+                if ($payment->subscription) {
+                    $payment->subscription->status = 'Expirado';
+                    $payment->subscription->save();
+                }
+                
+                Log::warning('[Webhook Subconta] Assinatura vencida', [
+                    'payment_id' => $payment->id,
+                    'subscription_id' => $payment->subscription_id
+                ]);
+                
+                // TODO: Notificar cliente que a assinatura dele está vencida
+                break;
+                
+            case 'PAYMENT_DELETED':
+            case 'PAYMENT_REFUNDED':
+                $payment->status = 'refunded';
+                $payment->save();
+                
+                if ($payment->subscription) {
+                    $payment->subscription->status = 'Cancelado';
+                    $payment->subscription->save();
+                }
+                break;
+        }
+    }
+    
+    /**
+     * Processa eventos de pagamentos AVULSOS
+     * Atualiza: tenant{id}.payments
+     */
+    private function processarEventoAvulso($event, Payment $payment, array $data)
+    {
+        Log::info('[Webhook Subconta] Processando evento', [
+            'event' => $event,
+            'payment_id' => $payment->id,
+            'appointment_id' => $payment->appointment_id
+        ]);
+        
+        switch ($event) {
+            case 'PAYMENT_CREATED':
+                // Pagamento criado
+                $payment->status = 'pending';
+                $payment->save();
+                break;
+                
+            case 'PAYMENT_RECEIVED':
+            case 'PAYMENT_CONFIRMED':
+                // Pagamento recebido/confirmado ✅
+                $payment->status = 'paid';
+                $payment->paid_at = now();
+                $payment->save();
+                
+                // Atualizar appointment
+                if ($payment->appointment) {
+                    $payment->appointment->payment_status = 'paid';
+                    $payment->appointment->save();
+                }
+                
+                Log::info('[Webhook Subconta] Pagamento confirmado', [
+                    'payment_id' => $payment->id,
+                    'amount' => $payment->amount
+                ]);
+                break;
+                
+            case 'PAYMENT_OVERDUE':
+                // Pagamento vencido ⚠️
+                $payment->status = 'overdue';
+                $payment->save();
+                
+                // Atualizar appointment
+                if ($payment->appointment) {
+                    $payment->appointment->payment_status = 'overdue';
+                    $payment->appointment->save();
+                }
+                
+                // Verificar se deve bloquear cliente
+                $tenant = tenant();
+                if ($tenant->getSetting('bloqueio_automatico_inadimplentes', false)) {
+                    $customer = $payment->appointment->customer;
+                    
+                    // Contar pagamentos atrasados total
+                    $totalOverdue = Payment::whereHas('appointment', function($q) use ($customer) {
+                        $q->where('customer_id', $customer->id);
+                    })
+                    ->where('status', 'overdue')
+                    ->count();
+                    
+                    // Bloquear se tem pagamentos atrasados
+                    if ($totalOverdue > 0) {
+                        $customer->is_blocked = true;
+                        $customer->save();
+                        
+                        Log::info('[Webhook Subconta] Cliente bloqueado por inadimplência', [
+                            'customer_id' => $customer->id,
+                            'total_overdue' => $totalOverdue
+                        ]);
+                    }
+                }
+                
+                // Notificar proprietário
+                $this->notificarProprietario($payment);
+                
+                break;
+                
+            case 'PAYMENT_DELETED':
+            case 'PAYMENT_REFUNDED':
+                $payment->status = 'refunded';
+                $payment->save();
+                break;
+        }
+    }
+    
+    private function processarEventoPagByPayment(string $event, \App\Models\PagByPayment $payment, array $webhookData)
+    {
+        Log::info('[Webhook Subconta] Processando evento PagBy Payment', [
+            'event' => $event,
+            'payment_id' => $payment->id,
+            'asaas_payment_id' => $payment->asaas_payment_id,
+            'tenant_id' => $payment->tenant_id,
+            'status_atual' => $payment->status
+        ]);
+        
+        switch ($event) {
+            case 'PAYMENT_RECEIVED':
+            case 'PAYMENT_CONFIRMED':
+                // ✅ Pagamento confirmado - ativar tenant
+                $payment->status = 'confirmed';
+                $payment->save();
+                
+                Log::info('[Webhook Subconta] Pagamento PagBy confirmado', [
+                    'payment_id' => $payment->id,
+                    'tenant_id' => $payment->tenant_id,
+                    'amount' => $payment->amount
+                ]);
+                
+                // Atualizar status do tenant (se necessário)
+                $tenant = \App\Models\Tenant::find($payment->tenant_id);
+                if ($tenant && $tenant->is_blocked) {
+                    $tenant->is_blocked = false;
+                    $tenant->subscription_status = 'active';
+                    $tenant->save();
+                    
+                    Log::info('[Webhook Subconta] Tenant desbloqueado após pagamento PagBy', [
+                        'tenant_id' => $tenant->id
+                    ]);
+                }
+                break;
+                
+            case 'PAYMENT_OVERDUE':
+                // ⚠️ Pagamento vencido - pode bloquear tenant
+                $payment->status = 'overdue';
+                $payment->save();
+                
+                Log::warning('[Webhook Subconta] Pagamento PagBy vencido', [
+                    'payment_id' => $payment->id,
+                    'tenant_id' => $payment->tenant_id
+                ]);
+                
+                // TODO: Implementar lógica de bloqueio por inadimplência
+                // Por enquanto apenas registra, mas não bloqueia automaticamente
+                break;
+                
+            case 'PAYMENT_DELETED':
+            case 'PAYMENT_REFUNDED':
+                // 🔄 Pagamento reembolsado/cancelado
+                $payment->status = 'refunded';
+                $payment->save();
+                
+                Log::info('[Webhook Subconta] Pagamento PagBy reembolsado/cancelado', [
+                    'payment_id' => $payment->id,
+                    'event' => $event
+                ]);
+                break;
+                
+            default:
+                Log::info('[Webhook Subconta] Evento PagBy não tratado', [
+                    'event' => $event,
+                    'payment_id' => $payment->id
+                ]);
+                break;
+        }
+    }
+
+    private function notificarProprietario(Payment $payment)
+    {
+        // Enviar notificação para proprietários
+        $proprietarios = \App\Models\User::whereHas('roles', function($q) {
+            $q->where('name', 'Proprietário');
+        })->get();
+        
+        foreach ($proprietarios as $proprietario) {
+            $proprietario->notify(
+                new \App\Notifications\ClienteInadimplente($payment)
+            );
+        }
+    }
+}

@@ -92,68 +92,71 @@ Route::middleware([
         $paymentId = $request->input('payment_id');
         
         try {
-            // Buscar o pagamento e cancelar diretamente
-            $payment = TenantsPlansPayment::on('mysql')->find($paymentId);
+            // Buscar o pagamento na base do TENANT (não na central)
+            $subscriptionPayment = \App\Models\SubscriptionPayment::find($paymentId);
 
-            if (!$payment || !$payment->asaas_subscription_id) {
-                return redirect()->back()->with('error', 'Assinatura não encontrada.');
+            if (!$subscriptionPayment) {
+                return redirect()->back()->with('error', 'Pagamento não encontrado.');
             }
 
-            // Cancelar no Asaas
+            // Obter a assinatura relacionada
+            $subscription = $subscriptionPayment->subscription;
+            
+            if (!$subscription || !$subscription->mp_payment_id) {
+                return redirect()->back()->with('error', 'Assinatura não encontrada no sistema.');
+            }
+
+            $asaasSubscriptionId = $subscription->mp_payment_id;
+
+            // Obter o accountId da subconta do tenant
+            $tenant = tenancy()->tenant;
+            $accountId = $tenant ? $tenant->asaas_account_id : null;
+
+            Log::info('🔍 Dados para cancelamento:', [
+                'subscription_id' => $subscription->id,
+                'asaas_subscription_id' => $asaasSubscriptionId,
+                'tenant_id' => $tenant?->id,
+                'account_id' => $accountId
+            ]);
+
+            // Cancelar no Asaas (na subconta do tenant)
             $asaasService = app(\App\Services\AsaasService::class);
-            $result = $asaasService->cancelarAssinatura($payment->asaas_subscription_id);
+            $result = $asaasService->cancelarAssinatura($asaasSubscriptionId, $accountId);
 
             Log::info('Resultado do cancelamento Asaas:', [
                 'payment_id' => $paymentId,
-                'asaas_subscription_id' => $payment->asaas_subscription_id,
+                'subscription_id' => $subscription->id,
+                'asaas_subscription_id' => $asaasSubscriptionId,
                 'result' => $result
             ]);
 
-            if ($result['success']) {
-                $payment->status = 'CANCELLED';
-                $payment->save();
+            // Se retornou 404, a assinatura não existe mais no Asaas (já foi cancelada ou nunca existiu)
+            // Nesse caso, cancelamos localmente mesmo assim
+            $asaasCancelado = $result['success'] || (isset($result['status']) && $result['status'] == 404);
+
+            if ($asaasCancelado) {
+                // Atualizar status da assinatura
+                $subscription->status = 'Cancelado';
+                $subscription->save();
                 
-                // Desativar plano do tenant
-                $tenantPlan = \App\Models\TenantPlan::on('mysql')
-                    ->where('tenant_id', $payment->tenant_id)
-                    ->where('name', $payment->plan)
-                    ->first();
+                // Atualizar status do pagamento  
+                $subscriptionPayment->status = 'cancelled';
+                $subscriptionPayment->save();
                 
-                if ($tenantPlan) {
-                    $tenantPlan->active = false;
-                    $tenantPlan->save();
-                }
-
-                // Desativar assinatura na base do tenant
-                $tenant = \App\Models\Tenant::on('mysql')->find($payment->tenant_id);
-                if ($tenant) {
-                    $tenant->run(function () use ($payment) {
-                        $payerData = json_decode($payment->payer_data, true);
-                        $email = $payerData['email'] ?? null;
-
-                        if ($email) {
-                            $user = \App\Models\User::where('email', $email)->first();
-                            if ($user) {
-                                $subscription = \App\Models\Subscription::where('user_id', $user->id)
-                                    ->where('mp_payment_id', $payment->asaas_subscription_id)
-                                    ->first();
-
-                                if ($subscription) {
-                                    $subscription->status = 'Cancelado';
-                                    $subscription->save();
-                                }
-                            }
-                        }
-                    });
-                }
+                $message = $result['success'] 
+                    ? 'Assinatura cancelada com sucesso!' 
+                    : 'Assinatura cancelada localmente (não encontrada no Asaas).';
                 
                 return redirect()->route('tenant.dashboard')
-                    ->with('success', 'Assinatura cancelada com sucesso!')
+                    ->with('success', $message)
                     ->with('tabelaAtiva', 'planos-de-assinatura');
             }
 
+            // Outros erros (não 404)
             Log::warning('Falha ao cancelar no Asaas:', [
                 'payment_id' => $paymentId,
+                'subscription_id' => $subscription->id,
+                'asaas_subscription_id' => $asaasSubscriptionId,
                 'result' => $result,
                 'message' => $result['message'] ?? 'Sem mensagem'
             ]);
@@ -222,31 +225,6 @@ Route::get('/plans', function () {
             
         ]);
     })->name('tenant-assinatura.failure');
-
-    //  ROTA DE ESPERA DE PAGAMENTO
-    Route::get('/tenant-assinatura/wait', function (Illuminate\Http\Request $request) {
-        
-        $payment_id = $request->query('paymentId');
-        $payment = TenantsPlansPayment::on('mysql')->find($payment_id);
-        $tenant_name = $request->query('tenant_name');     
-        $tenant_id = $request->query('tenant_id');
-        $plan_name = $payment->plan;
-        
-        $message = $request->query('message', 'Seu pagamento está sendo processado. Por favor, aguarde.');
-        $checkoutUrl = $request->query('checkoutUrl');
-        $amount = $payment->amount;
-                
-        // Se quiser, busque o plano do tenant aqui para exibir informações
-        return view('tenant-assinatura.wait', [
-            'tenant_name' => $tenant_name,
-            'tenant_id' => $tenant_id,
-            'plan_name' => $plan_name,
-            'payment' => $payment,
-            'message' => $message,
-            'checkout_url' => $checkoutUrl,
-            'amount' => $amount,
-        ]);
-    })->name('tenant-assinatura.wait');
 
     // Rota de checagem de status do pagamento
     Route::get('/tenant-assinatura/check-status/{paymentId}', [SubscriptionController::class, 'checkStatus'])

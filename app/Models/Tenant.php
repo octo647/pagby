@@ -53,7 +53,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'trial_ends_at',
             'subscription_status',
             'asaas_wallet_id',
+            'asaas_account_id',
             'asaas_account_data',
+            'asaas_api_key',
+            'asaas_account_status',
+            'asaas_account_activated_at',
             'subscription_started_at',
             'subscription_ends_at', 
             'is_blocked',
@@ -94,7 +98,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'trial_ends_at',
         'subscription_status',
         'asaas_wallet_id',
+        'asaas_account_id',
         'asaas_account_data',
+        'asaas_api_key',
+        'asaas_account_status',
+        'asaas_account_activated_at',
         'subscription_started_at',
         'subscription_ends_at', 
         'is_blocked',
@@ -103,12 +111,19 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'updated_at',
         
     ];
+
+    protected $hidden = [
+        'asaas_api_key', // Nunca expor API key em JSON/APIs
+    ];
+
     protected $casts = [
         'trial_started_at' => 'datetime',
         'trial_ends_at' => 'datetime',
         'subscription_started_at' => 'datetime',
         'subscription_ends_at' => 'datetime',
+        'asaas_account_activated_at' => 'datetime',
         'is_blocked' => 'boolean',
+        'asaas_account_data' => 'array',
     ];
 
     /**
@@ -295,6 +310,114 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function canChangeEmployeeCount(): bool
     {
         return !$this->shouldBeBlocked();
+    }
+
+    // ============================================================
+    // MÉTODOS PARA SUBCONTAS ASAAS (MODELO SEM SPLIT)
+    // ============================================================
+
+    /**
+     * Obtém API key descriptografada da subconta.
+     * 
+     * IMPORTANTE: Usar apenas quando necessário processar pagamentos.
+     * Nunca expor em APIs ou logs.
+     * 
+     * @return string|null
+     */
+    public function getAsaasApiKeyDecryptedAttribute()
+    {
+        if (!$this->asaas_api_key) {
+            return null;
+        }
+
+        try {
+            return \Illuminate\Support\Facades\Crypt::decryptString($this->asaas_api_key);
+        } catch (\Exception $e) {
+            \Log::error('[Tenant] Erro ao descriptografar API key', [
+                'tenant_id' => $this->id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Verifica se a subconta está ativa e pode receber pagamentos.
+     * 
+     * @return bool
+     */
+    public function canReceivePayments(): bool
+    {
+        return $this->asaas_account_status === 'active' 
+            && !empty($this->asaas_api_key);
+    }
+
+    /**
+     * Verifica se precisa criar subconta Asaas.
+     * 
+     * @return bool
+     */
+    public function needsAsaasSubaccount(): bool
+    {
+        return empty($this->asaas_account_id) 
+            || empty($this->asaas_api_key);
+    }
+
+    /**
+     * Verifica se a subconta está pendente de aprovação.
+     * 
+     * @return bool
+     */
+    public function isSubaccountPending(): bool
+    {
+        return $this->asaas_account_status === 'pending';
+    }
+
+    /**
+     * Verifica se a subconta foi rejeitada.
+     * 
+     * @return bool
+     */
+    public function isSubaccountRejected(): bool
+    {
+        return $this->asaas_account_status === 'rejected';
+    }
+
+    /**
+     * Ativa a subconta após aprovação do Asaas.
+     * 
+     * @return void
+     */
+    public function activateSubaccount(): void
+    {
+        $this->asaas_account_status = 'active';
+        $this->asaas_account_activated_at = now();
+        $this->save();
+
+        \Log::info('[Tenant] Subconta ativada', [
+            'tenant_id' => $this->id,
+            'account_id' => $this->asaas_account_id
+        ]);
+    }
+
+    /**
+     * Retorna status legível da subconta.
+     * 
+     * @return string
+     */
+    public function getSubaccountStatusDisplay(): string
+    {
+        if (!$this->asaas_account_id) {
+            return 'Subconta não criada';
+        }
+
+        return match($this->asaas_account_status) {
+            'pending' => '⏳ Aguardando aprovação Asaas',
+            'active' => '✅ Ativa - pode receber pagamentos',
+            'rejected' => '❌ Rejeitada pelo Asaas',
+            'disabled' => '⛔ Desabilitada',
+            default => '❓ Status desconhecido'
+        };
     }
 
 

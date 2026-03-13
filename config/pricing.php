@@ -18,11 +18,11 @@ return [
         'description' => 'Teste grátis por 30 dias com até 5 funcionários',
     ],
 
-    'base_price_per_employee' => 60.00, // R$ 60 por funcionário
+    'base_price_per_employee' => 30.00, // R$ 30 por funcionário
 
     // Promoção: 50% de desconto no primeiro ano
-    // Promoção: R$ 40 por funcionário no primeiro ano
-    'promo_price_first_year' => 40.00,
+    // Promoção: R$ 26 por funcionário no primeiro ano
+    'promo_price_first_year' => 26.00,
     'promo_duration_months' => 12,
 
     'features' => [
