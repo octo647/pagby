@@ -88,8 +88,12 @@
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.fantasy_name">
             </div>
             <div class="mb-4">
-                <label class="block font-semibold mb-1">Rua e número</label>
+                <label class="block font-semibold mb-1">Rua</label>
                 <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.address">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Número</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.{{$editedSalonIndex}}.number">
             </div>
             <div class="mb-4">
                 <label class="block font-semibold mb-1">Complemento</label>

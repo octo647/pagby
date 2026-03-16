@@ -7,6 +7,7 @@ namespace App\Livewire\Admin;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use App\Models\Tenant;
+use App\Services\TenantCreationService;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
@@ -130,6 +131,7 @@ class Saloes extends Component
             $this->newSalon['phone'] = $contact->phone;
             $this->newSalon['name'] = $contact->tenant_name;
             $this->newSalon['address'] = $contact->address;
+            $this->newSalon['number'] = $contact->number;
             $this->newSalon['cep'] = $contact->cep;
             $this->newSalon['neighborhood'] = $contact->neighborhood;
             $this->newSalon['city'] = $contact->city;
@@ -320,116 +322,36 @@ class Saloes extends Component
     
     public function saveNewSalon()
     {
-        $this->newSalon['id'] = $this->newSalon['slug'];
-        // Deleta a base de dados do tenant, se já existir (MySQL)
-        // Usa apenas o id do salão como nome do banco de dados
-        $dbName = $this->newSalon['id'];
-        
-        try {
-            if ($this->databaseExists($dbName)) {
-                DB::statement("DROP DATABASE IF EXISTS `$dbName`");
-            }
-        } catch (\Exception $e) {
-            Log::error('Erro ao tentar deletar base de dados existente do tenant: ' . $e->getMessage());
-        }
-
-        // Isso vai parar a execução e mostrar a mensagem
-        // O id do salão será igual ao slug
-        
+        // Validação
         $this->validate([
             'newSalon.slug' => 'required',
             'logoFile' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
         ]);
-        // Domínio baseado no ambiente (usa config() pois env() retorna null quando cached)
-        $domainSuffix = config('app.tenant_domain_suffix', '.localhost');
-        // Garante que social_login_enabled seja inteiro
-        $this->newSalon['social_login_enabled'] = (int) ($this->newSalon['social_login_enabled'] ?? 0);
-        // Cria o novo tenant se não existir, removendo o campo logo para não sobrescrever depois
-        $newSalonData = $this->newSalon;
-        if (isset($newSalonData['logo'])) {
-            unset($newSalonData['logo']);
-        }
-        $tenant = Tenant::firstOrCreate(['id' => $this->newSalon['id']], $newSalonData);
 
-        // Cria o domínio para o salão
-        $tenant->createDomain(['domain' => $this->newSalon['id'] . $domainSuffix]);
+        try {
+            // Cria o tenant usando o serviço
+            $tenantCreationService = new TenantCreationService();
+            
+            $tenant = $tenantCreationService->createTenant(
+                tenantData: $this->newSalon,
+                logoFile: $this->logoFile,
+                templateType: $this->newSalon['templateType'] ?? 'Barbearias',
+                template: $this->newSalon['template'] ?? 'Padrao'
+            );
 
-        // Inicia automaticamente o período de teste de 30 dias
-        $tenant->startTrial();
+            $this->dispatch('salonLogoUpdated');
+            $this->showCreateSalonPanel = false;
+            $this->loadSaloes();
+            $this->resetNewSalon();
+            session()->flash('message', 'Salão criado com sucesso.');
 
-        // Executa seeders do tenant ANTES de criar o proprietário
-        $this->seedTenantDatabase($tenant);
-
-        // Cria conta do proprietário no tenant
-        $this->createOwnerAccount($tenant);
-
-        //Criar a estrutura de diretórios
-        $this->createTenantDirectoryStructure($this->newSalon['id'], $this->newSalon['templateType'] ?? 'Barbearias', 
-        $this->newSalon['template'] ?? 'default');
-
-        // Salvar logo se enviada (em public/tenants/$tenantId/logo.{ext})
-        if ($this->logoFile) {
-            $slug = $this->newSalon['slug'];
-            $originalName = $this->logoFile->getClientOriginalName();
-            $ext = $this->logoFile->getClientOriginalExtension();
-            Log::info('Upload de logo recebido', [
-                'original_name' => $originalName,
-                'extension' => $ext,
-                'mime' => $this->logoFile->getMimeType(),
+        } catch (\Exception $e) {
+            Log::error('Erro ao criar salão via admin panel', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
-            // Usa public/tenants/{slug} ao invés de public/images/tenants/{slug} que é symlink
-            $logoDir = public_path("tenants/$slug");
-            if (!is_dir($logoDir)) {
-                mkdir($logoDir, 0775, true);
-            }
-            $logoPath = $logoDir . "/logo.$ext";
-            try {
-                $this->logoFile->storeAs("tmp", "logo.$ext", 'local');
-                $tmpPath = storage_path("app/tmp/logo.$ext");
-                copy($tmpPath, $logoPath);
-                unlink($tmpPath);
-                Log::info('LogoFile salvo em ' . $logoPath);
-            } catch (\Exception $e) {
-                Log::error('Erro ao salvar logoFile em public/tenants', [
-                    'exception' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString(),
-                ]);
-            }
-            // Atualiza o campo logo no banco e no array (caminho corrigido)
-            $logoRelPath = "tenants/$slug/logo.$ext";
-            $tenant->logo = $logoRelPath;
-            $tenant->save();
-            Log::info('Logo salvo no banco', ['tenant_id' => $tenant->id, 'logo' => $tenant->logo]);
-            $this->newSalon['logo'] = $logoRelPath;
-        } else {
-            // Se não houver upload, não sobrescreve o campo logo existente
-            if (!empty($this->newSalon['logo'])) {
-                $tenant->logo = $this->newSalon['logo'];
-                $tenant->save();
-                Log::info('Logo salvo no banco (sem upload)', ['tenant_id' => $tenant->id, 'logo' => $tenant->logo]);
-            }
+            session()->flash('error', 'Erro ao criar salão: ' . $e->getMessage());
         }
-        // Atualiza o nome temporário do salão na tabela pagbypayments
-        $contact = \App\Models\Contact::where('email', $this->newSalon['email'])->first();
-        if ($contact) {
-            \App\Models\PagByPayment::where('tenant_id', 'temp_' . $contact->id)->update(['tenant_id' => $tenant->id]);
-            // Transfere o employee_count do contact para o tenant se não foi definido
-            if (!isset($this->newSalon['employee_count']) || $this->newSalon['employee_count'] <= 0) {
-                $tenant->employee_count = $contact->employee_count ?? 1;
-                // Salva apenas employee_count, não sobrescreve logo
-                $tenant->save();
-            }
-        }
-        
-        $this->dispatch('salonLogoUpdated');
-
-        // Limpa o cache de views para garantir que novos symlinks/templates sejam reconhecidos
-        Artisan::call('view:clear');
-
-        $this->showCreateSalonPanel = false;
-        $this->loadSaloes(); // Recarrega a lista
-        $this->resetNewSalon();
-        session()->flash('message', 'Salão criado com sucesso.');
     }
     /**
      * Cria a estrutura de diretórios para o tenant
@@ -478,21 +400,42 @@ class Saloes extends Component
         }
  
 
-        // Cria symlink para o template home.blade.php
+        // Criar link/cópia do template home.blade.php
+        // Template "Padrao": CÓPIA (editável individualmente)
+        // Outros templates: SYMLINK (compartilhado, não editável)
         $templateHome = resource_path("Templates/$templateType/$template/home.blade.php");
         $tenantHome = resource_path("views/tenants/$tenantId/home.blade.php");
-            Log::info('Tentando criar symlink do home.blade.php', ['templateHome' => $templateHome, 'tenantHome' => $tenantHome]);
-        if (!is_link($tenantHome)) {
-            if (file_exists($tenantHome)) {
-                unlink($tenantHome);
-            }
-            if (file_exists($templateHome)) {
-                symlink($templateHome, $tenantHome);
-                Log::info('Symlink do home.blade.php criado', ['from' => $templateHome, 'to' => $tenantHome]);
-                    Log::info('Symlink do home.blade.php criado', ['from' => $templateHome, 'to' => $tenantHome]);
+        Log::info('Processando template home.blade.php', [
+            'templateHome' => $templateHome,
+            'tenantHome' => $tenantHome,
+            'template' => $template,
+        ]);
+        
+        // Remove arquivo ou symlink existente
+        if (is_link($tenantHome)) {
+            unlink($tenantHome);
+        } elseif (file_exists($tenantHome)) {
+            unlink($tenantHome);
+        }
+        
+        if (file_exists($templateHome)) {
+            // Template "Padrao" é COPIADO (editável)
+            if ($template === 'Padrao') {
+                if (copy($templateHome, $tenantHome)) {
+                    Log::info('Template Padrao copiado (editável)', ['from' => $templateHome, 'to' => $tenantHome]);
+                } else {
+                    Log::error('Erro ao copiar template Padrao');
+                }
             } else {
-                    Log::error('Arquivo de template home.blade.php não encontrado', ['templateHome' => $templateHome]);
+                // Outros templates usam SYMLINK (não editável)
+                if (symlink($templateHome, $tenantHome)) {
+                    Log::info('Symlink do template criado (não editável)', ['from' => $templateHome, 'to' => $tenantHome]);
+                } else {
+                    Log::error('Erro ao criar symlink do template');
+                }
             }
+        } else {
+            Log::error('Arquivo de template home.blade.php não encontrado', ['templateHome' => $templateHome]);
         }
 
         // Criar link simbólico para storage público

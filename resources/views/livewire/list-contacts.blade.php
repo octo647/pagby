@@ -54,6 +54,11 @@
                         @error('newContact.address') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Número</label>
+                        <input type="text" wire:model="newContact.number" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('newContact.number') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700">Bairro</label>
                         <input type="text" wire:model="newContact.neighborhood" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                         @error('newContact.neighborhood') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
@@ -128,6 +133,11 @@
                         <label class="block text-sm font-medium text-gray-700">Endereço</label>
                         <input type="text" wire:model="editingContact.address" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
                         @error('editingContact.address') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Número</label>
+                        <input type="text" wire:model="editingContact.number" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm">
+                        @error('editingContact.number') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700">Bairro</label>

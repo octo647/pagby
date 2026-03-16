@@ -307,15 +307,15 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
  <div>
                             <label for="complement" class="block text-sm font-medium text-gray-700 mb-2">
-                                Complemento
+                                Complemento (Opcional)
                             </label>
                             <input type="text" 
                                    id="complement" 
                                    name="complement" 
                                    value="{{ old('complement') }}" 
-                                   required 
+                                   
                                    class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-colors text-gray-900 bg-white @error('complement') border-red-500 @enderror"
-                                   placeholder="Apartamento, bloco, etc.">
+                                   placeholder="Apto, Sala, etc.">
                             @error('complement')
                                 <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                             @enderror

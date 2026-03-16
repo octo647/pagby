@@ -155,6 +155,8 @@
                         @livewire('planos-de-assinatura')
                     @elseif($tabelaAtiva === 'meu-pagby')
                         @livewire('proprietario.meu-pagby')
+                    @elseif($tabelaAtiva === 'customizar-home')
+                        @livewire('proprietario.customizar-home')
                     @elseif($tabelaAtiva === 'link-agendamento')
                         @livewire('create-post')
                     @elseif($tabelaAtiva === 'gerenciar-comandas')
