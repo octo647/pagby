@@ -29,6 +29,10 @@ SESSION_SECURE_COOKIE=true
 SESSION_SAME_SITE=lax
 CACHE_STORE=file
 CACHE_PREFIX=pagby_
+
+# Asaas PRODUÇÃO
+ASAAS_API_URL=https://api.asaas.com/v3
+ASAAS_API_KEY=$aact_prod_...
 ```
 
 ---
