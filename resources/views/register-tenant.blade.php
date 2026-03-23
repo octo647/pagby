@@ -401,15 +401,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- Botão de submit -->
                                 <!-- Aceite do contrato -->
                                 <div class="flex items-start mb-6">
-                                    <input type="checkbox" id="contract_accepted" name="contract_accepted" value="1" required class="mt-1 mr-2">
+                                    <input type="checkbox" id="contract_accepted" name="contract_accepted" value="1" required class="mt-1 mr-2"
+                                           onchange="if(this.checked && typeof fbq !== 'undefined') fbq('track', 'Lead', {content_name: 'Aceite de Contrato', content_category: 'Registro'});">
                                     <label for="contract_accepted" class="text-sm text-gray-700 select-none">
-                                        Eu li e aceito os <a href="{{ route('contrato') }}" target="_blank" class="text-purple-600 underline hover:text-purple-800">Termos e Contrato da Plataforma PagBy</a> *
+                                        Eu li e aceito os <a href="{{ route('contrato') }}" target="_blank" class="text-purple-600 underline hover:text-purple-800"
+                                                            onclick="if(typeof fbq !== 'undefined') fbq('track', 'ViewContent', {content_name: 'Termos e Contrato', content_category: 'Legal'});">Termos e Contrato da Plataforma PagBy</a> *
                                     </label>
                                 </div>
                 <div class="pt-6">
                     <button type="submit" 
                             id="submit-btn"
-                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed">
+                            class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            onclick="if(typeof fbq !== 'undefined') fbq('track', 'CompleteRegistration', {content_name: 'Formulário de Registro', status: 'submitted'});">
                         <i class="fas fa-rocket mr-2"></i>
                         <span id="submit-text">Criar Minha Conta PagBy</span>
                     </button>
@@ -418,7 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 <!-- Link para voltar -->
                 <div class="text-center pt-4">
                     <a href="{{ route('home') }}" 
-                       class="text-gray-600 hover:text-gray-800 transition-colors">
+                       class="text-gray-600 hover:text-gray-800 transition-colors"
+                       onclick="if(typeof fbq !== 'undefined') fbq('trackCustom', 'AbandonRegistration', {content_name: 'Voltar para Home'});">
                         ← Voltar para a página inicial
                     </a>
                 </div>
@@ -429,6 +433,46 @@ document.addEventListener('DOMContentLoaded', function() {
     <!-- JavaScript para validações e CEP -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Facebook Pixel - Rastreamento de visualização da página de registro
+            if (typeof fbq !== 'undefined') {
+                const selectedPlan = '{{ $selectedPlan ?? "none" }}';
+                const employeeCount = '{{ $selectedEmployeeCount ?? "0" }}';
+                
+                fbq('track', 'ViewContent', {
+                    content_name: 'Página de Registro',
+                    content_category: 'Registration',
+                    plan: selectedPlan,
+                    employees: employeeCount
+                });
+            }
+            
+            // Rastreamento de início de preenchimento do formulário
+            let formStarted = false;
+            const formInputs = document.querySelectorAll('#registration-form input[type="text"], #registration-form input[type="email"], #registration-form input[type="tel"]');
+            
+            formInputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    if (!formStarted && typeof fbq !== 'undefined') {
+                        formStarted = true;
+                        fbq('trackCustom', 'StartRegistration', {
+                            content_name: 'Início do Preenchimento',
+                            first_field: this.name
+                        });
+                    }
+                });
+            });
+            
+            // Rastreamento de seleção do tipo de negócio
+            const tipoRadios = document.querySelectorAll('input[name="tipo"]');
+            tipoRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.checked && typeof fbq !== 'undefined') {
+                        fbq('trackCustom', 'BusinessTypeSelected', {
+                            business_type: this.value
+                        });
+                    }
+                });
+            });
             // Elementos do formulário
             const emailInput = document.getElementById('email');
             const phoneInput = document.getElementById('phone');
@@ -485,6 +529,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     feedback.className = 'mt-1 text-sm text-green-600';
                     emailInput.classList.remove('border-red-500');
                     emailInput.classList.add('border-green-500');
+                    
+                    // Facebook Pixel - Email validado
+                    if (typeof fbq !== 'undefined') {
+                        fbq('trackCustom', 'EmailValidated', {
+                            content_name: 'Email Válido Inserido'
+                        });
+                    }
                     return true;
                 }
                 return true;
@@ -511,6 +562,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     feedback.className = 'mt-1 text-sm text-green-600';
                     phoneInput.classList.remove('border-red-500');
                     phoneInput.classList.add('border-green-500');
+                    
+                    // Facebook Pixel - Telefone validado
+                    if (typeof fbq !== 'undefined') {
+                        fbq('trackCustom', 'PhoneValidated', {
+                            content_name: 'Telefone Válido Inserido'
+                        });
+                    }
                     return true;
                 } else {
                     feedback.textContent = '';
@@ -541,7 +599,16 @@ document.addEventListener('DOMContentLoaded', function() {
                             feedback.className = 'mt-1 text-sm text-green-600';
                             cepInput.classList.remove('border-red-500');
                             cepInput.classList.add('border-green-500');
+                            acebook Pixel - CEP validado e endereço preenchido
+                            if (typeof fbq !== 'undefined') {
+                                fbq('trackCustom', 'AddressAutoFilled', {
+                                    content_name: 'CEP Validado e Endereço Preenchido',
+                                    city: data.localidade,
+                                    state: data.uf
+                                });
+                            }
                             
+                            // F
                             // Preencher campos automaticamente
                             addressInput.value = data.logradouro || '';
                             neighborhoodInput.value = data.bairro || '';

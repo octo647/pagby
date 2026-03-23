@@ -22,6 +22,7 @@
          
        
         @livewireStyles
+       
     </head>
     <body class="font-sans antialiased">
             <!-- Flatpickr JS -->

@@ -35,7 +35,8 @@
             </p>
           
             <a href="#planos" 
-               class="inline-block bg-gradient-to-r from-pink-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:from-pink-700 hover:to-indigo-700 transition mb-8 pulse-animation">
+               class="inline-block bg-gradient-to-r from-pink-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:from-pink-700 hover:to-indigo-700 transition mb-8 pulse-animation"
+               onclick="fbq('track', 'Lead', {content_name: 'CTA Principal - Hero Section', content_category: 'Landing Page'});">
                 Quero meu negócio no PagBy
             </a>
         </div>
@@ -170,7 +171,8 @@
                 @endforeach
             </div>
             
-            <button class="mt-8 bg-pink-600 text-white px-6 py-3 rounded-full font-bold shadow hover:bg-pink-700 transition">
+            <button class="mt-8 bg-pink-600 text-white px-6 py-3 rounded-full font-bold shadow hover:bg-pink-700 transition"
+                    onclick="fbq('track', 'ViewContent', {content_name: 'Ver funcionalidades', content_category: 'Funcionalidades'});">
                 <a href="/funcionalidades">Ver todas as funcionalidades</a>
             </button>
         </div>
@@ -265,7 +267,8 @@
                 <div id="avisoFuncionarios" class="hidden text-yellow-300 text-lg font-semibold mb-4 bg-yellow-900/30 rounded-xl p-4 max-w-2xl mx-auto">
                     <i class="fas fa-info-circle mr-2"></i>
                     Para mais de 20 funcionários, consulte valores pelo WhatsApp 
-                    <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-300 hover:text-green-200" target="_blank">
+                    <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" class="underline text-green-300 hover:text-green-200" target="_blank"
+                       onclick="fbq('track', 'Contact', {content_name: 'WhatsApp +20 Funcionários', content_category: 'Planos'});">
                         {{ config('pagby.whatsapp_display') }}
                     </a>
                 </div>
@@ -287,7 +290,7 @@
                             <div class="text-gray-600 text-sm mt-1">/mês</div>
                         </div>
                         
-                        <button onclick="selecionarPlano('mensal')" 
+                        <button onclick="selecionarPlano('mensal'); fbq('track', 'InitiateCheckout', {content_name: 'Plano Mensal', value: document.querySelector('[data-plan=mensal] .valor-mensal').textContent, currency: 'BRL'});" 
                                 class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
                             Escolher plano
                         </button>
@@ -318,7 +321,7 @@
                             <div class="text-gray-600 text-sm mt-1">/mês</div>
                         </div>
                         
-                        <button onclick="selecionarPlano('semestral')" 
+                        <button onclick="selecionarPlano('semestral'); fbq('track', 'InitiateCheckout', {content_name: 'Plano Semestral', value: document.querySelector('[data-plan=semestral] .valor-mensal').textContent, currency: 'BRL'});" 
                                 class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
                             Escolher plano
                         </button>
@@ -352,7 +355,7 @@
                             <div class="text-white/90 text-sm mt-1">/mês</div>
                         </div>
                         
-                        <button onclick="selecionarPlano('anual')" 
+                        <button onclick="selecionarPlano('anual'); fbq('track', 'InitiateCheckout', {content_name: 'Plano Anual', value: document.querySelector('[data-plan=anual] .valor-mensal').textContent, currency: 'BRL'});" 
                                 class="w-full bg-yellow-400 text-gray-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-yellow-300 transition-all">
                             Escolher plano
                         </button>
@@ -415,7 +418,8 @@
                 <input type="text" name="cidade" placeholder="Cidade (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
                 <input type="text" name="estado" placeholder="Estado (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
                 <textarea name="mensagem" placeholder="Sua mensagem (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900"></textarea>
-                <button type="submit" class="mt-6 bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition">
+                <button type="submit" class="mt-6 bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition"
+                        onclick="fbq('track', 'Lead', {content_name: 'Formulário de Dúvidas', content_category: 'Contato'});">
                     Enviar
                 </button>
             </form>
@@ -522,12 +526,14 @@
                 
             </div>
             <div class="flex items-center mb-4 md:mb-0">
-                <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" target="_blank" 
-                   class="flex items-center text-white/80 hover:text-white transition mr-6">
+                <a href="https://wa.me/{{ config('pagby.whatsapp_number') }}" target="_blan
+                   onclick="fbq('track', 'Contact', {content_name: 'WhatsApp Footer', content_category: 'Contato'});">
                     <i class="fab fa-whatsapp text-2xl mr-2"></i>
                     <span>{{ config('pagby.whatsapp_display') }}</span>
                 </a>
                 <a href="mailto:{{ config('pagby.contact_email') }}" 
+                   class="flex items-center text-white/80 hover:text-white transition"
+                   onclick="fbq('track', 'Contact', {content_name: 'Email Footer', content_category: 'Contato'});
                    class="flex items-center text-white/80 hover:text-white transition">
                     <i class="fas fa-envelope text-2xl mr-2"></i>
                     <span>{{ config('pagby.contact_email') }}</span>
@@ -535,7 +541,7 @@
                 
             </div>
             <div class="text-center md:text-right text-white/70">
-                <p>&copy; {{ date('Y') }} PagBy. Todos os direitos reservados.</p>
+                <p>&copy; {{ date('Y') }} HECO Softwares Ltda. Todos os direitos reservados.</p>
                 <p class="text-sm mt-2">Feito com ❤️ para profissionais da beleza</p>
             </div>
         </div>
@@ -640,5 +646,55 @@
         const url = `/register-tenant?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
         window.location.href = url;
     }
+
+    // Facebook Pixel - Rastreamento de visualização de seções
+    document.addEventListener('DOMContentLoaded', function() {
+        const sectionsTracked = new Set();
+        
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !sectionsTracked.has(entry.target.id)) {
+                    sectionsTracked.add(entry.target.id);
+                    
+                    const sectionNames = {
+                        'funcionalidades': 'Seção Funcionalidades',
+                        'planos': 'Seção Planos',
+                        'contato': 'Seção Contato'
+                    };
+                    
+                    const sectionName = sectionNames[entry.target.id];
+                    if (sectionName && typeof fbq !== 'undefined') {
+                        fbq('track', 'ViewContent', {
+                            content_name: sectionName,
+                            content_category: 'Landing Page Sections'
+                        });
+                    }
+                }
+            });
+        }, { threshold: 0.3 });
+        
+        // Observa as seções principais
+        ['funcionalidades', 'planos', 'contato'].forEach(id => {
+            const section = document.getElementById(id);
+            if (section) {
+                sectionObserver.observe(section);
+            }
+        });
+        
+        // Rastreia mudança no número de funcionários
+        const numFuncionariosInput = document.getElementById('numFuncionarios');
+        let lastValue = numFuncionariosInput.value;
+        
+        numFuncionariosInput.addEventListener('change', function() {
+            const newValue = this.value;
+            if (newValue !== lastValue && typeof fbq !== 'undefined') {
+                fbq('trackCustom', 'EmployeeCountChanged', {
+                    old_count: lastValue,
+                    new_count: newValue
+                });
+                lastValue = newValue;
+            }
+        });
+    });
 </script>
 </x-pagby-layout>
