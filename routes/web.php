@@ -40,6 +40,9 @@ Route::get('/api/social-auth/{token}', function ($token) {
         Route::get('/', function () {
             return view('home');
         })->name('home');
+        Route::get('/barbearias', function () {
+             return view('landing.barbearias');
+        })->name('landing.barbearias');
         
         // Rotas de registro e contrato
 

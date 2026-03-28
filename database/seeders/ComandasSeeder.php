@@ -27,7 +27,6 @@ class ComandasSeeder extends Seeder
 
             $comanda = Comanda::create([
                 'appointment_id' => $appointment->id,
-                'client_id' => $appointment->customer_id,
                 'branch_id' => $appointment->branch_id,
                 'numero_comanda' => $appointment->id.'-'. $appointment->created_at->format('Ymd').'-'.random_int(1000,9999),
                 'cliente_nome' => User::where('id', $appointment->customer_id)->value('name'),
@@ -37,11 +36,10 @@ class ComandasSeeder extends Seeder
                 'status' => $status,               
                 'data_fechamento' => $appointment->appointment_date,
                 'subtotal_servicos' => $subtotal_services,
-                'subtotal_produtos' => 0, // Ajuste conforme necessário
-                'desconto' => 0,
+                'subtotal_produtos' => 0,
+                'desconto_servicos' => 0,
+                'desconto_produtos' => 0,
                 'total_geral' => $subtotal_services,
-
-                // Adicione outros campos obrigatórios de comanda aqui
             ]);
 
             // Adiciona serviços à comanda extraídos do appointment

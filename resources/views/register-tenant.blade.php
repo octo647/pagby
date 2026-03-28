@@ -579,4 +579,13 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     </script>
+
+    <!-- Facebook Pixel - CompleteRegistration Event -->
+    @if (session('success'))
+    <script>
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'CompleteRegistration');
+        }
+    </script>
+    @endif
 </x-pagby-layout>

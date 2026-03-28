@@ -4,8 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Contact;
-use App\Services\AsaasService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class TenantRegistrationController extends Controller
 {
@@ -86,19 +87,12 @@ class TenantRegistrationController extends Controller
             // Criar o contato no banco de dados
             $contact = Contact::create($validatedData);
 
-            // INTEGRAÇÃO ASAAS: criar cliente e salvar customer_id
-            $asaas = new AsaasService();
-            $customerData = [
-                'name' => $contact->owner_name,
-                'email' => $contact->email,
-                'cpfCnpj' => $contact->cpf,
-                'phone' => $contact->phone,
-            ];
-            $customerId = $asaas->getOrCreateCustomer($customerData);
-            if ($customerId) {
-                $contact->asaas_customer_id = $customerId;
-                $contact->save();
-            }
+            // INTEGRAÇÃO ASAAS: Removida do cadastro inicial
+            // A integração com Asaas só acontecerá quando o tenant decidir assinar após o trial
+            // Isso evita erros de API durante o teste grátis e simplifica o onboarding
+            
+            // CRIAR TENANT AUTOMATICAMENTE COM STATUS TRIAL
+            $tenant = $this->createTrialTenant($contact);
 
             // Pegar o plano da sessão se existir
             $selectedPlan = $validatedData['selected_plan'] ?? session('selected_plan');
@@ -108,13 +102,17 @@ class TenantRegistrationController extends Controller
                 'registration_completed' => true, 
                 'registration_time' => now(),  
                 'contact_id' => $contact->id,
-                'selected_plan' => $selectedPlan
+                'contact_email' => $contact->email,
+                'selected_plan' => $selectedPlan,
+                'tenant_id' => $tenant->id,
+                'tenant_domain' => $tenant->domains->first()->domain ?? null
             ]);
 
             Log::info('Registro de contato realizado com sucesso', [
                 'contact_id' => $contact->id,
                 'email' => $contact->email,
-                'selected_plan' => $selectedPlan
+                'selected_plan' => $selectedPlan,
+                'tenant_id' => $tenant->id
             ]);
 
             return redirect()->route('registration-success')
@@ -167,12 +165,293 @@ class TenantRegistrationController extends Controller
 
         $contactId = session('contact_id');
         $selectedPlan = session('selected_plan');
+        $tenantId = session('tenant_id');
+        $tenantDomain = session('tenant_domain');
 
         // As variáveis de sessão só serão removidas após o início do pagamento
 
         return view('registration-success', [
             'contact_id' => $contactId,
-            'selected_plan' => $selectedPlan
+            'selected_plan' => $selectedPlan,
+            'tenant_id' => $tenantId,
+            'tenant_domain' => $tenantDomain
         ]);
+    }
+
+    /**
+     * Cria um tenant com período de trial de 30 dias
+     */
+    private function createTrialTenant(Contact $contact)
+    {
+        Log::info('🏗️ Criando tenant trial para:', [
+            'tenant_name' => $contact->tenant_name,
+            'owner_name' => $contact->owner_name,
+            'email' => $contact->email
+        ]);
+        
+        try {
+            // Criar slug único para o tenant
+            $baseSlug = Str::slug($contact->tenant_name);
+            $slug = $baseSlug;
+            $counter = 1;
+            
+            while (\App\Models\Tenant::where('id', $slug)->exists()) {
+                $slug = $baseSlug . $counter;
+                $counter++;
+            }
+            
+            // Criar o tenant com status trial
+            $tenant = \App\Models\Tenant::create([
+                'id' => $slug,
+                'name' => $contact->tenant_name,
+                'email' => $contact->email,
+                'phone' => $contact->phone,
+                'fantasy_name' => $contact->tenant_name,
+                'cnpj' => $contact->cpf, // Usando CPF como CNPJ temporário
+                'type' => $this->mapContactTypeToTenantType($contact->tipo ?? 'Barbearia'),
+                'template' => 'Padrao', // Template padrão para novos tenants
+                'subscription_status' => 'trial', // Status trial
+                'subscription_plan' => $contact->subscription_plan ?? 'mensal',
+                'trial_started_at' => now(),
+                'trial_ends_at' => now()->addDays(30), // 30 dias de trial
+                'subscription_started_at' => null,
+                'subscription_ends_at' => null,
+                'employee_count' => $contact->employee_count ?? 1,
+                'is_blocked' => false,
+                'address' => $contact->address,
+                'number' => $contact->number,
+                'complement' => $contact->complement,
+                'neighborhood' => $contact->neighborhood,
+                'cep' => $contact->cep,
+                'city' => $contact->city,
+                'state' => $contact->state,
+            ]);
+            
+            // Criar domínio para o tenant
+            $domainSuffix = config('app.tenant_domain_suffix', '.pagby.com.br');
+            $domain = $slug . $domainSuffix;
+            $tenant->domains()->create([
+                'domain' => $domain
+            ]);
+            
+            // Atualizar o contato com o tenant_id
+            $contact->tenant_id = $tenant->id;
+            $contact->save();
+
+            Log::info('🔍 Verificando diretórios ANTES de criar', [
+                'tenant_id' => $slug,
+                'public_exists' => is_dir(public_path("tenants/$slug")),
+                'storage_exists' => is_dir(storage_path("tenant$slug")),
+                'views_exists' => is_dir(resource_path("views/tenants/$slug")),
+            ]);
+
+            // Criar estrutura de diretórios do tenant
+            $this->createTenantDirectories($slug);
+            
+            Log::info('🔍 Verificando diretórios DEPOIS de criar', [
+                'tenant_id' => $slug,
+                'public_exists' => is_dir(public_path("tenants/$slug")),
+                'storage_exists' => is_dir(storage_path("tenant$slug")),
+                'views_exists' => is_dir(resource_path("views/tenants/$slug")),
+            ]);
+            
+            // Inicializar tenant e criar usuário owner
+            $this->initializeTenantDatabase($tenant, $contact);
+            
+            Log::info('✅ Tenant trial criado com sucesso!', [
+                'tenant_id' => $tenant->id,
+                'domain' => $domain,
+                'trial_ends_at' => $tenant->trial_ends_at->format('Y-m-d H:i:s')
+            ]);
+            
+            return $tenant;
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao criar tenant trial:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'contact_id' => $contact->id
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Inicializa o banco de dados do tenant e cria o usuário owner
+     */
+    private function initializeTenantDatabase(\App\Models\Tenant $tenant, Contact $contact)
+    {
+        tenancy()->initialize($tenant);
+        
+        try {
+            // 1. Criar as roles básicas (deve ser feito antes de criar o usuário)
+            Log::info('🌱 Criando roles para tenant', ['tenant_id' => $tenant->id]);
+            
+            $roles = [
+                ['role' => 'Proprietário'],
+                ['role' => 'Funcionário'],
+                ['role' => 'Cliente'],
+            ];
+
+            foreach ($roles as $roleData) {
+                \App\Models\Role::firstOrCreate($roleData);
+            }
+            
+            Log::info('✅ Roles criadas', [
+                'tenant_id' => $tenant->id,
+                'roles_count' => \App\Models\Role::count()
+            ]);
+            
+            // 2. Criar o usuário owner no banco do tenant
+            $user = \App\Models\User::create([
+                'name' => $contact->owner_name,
+                'email' => $contact->email,
+                'cpf' => $contact->cpf,
+                'phone' => $contact->phone,
+                'password' => Hash::make('123456'), // Senha padrão
+                'email_verified_at' => now(),
+                'status' => 'Ativo',
+                'origin' => 'registration',
+            ]);
+
+            // 3. Atribuir role de Proprietário
+            $ownerRole = \App\Models\Role::where('role', 'Proprietário')->first();
+            if ($ownerRole) {
+                $user->roles()->attach($ownerRole->id);
+                
+                Log::info('✅ Role de Proprietário atribuída', [
+                    'tenant_id' => $tenant->id,
+                    'user_id' => $user->id,
+                    'role_id' => $ownerRole->id
+                ]);
+            } else {
+                Log::error('❌ Role Proprietário não encontrada no tenant', [
+                    'tenant_id' => $tenant->id,
+                    'roles_available' => \App\Models\Role::pluck('role')->toArray()
+                ]);
+            }
+
+            Log::info('✅ Usuário owner criado no tenant', [
+                'tenant_id' => $tenant->id,
+                'user_id' => $user->id,
+                'email' => $user->email
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao inicializar banco do tenant:', [
+                'tenant_id' => $tenant->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        } finally {
+            tenancy()->end();
+        }
+    }
+
+    /**
+     * Cria estrutura de diretórios para o tenant
+     */
+    private function createTenantDirectories(string $tenantId): void
+    {
+        Log::info('📁 [INICIO] Criando diretórios do tenant', ['tenant_id' => $tenantId]);
+        
+        try {
+            // Diretórios principais
+            $directories = [
+                public_path("tenants/$tenantId"),
+                storage_path("tenant$tenantId"),
+                resource_path("views/tenants/$tenantId"),
+                storage_path("tenant$tenantId/profile-photos"),
+                storage_path("tenant$tenantId/services"),
+                storage_path("tenant$tenantId/gallery"),
+                storage_path("tenant$tenantId/cache"),
+                storage_path("tenant$tenantId/framework/cache"),
+                resource_path("views/tenants/$tenantId/partials"),
+                resource_path("views/tenants/$tenantId/components"),
+            ];
+
+            // Criar todos os diretórios
+            foreach ($directories as $directory) {
+                if (!is_dir($directory)) {
+                    if (!mkdir($directory, 0775, true)) {
+                        throw new \Exception("Não foi possível criar o diretório: $directory");
+                    }
+                    Log::info("✓ Diretório criado", ['directory' => $directory]);
+                }
+            }
+
+            // Copiar template Padrao (editável) para o tenant
+            // Determinar tipo de template baseado no tipo de estabelecimento
+            $templateType = match($contact->tipo ?? 'Barbearia') {
+                'Barbearia' => 'Barbearias',
+                'Salão de Beleza' => 'Salões',
+                default => 'Salões'
+            };
+            
+            $templateHome = resource_path("Templates/{$templateType}/Padrao/home.blade.php");
+            $tenantHome = resource_path("views/tenants/$tenantId/home.blade.php");
+
+            if (file_exists($templateHome)) {
+                if (!copy($templateHome, $tenantHome)) {
+                    throw new \Exception("Erro ao copiar template home.blade.php");
+                }
+                Log::info('✓ Template Padrao copiado', [
+                    'tenant_id' => $tenantId,
+                    'template_type' => $templateType,
+                    'from' => $templateHome
+                ]);
+            } else {
+                Log::warning('⚠ Template Padrao não encontrado', [
+                    'path' => $templateHome,
+                    'template_type' => $templateType
+                ]);
+            }
+
+            // Criar symlink de storage
+            $storagePath = storage_path("tenant$tenantId/app/public");
+            $publicPath = public_path("storage/tenants/$tenantId");
+
+            if (!is_dir($storagePath)) {
+                mkdir($storagePath, 0775, true);
+            }
+
+            if (!is_dir(dirname($publicPath))) {
+                mkdir(dirname($publicPath), 0775, true);
+            }
+
+            if (is_link($publicPath)) {
+                @unlink($publicPath);
+            }
+
+            if (@symlink($storagePath, $publicPath)) {
+                Log::info('✓ Symlink de storage criado', ['tenant_id' => $tenantId]);
+            } else {
+                Log::warning('⚠ Não foi possível criar symlink de storage', ['tenant_id' => $tenantId]);
+            }
+            
+            Log::info('✅ Estrutura de diretórios criada com sucesso', ['tenant_id' => $tenantId]);
+            
+        } catch (\Exception $e) {
+            Log::error('❌ Erro ao criar diretórios do tenant', [
+                'tenant_id' => $tenantId,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Mapeia o tipo de contato para o tipo de tenant
+     */
+    private function mapContactTypeToTenantType(string $contactType): string
+    {
+        $map = [
+            'Barbearia' => 'barbearia',
+            'Salão de Beleza' => 'salao',
+            'Outro' => 'outro'
+        ];
+        
+        return $map[$contactType] ?? 'barbearia';
     }
 }

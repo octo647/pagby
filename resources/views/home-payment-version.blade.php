@@ -24,121 +24,94 @@
         </div>
     </header>
 
-    <main class="flex-1 flex flex-col items-center justify-center text-center px-4 py-4">
+    <main class="flex-1 flex flex-col items-center justify-center text-center px-4 py-10">
         <!-- Hero Section -->
         <div class="fade-in max-w-3xl">
-            <h2 class="text-2xl md:text-5xl font-extrabold mb-2 text-pink-600 ">Clientes estão indo embora porque você demora a responder
-            </h2>
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-4 text-pink-600 ">Bem-vindo ao PagBy!</h1>
             <p class="mb-6 text-lg md:text-xl text-white/90 max-w-2xl mx-auto">
-                
-               ✅  Organize sua agenda, confirme clientes automaticamente e evite faltas             
+                A plataforma inteligente para gestão de <span class="font-semibold text-pink-300">salões de beleza</span>, 
+                <span class="font-semibold text-pink-300">barbearias</span> e negócios de estética.<br>
+                Organize sua agenda, otimize pagamentos e conquiste seus clientes com tecnologia!
             </p>
           
             <a href="#planos" 
                class="inline-block bg-gradient-to-r from-pink-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:from-pink-700 hover:to-indigo-700 transition mb-8 pulse-animation">
-                Testar Grátis Agora
-            </a>  
-            <div class="bg-gradient-to-r from-pink-900/30 to-indigo-900/30 rounded-xl p-4 mb-8">
-               <p class="text-white/80">✅ Sem cartão • Comece em minutos</p>
+                Quero meu negócio no PagBy
+            </a>
         </div>
-        <div class="w-full flex justify-center mt-8 mb-12">
-            <div class="w-full max-w-4xl max-h-[600px] overflow-hidden rounded-2xl shadow-2xl">
-                <img src="{{ asset('images/consultando_agenda5.png') }}" alt="Consultando Agenda" class="w-full h-full object-cover">
-            </div>
-        </div>
-          <div class="bg-gradient-to-r from-pink-900/30 to-indigo-900/30 rounded-xl p-4 mb-8">
-                <h3 class="text-xl font-bold mb-4 text-white">Com o PagBy você pode:</h3>
-           <ul>
-               <li>Confirmar clientes automaticamente</li>
-               <li>Evitar faltas</li>
-               <li>Agendar sem trocar mensagens</li>
-            </ul>
-            </div>
-        <span class="inline-block mt-4 text-yellow-300 font-bold text-xl">✨ Sem compromisso • Sem cartão de crédito • Acesso imediato</span>
         
-        <!-- Transformation Section -->
-        <div class="fade-in mt-16 max-w-6xl w-full">
-            <h2 class="text-3xl md:text-4xl font-bold text-center mb-12 text-white">
-                A transformação que sua agenda precisa
-            </h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <!-- ANTES -->
-                <div class="bg-red-900/20 border-2 border-red-500/50 rounded-2xl p-6 md:p-8 transition-transform hover:scale-105">
-                    <div class="text-center mb-6">
-                        <span class="inline-block bg-red-600 text-white px-6 py-2 rounded-full font-bold text-lg mb-4">
-                            ❌ ANTES
-                        </span>
-                        <h3 class="text-2xl font-bold text-red-300 mb-4">Sem o PagBy</h3>
+        <!-- App Preview -->
+        <div class="fade-in mt-12 max-w-4xl w-full">
+            <div class="bg-gray-800/50 rounded-2xl p-6 md:p-8 shadow-2xl">
+                <div class="flex flex-col md:flex-row items-center justify-between">
+                    <div class="md:w-1/2 mb-8 md:mb-0 md:pr-8">
+                        <h2 class="text-2xl md:text-3xl font-bold mb-4 text-white">Interface Intuitiva e Moderna</h2>
+                        <p class="text-white/80 mb-6">Gerencie seu negócio de forma simples e eficiente com uma interface pensada para profissionais da beleza.</p>
+                        <div class="flex space-x-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-check text-pink-500 mr-2"></i>
+                                <span>Fácil de usar</span>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-check text-pink-500 mr-2"></i>
+                                <span>Totalmente responsivo</span>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <div class="mb-6 flex justify-center">
-                        <img src="{{ asset('images/agenda_papel.jpeg') }}" alt="Agenda Desorganizada" class="rounded-xl shadow-lg w-48 h-auto">
+                    <div class="md:w-1/2 relative">
+                        <div class="bg-gray-700 rounded-xl p-4 shadow-lg mx-auto max-w-xs">
+                            <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <div class="text-sm font-semibold">Agenda</div>
+                                    <div class="text-xs text-gray-400">Hoje</div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="bg-pink-900/30 rounded p-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm">Maria Silva</span>
+                                            <span class="text-xs">09:00</span>
+                                        </div>
+                                        <div class="text-xs text-gray-400">Corte e escova</div>
+                                    </div>
+                                    <div class="bg-indigo-900/30 rounded p-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm">João Santos</span>
+                                            <span class="text-xs">10:30</span>
+                                        </div>
+                                        <div class="text-xs text-gray-400">Barba</div>
+                                    </div>
+                                    <div class="bg-purple-900/30 rounded p-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-sm">Ana Costa</span>
+                                            <span class="text-xs">14:00</span>
+                                        </div>
+                                        <div class="text-xs text-gray-400">Manicure</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex justify-around">
+                                <div class="text-center">
+                                    <i class="fas fa-calendar text-pink-500 mb-1"></i>
+                                    <div class="text-xs">Agenda</div>
+                                </div>
+                                <div class="text-center">
+                                    <i class="fas fa-users text-indigo-500 mb-1"></i>
+                                    <div class="text-xs">Clientes</div>
+                                </div>
+                                <div class="text-center">
+                                    <i class="fas fa-chart-bar text-purple-500 mb-1"></i>
+                                    <div class="text-xs">Relatórios</div>
+                                </div>
+                                <div class="text-center">
+                                    <i class="fas fa-cog text-gray-500 mb-1"></i>
+                                    <div class="text-xs">Mais</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    
-                    <ul class="space-y-3 text-white/90">
-                        <li class="flex items-start">
-                            <i class="fas fa-times-circle text-red-400 mr-3 mt-1"></i>
-                            <span>Agenda bagunçada e difícil de ler</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-times-circle text-red-400 mr-3 mt-1"></i>
-                            <span>Cliente indo embora pela demora</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-times-circle text-red-400 mr-3 mt-1"></i>
-                            <span>Mensagens confusas e mal organizadas</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-times-circle text-red-400 mr-3 mt-1"></i>
-                            <span>Perda de tempo respondendo cada cliente</span>
-                        </li>
-                    </ul>
-                </div>
-                
-                <!-- DEPOIS -->
-                <div class="bg-green-900/20 border-2 border-green-500/50 rounded-2xl p-6 md:p-8 transition-transform hover:scale-105">
-                    <div class="text-center mb-6">
-                        <span class="inline-block bg-green-600 text-white px-6 py-2 rounded-full font-bold text-lg mb-4">
-                            ✅ DEPOIS
-                        </span>
-                        <h3 class="text-2xl font-bold text-green-300 mb-4">Com o PagBy</h3>
-                    </div>
-                    
-                    <div class="mb-6 flex justify-center">
-                        <img src="{{ asset('images/agenda1.png') }}" alt="Agenda Digital Organizada" class="rounded-xl shadow-lg w-48 h-auto">
-                    </div>
-                    
-                    <ul class="space-y-3 text-white/90">
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-green-400 mr-3 mt-1"></i>
-                            <span>Agenda automática e sempre atualizada</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-green-400 mr-3 mt-1"></i>
-                            <span>Clientes confirmados automaticamente</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-green-400 mr-3 mt-1"></i>
-                            <span>Rotina organizada e mais produtiva</span>
-                        </li>
-                        <li class="flex items-start">
-                            <i class="fas fa-check-circle text-green-400 mr-3 mt-1"></i>
-                            <span>Mais tempo para atender seus clientes</span>
-                        </li>
-                    </ul>
                 </div>
             </div>
-            
-            <div class="text-center mt-8">
-                <a href="#planos" 
-                   class="inline-block bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:from-green-700 hover:to-emerald-700 transition">
-                    Testar grátis agora →
-                </a>
-            </div>
         </div>
-        
-        
         
         <!-- Features Section -->
         <div id="funcionalidades" class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full">
@@ -159,7 +132,24 @@
                             'title' => 'Gestão de Equipe',
                             'description' => 'Organize profissionais, serviços e horários de forma eficiente.'
                         ],
-                       
+                        [
+                            'icon' => 'credit-card',
+                            'color' => 'purple',
+                            'title' => 'Pagamentos Integrados',
+                            'description' => 'Aceite múltiplas formas de pagamento com segurança.'
+                        ],
+                        [
+                            'icon' => 'chart-line',
+                            'color' => 'green',
+                            'title' => 'Relatórios Inteligentes',
+                            'description' => 'Acompanhe métricas e tome decisões baseadas em dados.'
+                        ],
+                        [
+                            'icon' => 'mobile-alt',
+                            'color' => 'yellow',
+                            'title' => 'Acesso Multiplataforma',
+                            'description' => 'Funciona perfeitamente no computador, tablet e celular.'
+                        ],
                         [
                             'icon' => 'bell',
                             'color' => 'blue',
@@ -256,16 +246,11 @@
         <div id="planos" class="fade-in mt-16 max-w-7xl w-full px-4">
             <div class="text-center mb-12">
                 <h2 class="text-4xl font-bold mb-4 text-white">
-                    Comece seu teste grátis de 30 dias
+                    Escolha seu plano Pagby
                 </h2>
                 <p class="text-xl text-white/80 max-w-2xl mx-auto mb-6">
-                    Você terá 30 dias grátis para testar todas as funcionalidades sem compromisso!
+                    Selecione o número de funcionários e escolha o plano ideal para seu negócio.
                 </p>
-                <div class="bg-green-500/20 border-2 border-green-400 rounded-xl p-4 max-w-2xl mx-auto mb-6">
-                    <p class="text-green-200 font-bold text-lg">
-                        🎁 Durante o teste grátis você tem acesso a TODAS as funcionalidades premium!
-                    </p>
-                </div>
                 
                 <!-- Selector de Funcionários -->
                 <div class="inline-flex flex-col items-center bg-white/10 backdrop-blur rounded-2xl p-6 mb-8">
@@ -287,11 +272,11 @@
             </div>
 
             <!-- Grid de Planos -->
-            <div class="grid grid-cols-1 gap-6 mb-12 max-w-xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 <!-- Plano Mensal -->
                 <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
                     <div class="text-center">
-                        <!--<h3 class="text-2xl font-bold text-gray-800 mb-2">Mensal</h3>-->
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Mensal</h3>
                         <p class="text-gray-600 text-sm mb-6">Pagamento mensal</p>
                         
                         <div class="mb-6">
@@ -304,21 +289,19 @@
                         
                         <button onclick="selecionarPlano('mensal')" 
                                 class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
-                            Começar Teste Grátis
+                            Escolher plano
                         </button>
-                        <!--
+                        
                         <div class="mt-4 text-gray-700 text-sm">
                             <div class="font-semibold mb-2">Pagamento:</div>
                             <div class="valor-total" data-plan="mensal">R$ 30,00 no total</div>
                         </div>
-                        -->
                     </div>
                 </div>
 
                 
 
                 <!-- Plano Semestral -->
-                <!--            
                 <div class="plan-card bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden">
                     <div class="absolute top-4 right-4 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full">
                         10% OFF
@@ -337,7 +320,7 @@
                         
                         <button onclick="selecionarPlano('semestral')" 
                                 class="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all">
-                            Começar Teste Grátis
+                            Escolher plano
                         </button>
                         
                         <div class="mt-4 text-gray-700 text-sm">
@@ -346,9 +329,8 @@
                         </div>
                     </div>
                 </div>
-                -->
 
-                <!-- Plano Anual - DESTAQUE 
+                <!-- Plano Anual - DESTAQUE -->
                 <div class="plan-card bg-gradient-to-br from-pink-600 to-purple-700 rounded-2xl shadow-2xl p-6 transition-all duration-300 hover:scale-105 relative overflow-hidden border-4 border-yellow-400">
                     <div class="absolute top-0 left-0 right-0 bg-yellow-400 text-gray-900 text-center text-sm font-bold py-2 flex items-center justify-center gap-2">
                         <i class="fas fa-crown text-gray-900"></i>
@@ -372,7 +354,7 @@
                         
                         <button onclick="selecionarPlano('anual')" 
                                 class="w-full bg-yellow-400 text-gray-900 px-6 py-3 rounded-xl font-bold shadow-lg hover:bg-yellow-300 transition-all">
-                            Começar Teste Grátis
+                            Escolher plano
                         </button>
                         
                         <div class="mt-4 text-white text-sm">
@@ -382,10 +364,8 @@
                                 💰 Economize R$ 126,00 no ano!
                             </div>
                         </div>
-                        
                     </div>
                 </div>
-                -->
             </div>
 
             <!-- Benefícios -->
@@ -411,13 +391,43 @@
                     </div>
                 </div>
                 <p class="text-white/70 text-sm mt-4">
-                    • Cancele quando quiser • Suporte via WhatsApp {{ config('pagby.whatsapp_display') }} • Sem taxas escondidas
+                    Cancele quando quiser • Suporte via WhatsApp • Garantia de 7 dias
                 </p>
             </div>
         </div>
             </div>
         </div>
-       
+        <!-- Dúvidas sobre o modelo? -->
+        <div class="fade-in mt-16 bg-white/10 rounded-2xl p-8 shadow max-w-4xl w-full text-center">
+            <h3 class="text-2xl font-bold mb-4">Dúvidas se o PagBy irá atender seu modelo de negócio?</h3>
+            <p class="max-w-2xl mx-auto text-white/80">
+                O PagBy é ideal para salões de beleza, barbearias, clínicas de estética e outros negócios do setor de beleza e bem-estar. Se você atende clientes com agendamentos e precisa de uma gestão eficiente, o PagBy é para você!
+            </p>
+            <h3 class="font-bold mt-6 mb-4">Ainda tem dúvidas? Preencha o formulário abaixo e agendaremos uma entrevista online.</h3>
+            
+            <!-- Removido form duplicado -->
+            <form id="contato-duvida-form" class="mt-8 flex flex-col items-center" action="{{ route('contato.duvida.store') }}" method="POST">
+                @csrf
+                <input type="text" name="nome" placeholder="Seu nome" required class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <input type="text" name="telefone" placeholder="Seu telefone" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <input type="email" name="email" placeholder="Seu e-mail" required class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <!-- Cidade e Estado opcionais, não salvos -->
+                <input type="text" name="cidade" placeholder="Cidade (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <input type="text" name="estado" placeholder="Estado (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900" />
+                <textarea name="mensagem" placeholder="Sua mensagem (opcional)" class="mt-4 p-3 rounded-lg w-full max-w-md text-gray-900"></textarea>
+                <button type="submit" class="mt-6 bg-gradient-to-r from-pink-600 to-purple-600 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition">
+                    Enviar
+                </button>
+            </form>
+
+            <!-- Modal de confirmação -->
+            <div id="modal-confirmacao" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-xl p-8 max-w-md w-full text-center">
+                    <h4 class="text-2xl font-bold mb-4 text-pink-600">Recebemos sua dúvida!</h4>
+                    <p class="mb-4 text-gray-700">Em breve nossa equipe entrará em contato por e-mail.<br>Obrigado pelo interesse no PagBy!</p>
+                    <button id="fechar-modal" class="mt-4 bg-pink-600 text-white px-6 py-2 rounded-full font-bold hover:bg-pink-700 transition">Fechar</button>
+                </div>
+            </div>
 
             <script>
             document.addEventListener('DOMContentLoaded', function() {
@@ -525,7 +535,7 @@
                 
             </div>
             <div class="text-center md:text-right text-white/70">
-                <p>&copy; {{ date('Y') }} PagBy é uma marca registrada de HECO Softwares Ltda. Todos os direitos reservados.</p>
+                <p>&copy; {{ date('Y') }} PagBy. Todos os direitos reservados.</p>
                 <p class="text-sm mt-2">Feito com ❤️ para profissionais da beleza</p>
             </div>
         </div>

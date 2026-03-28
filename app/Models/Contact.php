@@ -16,6 +16,7 @@ class Contact extends Model
         'notas',
         'tipo',
         'tenant_name',
+        'tenant_id',
         'employee_count',
         'address',
         'number',

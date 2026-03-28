@@ -1,1 +1,1 @@
-/home/helder/projetos/pagby/resources/Templates/SalaoBeleza1/home.blade.php
+/home/helder/projetos/pagby/resources/Templates/Salões/Moderno/home.blade.php

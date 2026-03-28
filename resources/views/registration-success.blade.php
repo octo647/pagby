@@ -11,64 +11,78 @@
                     </svg>
                 </div>
 
-                <h1 class="text-3xl font-bold text-gray-900 mb-4">🎉 Registro Realizado!</h1>
+                <h1 class="text-3xl font-bold text-gray-900 mb-4">🎉 Cadastro Realizado com Sucesso!</h1>
                 
-                
-                <!-- Mostrar plano selecionado se existir -->
-               
-                               
-
                 <div class="text-gray-600 mb-8">
-                    <p class="mb-4">✅ Seu negócio foi registrado com sucesso em nossa plataforma!</p>       
-                    
-                    
+                    <p class="mb-4">✅ Seu negócio foi registrado e está pronto para usar!</p>       
+                    <p class="text-lg font-semibold text-green-600 mb-2">
+                        🎁 Você ganhou 30 dias GRÁTIS de todas as funcionalidades!
+                    </p>
+                    <p class="text-sm mb-2">
+                        Acesse seu sistema agora e comece a gerenciar seu negócio com o PagBy.
+                    </p>
                 </div>
 
-                <!-- Próximos passos -->
-                @if(isset($selected_plan) && $selected_plan === 'trial')
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
-                    <ol class="text-blue-700 text-sm text-left space-y-1">
-                        <li><strong>1.</strong> Assinar o plano PagBy</li>
-
-                        <li><strong>2.</strong> Configuração do sistema</li>
-                        <li><strong>3.</strong> Aproveitar 30 dias grátis de todas as funcionalidades</li>
-                        
-                    </ol>
-                </div>
-                @elseif(isset($selected_plan))
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                    <h4 class="text-blue-800 font-semibold mb-3">🔄 Próximos Passos:</h4>
-                    <ol class="text-blue-700 text-sm text-left space-y-1">
-                        <li><strong>1.</strong> Finalizar pagamento da assinatura</li>
-                        <li><strong>2.</strong> Ativação do sistema </li>
-                        <li><strong>3.</strong> Receber dados de acesso por email</li>
-                        <li><strong>4.</strong> Começar a usar o PagBy!</li>
-                    </ol>
+                <!-- Informações de acesso -->
+                @if(isset($tenant_domain))
+                <div class="bg-blue-50 border-2 border-blue-300 rounded-lg p-6 mb-6">
+                    <h4 class="text-blue-900 font-bold text-lg mb-3">🔐 Dados de Acesso</h4>
+                    <div class="text-blue-800 text-left space-y-3">
+                        <div>
+                            <strong class="block text-sm text-gray-600 mb-1">Endereço do seu sistema:</strong>
+                            <a href="http://{{ $tenant_domain }}" target="_blank" 
+                               class="text-blue-600 hover:text-blue-800 font-mono text-lg underline break-all">
+                                {{ $tenant_domain }}
+                            </a>
+                        </div>
+                        <div>
+                            <strong class="block text-sm text-gray-600 mb-1">Email de acesso:</strong>
+                            <span class="font-mono">{{ session('contact_email') ?? 'Verifique seu e-mail' }}</span>
+                        </div>
+                        <div class="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded">
+                            <p class="text-sm text-yellow-800">
+                                <i class="fas fa-envelope mr-2"></i>
+                                Enviamos sua senha temporária por e-mail. Verifique sua caixa de entrada!
+                            </p>
+                        </div>
+                    </div>
                 </div>
                 @endif
+
+                <!-- Próximos passos -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <h4 class="text-green-800 font-semibold mb-3">🚀 Próximos Passos:</h4>
+                    <ol class="text-green-700 text-sm text-left space-y-2">
+                        <li><strong>1.</strong> Acesse seu sistema usando o link acima</li>
+                        <li><strong>2.</strong> Configure seus serviços e horários de atendimento</li>
+                        <li><strong>3.</strong> Adicione sua equipe de profissionais</li>
+                        <li><strong>4.</strong> Comece a agendar clientes!</li>
+                        <li><strong>5.</strong> Após 30 dias, escolha seu plano para continuar usando</li>
+                    </ol>
+                </div>
                 
                 <!-- Botões de ação -->
                 <div class="space-y-3">
-                    @if(isset($selected_plan) && $selected_plan === 'trial')
+                    @if(isset($tenant_domain))
+                        <!-- Botão para acessar o sistema -->
+                        <a href="http://{{ $tenant_domain }}" target="_blank"
+                           class="w-full bg-gradient-to-r from-green-600 to-green-700 text-white font-bold py-4 px-6 rounded-lg hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200 block text-center">
+                            <i class="fas fa-rocket mr-2"></i>
+                            Acessar Meu Sistema Agora
+                        </a>
+                        
+                        <!-- Botão secundário para voltar à home -->
+                        <a href="{{ route('home') }}" 
+                           class="w-full bg-white text-gray-700 border-2 border-gray-300 font-semibold py-3 px-6 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition-all block text-center">
+                            <i class="fas fa-home mr-2"></i>
+                            Voltar para Página Inicial
+                        </a>
+                    @else
+                        <!-- Se não tem domínio, mostrar botão para home -->
                         <a href="{{ route('home') }}" 
                            class="w-full bg-gradient-to-r from-pink-600 to-indigo-600 text-white font-bold py-4 px-6 rounded-lg hover:from-pink-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-offset-2 block text-center transition-all">
                             <i class="fas fa-home mr-2"></i>
                             Ir para o Início
-                        </a>
-                    @elseif(isset($selected_plan))
-                        <!-- Botão para ir para pagamento -->
-                        <a href="{{ route('registration-finalize') }}"
-                           class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transform hover:scale-105 transition-all duration-200">
-                            <i class="fas fa-credit-card mr-2"></i>
-                            Realizar Pagamento
-                        </a>
-                    @else
-                        <!-- Se não tem plano, mostrar opções -->
-                        <a href="{{ route('home') }}#planos" 
-                           class="w-full bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold py-4 px-6 rounded-lg hover:from-purple-700 hover:to-pink-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 block text-center transition-all">
-                            <i class="fas fa-star mr-2"></i>
-                            Escolher Plano de Assinatura
                         </a>
                     @endif
                 </div>
