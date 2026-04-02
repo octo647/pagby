@@ -823,18 +823,13 @@ class PagBySubscriptionController extends Controller
                     
                     // Processar renovação ou novo tenant
                     if (str_starts_with($payment->tenant_id, 'temp_')) {
-                        // Novo tenant
-                        Log::info('💰 Pagamento APROVADO! Tenant NÃO será criado automaticamente. Aguardando onboarding manual.', [
+                        // Novo tenant - criar automaticamente após aprovação do pagamento
+                        Log::info('💰 Pagamento APROVADO! Criando tenant automaticamente...', [
                             'payment_id' => $payment->id,
                             'contact_id' => $payment->contact_id,
                             'tenant_id_atual' => $payment->tenant_id
                         ]);
-                        Log::notice('⚠️ Atenção: Realize o onboarding manual do tenant após aprovação do pagamento.', [
-                            'payment_id' => $payment->id,
-                            'contact_id' => $payment->contact_id,
-                            'tenant_id_atual' => $payment->tenant_id
-                        ]);
-                        // $this->criarTenantAposAprovacao($payment); // Automação desativada para onboarding manual
+                        $this->criarTenantAposAprovacao($payment);
                     } else {
                         // Renovação de tenant existente
                         $this->renovarAssinaturaTenant($payment);

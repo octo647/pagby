@@ -190,77 +190,17 @@ class TenantRegistrationController extends Controller
         ]);
         
         try {
-            // Criar slug único para o tenant
-            $baseSlug = Str::slug($contact->tenant_name);
-            $slug = $baseSlug;
-            $counter = 1;
-            
-            while (\App\Models\Tenant::where('id', $slug)->exists()) {
-                $slug = $baseSlug . $counter;
-                $counter++;
-            }
-            
-            // Criar o tenant com status trial
-            $tenant = \App\Models\Tenant::create([
-                'id' => $slug,
-                'name' => $contact->tenant_name,
-                'email' => $contact->email,
-                'phone' => $contact->phone,
-                'fantasy_name' => $contact->tenant_name,
-                'cnpj' => $contact->cpf, // Usando CPF como CNPJ temporário
-                'type' => $this->mapContactTypeToTenantType($contact->tipo ?? 'Barbearia'),
-                'template' => 'Padrao', // Template padrão para novos tenants
-                'subscription_status' => 'trial', // Status trial
-                'subscription_plan' => $contact->subscription_plan ?? 'mensal',
-                'trial_started_at' => now(),
-                'trial_ends_at' => now()->addDays(30), // 30 dias de trial
-                'subscription_started_at' => null,
-                'subscription_ends_at' => null,
-                'employee_count' => $contact->employee_count ?? 1,
-                'is_blocked' => false,
-                'address' => $contact->address,
-                'number' => $contact->number,
-                'complement' => $contact->complement,
-                'neighborhood' => $contact->neighborhood,
-                'cep' => $contact->cep,
-                'city' => $contact->city,
-                'state' => $contact->state,
-            ]);
-            
-            // Criar domínio para o tenant
-            $domainSuffix = config('app.tenant_domain_suffix', '.pagby.com.br');
-            $domain = $slug . $domainSuffix;
-            $tenant->domains()->create([
-                'domain' => $domain
-            ]);
+            // Usar TenantCreationService para criar o tenant completo
+            $tenantService = new \App\Services\TenantCreationService();
+            $tenant = $tenantService->createTenantFromContact($contact);
             
             // Atualizar o contato com o tenant_id
             $contact->tenant_id = $tenant->id;
             $contact->save();
-
-            Log::info('🔍 Verificando diretórios ANTES de criar', [
-                'tenant_id' => $slug,
-                'public_exists' => is_dir(public_path("tenants/$slug")),
-                'storage_exists' => is_dir(storage_path("tenant$slug")),
-                'views_exists' => is_dir(resource_path("views/tenants/$slug")),
-            ]);
-
-            // Criar estrutura de diretórios do tenant
-            $this->createTenantDirectories($slug);
             
-            Log::info('🔍 Verificando diretórios DEPOIS de criar', [
-                'tenant_id' => $slug,
-                'public_exists' => is_dir(public_path("tenants/$slug")),
-                'storage_exists' => is_dir(storage_path("tenant$slug")),
-                'views_exists' => is_dir(resource_path("views/tenants/$slug")),
-            ]);
-            
-            // Inicializar tenant e criar usuário owner
-            $this->initializeTenantDatabase($tenant, $contact);
-            
-            Log::info('✅ Tenant trial criado com sucesso!', [
+            Log::info('✅ Tenant trial criado com sucesso via TenantCreationService!', [
                 'tenant_id' => $tenant->id,
-                'domain' => $domain,
+                'slug' => $tenant->slug,
                 'trial_ends_at' => $tenant->trial_ends_at->format('Y-m-d H:i:s')
             ]);
             
