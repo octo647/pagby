@@ -33,11 +33,9 @@ class AppServiceProvider extends ServiceProvider
         // Registrar Observer para Tenants (cria subconta Asaas automática)
         Tenant::observe(TenantObserver::class);
         
-        // Configuração de regras de senha mais amigáveis
+        // Configuração de regras de senha simples: mínimo 6 caracteres
         Password::defaults(function () {
-            return Password::min(8)
-                ->letters()
-                ->numbers();
+            return Password::min(6);
         });
 
         Gate::define('Admin', function (User $user) {

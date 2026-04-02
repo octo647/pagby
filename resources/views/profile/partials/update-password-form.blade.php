@@ -45,24 +45,8 @@
                 </button>
             </div>
             <x-input-error :messages="$errors->updatePassword->get('password')" class="mt-2" />
-            <div class="mt-1 text-xs text-gray-500 space-y-1">
-                <p>Sua senha deve conter:</p>
-                <ul class="list-disc list-inside pl-2 space-y-0.5">
-                    <li>Pelo menos 8 caracteres</li>
-                    <li>Pelo menos uma letra</li>
-                    <li>Pelo menos um número</li>
-                </ul>
-                
-                <!-- Indicador de força da senha -->
-                <div class="mt-2">
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-medium text-gray-700">Força da senha:</span>
-                        <span id="password-strength-text" class="text-xs font-medium"></span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-2 mt-1">
-                        <div id="password-strength-bar" class="h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
-                    </div>
-                </div>
+            <div class="mt-1 text-xs text-gray-500">
+                <p>Mínimo de 6 caracteres (letras, números ou caracteres especiais)</p>
             </div>
         </div>
 
@@ -132,63 +116,5 @@
                 closedEye.classList.add('hidden');
             }
         }
-
-        // Função para verificar a força da senha
-        function checkPasswordStrength(password) {
-            let score = 0;
-
-            // Critérios de força
-            if (password.length >= 8) score += 25;
-            if (/[a-z]/.test(password)) score += 25;
-            if (/[A-Z]/.test(password)) score += 25;
-            if (/[0-9]/.test(password)) score += 25;
-            if (/[^A-Za-z0-9]/.test(password)) score += 25; // Símbolos
-            if (password.length >= 12) score += 25; // Bônus para senhas longas
-
-            // Classificação
-            let strength = '';
-            let color = '';
-            
-            if (score <= 25) {
-                strength = 'Muito fraca';
-                color = 'bg-red-500';
-            } else if (score <= 50) {
-                strength = 'Fraca';
-                color = 'bg-orange-500';
-            } else if (score <= 75) {
-                strength = 'Boa';
-                color = 'bg-yellow-500';
-            } else if (score <= 100) {
-                strength = 'Forte';
-                color = 'bg-green-500';
-            } else {
-                strength = 'Muito forte';
-                color = 'bg-green-600';
-            }
-
-            return { score: Math.min(score, 100), strength, color };
-        }
-
-        // Event listener para o campo de nova senha
-        document.addEventListener('DOMContentLoaded', function() {
-            const passwordField = document.getElementById('update_password_password');
-            const strengthBar = document.getElementById('password-strength-bar');
-            const strengthText = document.getElementById('password-strength-text');
-
-            if (passwordField && strengthBar && strengthText) {
-                passwordField.addEventListener('input', function() {
-                    const password = this.value;
-                    const result = checkPasswordStrength(password);
-                    
-                    // Atualizar barra de progresso
-                    strengthBar.style.width = result.score + '%';
-                    strengthBar.className = `h-2 rounded-full transition-all duration-300 ${result.color}`;
-                    
-                    // Atualizar texto
-                    strengthText.textContent = password.length > 0 ? result.strength : '';
-                    strengthText.className = `text-xs font-medium ${result.color.replace('bg-', 'text-')}`;
-                });
-            }
-        });
     </script>
 </section>
