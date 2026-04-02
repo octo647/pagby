@@ -379,6 +379,26 @@ class TenantCreationService
         } finally {
             tenancy()->end();
         }
+        
+        // Enviar e-mail com credenciais após finalizar o tenancy context
+        if ($contact) {
+            try {
+                \Mail::to($contact->email)->send(
+                    new \App\Mail\TenantOwnerCredentialsMail($contact, $tenant, '123456')
+                );
+                
+                Log::info("📧 E-mail de credenciais enviado com sucesso", [
+                    'tenant_id' => $tenant->id,
+                    'email' => $contact->email,
+                ]);
+            } catch (\Exception $e) {
+                Log::error("❌ Erro ao enviar e-mail de credenciais", [
+                    'tenant_id' => $tenant->id,
+                    'email' => $contact->email,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**
