@@ -71,13 +71,9 @@
             <x-primary-button>{{ __('Atualizar Senha') }}</x-primary-button>
 
             @if (session('status') === 'password-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 3000)"
-                    class="text-sm text-green-600 font-medium"
-                >{{ __('Senha atualizada com sucesso!') }}</p>
+                <p class="text-sm text-green-600 font-medium">
+                    {{ __('Senha atualizada com sucesso!') }}
+                </p>
             @endif
         </div>
     </form>
