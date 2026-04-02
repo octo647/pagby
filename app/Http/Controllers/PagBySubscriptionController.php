@@ -954,52 +954,28 @@ class PagBySubscriptionController extends Controller
         ]);
         
         try {
-            // Criar slug único para o tenant
-            $baseSlug = \Illuminate\Support\Str::slug($contact->tenant_name);
-            $slug = $baseSlug;
-            $counter = 1;
+            // Usar TenantCreationService para criar o tenant completo
+            $tenantService = new \App\Services\TenantCreationService();
+            $tenant = $tenantService->createTenantFromContact($contact);
             
-            while (\App\Models\Tenant::where('id', $slug)->exists()) {
-                $slug = $baseSlug . $counter;
-                $counter++;
-            }
-            
-            // Criar o tenant
-            $tenant = \App\Models\Tenant::create([
-                'id' => $slug,
-                'name' => $contact->tenant_name,
-                'email' => $contact->email,
-                'phone' => $contact->phone,
-                'fantasy_name' => $contact->tenant_name,
-                'cnpj' => $contact->cpf, // Usando CPF como CNPJ temporário
-                'type' => $this->mapContactTypeToTenantType($contact->tipo ?? 'Barbearia'),
-                'subscription_status' => 'active', // Ativo após pagamento
-                'subscription_plan' => $payment->plan ?? 'basico',
-                'trial_ends_at' => null, // Sem trial, já pagou
-                'subscription_start' => now(),
-                'subscription_end' => now()->addMonth(), // 1 mês de assinatura
-                'employee_count' => $payment->employee_count ?? 1,
-                'is_blocked' => false,
-            ]);
-            
-            // Criar domínio para o tenant
-            $domain = $slug . '.' . config('app.domain', 'localhost');
-            $tenant->domains()->create([
-                'domain' => $domain
-            ]);
+            // Atualizar o tenant para status de assinatura ativa (não trial)
+            $tenant->subscription_status = 'active';
+            $tenant->subscription_started_at = now();
+            $tenant->subscription_ends_at = now()->addMonth(); // 1 mês de assinatura
+            $tenant->trial_ends_at = null; // Remove trial já que pagou
+            $tenant->is_blocked = false;
+            $tenant->save();
             
             // Atualizar o pagamento com o tenant_id real
             $payment->tenant_id = $tenant->id;
             $payment->save();
             
-            Log::info('✅ Tenant criado com sucesso!', [
+            Log::info('✅ Tenant criado com sucesso via TenantCreationService!', [
                 'tenant_id' => $tenant->id,
-                'domain' => $domain,
+                'slug' => $tenant->slug,
+                'domain' => $tenant->domains->first()->domain ?? 'N/A',
                 'payment_id' => $payment->id
             ]);
-            
-            // Enviar email de boas-vindas (opcional)
-            // Mail::to($contact->email)->send(new TenantCreated($tenant, $contact));
             
         } catch (\Exception $e) {
             Log::error('❌ Erro ao criar tenant:', [
