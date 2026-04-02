@@ -50,8 +50,25 @@ class RegisteredUserController extends Controller
 
         // Envia email de boas-vindas
         if ($user->email) {
-            \Illuminate\Support\Facades\Mail::to($user->email)
-                ->send(new \App\Mail\WelcomeUser($user));
+            try {
+                \Illuminate\Support\Facades\Log::info('📧 Tentando enviar e-mail de boas-vindas', [
+                    'email' => $user->email,
+                    'tenant' => tenancy()->tenant->id ?? 'N/A'
+                ]);
+                
+                \Illuminate\Support\Facades\Mail::to($user->email)
+                    ->send(new \App\Mail\WelcomeUser($user));
+                
+                \Illuminate\Support\Facades\Log::info('✅ E-mail de boas-vindas enviado', [
+                    'email' => $user->email
+                ]);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('❌ Erro ao enviar e-mail de boas-vindas', [
+                    'email' => $user->email,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
         }
 
         Auth::login($user);
