@@ -1,6 +1,18 @@
-# WhatsApp Bot - Captação de Leads Pagby
+# WhatsApp Bot - Pagby
 
-Bot automatizado para captar leads de campanhas do Instagram/Facebook, fazer perguntas qualificadoras e agendar demonstrações.
+Bot automatizado para:
+- 📱 Lembretes de vencimento de planos e assinaturas
+- 🤖 Captação de leads de campanhas do Instagram/Facebook
+- 📝 Perguntas qualificadoras e agendamento de demonstrações
+- ✅ Ativação de notificações via WhatsApp
+
+## 📱 Número Atual do Bot
+
+**Número:** 32 998621569  
+**WhatsApp:** 5532998621569  
+**Status:** ✅ Ativo
+
+_(Número anterior 32 98294948 migrado para Zapby)_
 
 ## Funcionalidades
 
@@ -21,6 +33,8 @@ Bot automatizado para captar leads de campanhas do Instagram/Facebook, fazer per
 
 ## Como usar
 
+### Primeira Ativação (novo número)
+
 1. Instale as dependências:
 
 ```bash
@@ -28,15 +42,35 @@ cd scripts/whatsapp-bot
 npm install
 ```
 
-2. Rode o bot:
+2. Inicie o bot:
 
 ```bash
+# Opção 1: Usando script automatizado com PM2
+./start-pagby-bot.sh
+
+# Opção 2: Modo normal (sem PM2)
 npm start
 ```
 
-3. Escaneie o QR code com o WhatsApp dedicado (apenas na primeira vez).
+3. Escaneie o QR code com o WhatsApp do número **32 998621569** (apenas na primeira vez).
 
 4. O bot ficará rodando e responderá automaticamente a qualquer mensagem recebida.
+
+### Resetar Autenticação (trocar de número)
+
+Se precisar conectar outro número posteriormente:
+
+```bash
+./reset-auth.sh
+```
+
+### Scripts Disponíveis
+
+- `start-pagby-bot.sh` - Inicia o bot com PM2 (recomendado)
+- `reset-auth.sh` - Remove autenticação e permite conectar novo número
+- `start-reminder-bot.sh` - Inicia bot específico de lembretes
+
+📖 **Documentação completa:** [ATIVACAO_NOVO_NUMERO.md](ATIVACAO_NOVO_NUMERO.md)
 
 ## Visualizar leads capturados
 
@@ -62,10 +96,10 @@ Os leads são salvos em `leads.json` no formato:
 Use este link no anúncio para abrir conversa diretamente:
 
 ```
-https://wa.me/5599999999999?text=Oi!%20Vi%20a%20propaganda%20do%20Pagby
+https://wa.me/5532998621569?text=Oi!%20Vi%20a%20propaganda%20do%20Pagby
 ```
 
-Substitua `5599999999999` pelo número do WhatsApp do bot.
+**Link completo:** https://wa.me/5532998621569
 
 ## Manter bot rodando 24/7
 

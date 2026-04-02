@@ -189,13 +189,13 @@ async function handleConversation(sock, jid, text) {
   // Comandos especiais
   if (lowerText === 'menu' || lowerText === 'ajuda') {
     await sock.sendMessage(jid, {
-      text: '*🤖 Bot PagBy*\n\nComandos disponíveis:\n• ATIVAR - Ativar lembretes via WhatsApp\n\nEste bot processa comandos automáticos de lembretes.\n\nPara falar com o suporte, envie sua dúvida que retornaremos em breve!'
+      text: '*🤖 Bot PagBy*\n\nComandos disponíveis:\n• ATIVAR - Ativar lembretes via WhatsApp\n• VINCULAR [número] - Vincular seu telefone\n\nEste bot processa comandos automáticos de lembretes.\n\nPara falar com o suporte, envie sua dúvida que retornaremos em breve!'
     })
     return
   }
 
-  // Lógica de conversa existente continua aqui...
-  // Por exemplo: agendamentos, consultas, etc.
+  // Não responde outras mensagens - apenas processa comandos específicos
+  // Isso evita respostas automáticas quando clientes respondem aos lembretes
 }
 
 /**
@@ -262,19 +262,26 @@ async function savePhoneMapping(jid) {
     // Salva o JID original
     let key = jid.split('@')[0]
     
-    // Procura se já existe um número brasileiro mapeado para este JID
-    let brazilianPhone = null
-    for (const [phone, mappedJid] of Object.entries(phoneMap)) {
-      if (mappedJid === jid && phone.length >= 10 && phone.length <= 11 && !phone.includes('@')) {
-        brazilianPhone = phone
-        break
+    // Para JIDs do tipo @lid (contas business/linked), não tenta extrair número
+    // Esses JIDs não contêm o número de telefone
+    if (jid.includes('@lid')) {
+      console.log(`ℹ️  JID tipo @lid detectado: ${jid}`)
+      console.log(`💡 Para ativar lembretes, use o comando ATIVAR`)
+      
+      // Apenas procura se já existe mapeamento
+      let brazilianPhone = null
+      for (const [phone, mappedJid] of Object.entries(phoneMap)) {
+        if (mappedJid === jid && phone.length >= 10 && phone.length <= 11 && !phone.includes('@')) {
+          brazilianPhone = phone
+          break
+        }
       }
-    }
-    
-    // Se encontrou um número brasileiro mapeado, ativa
-    if (brazilianPhone) {
-      console.log(`📱 Número encontrado no mapeamento: ${brazilianPhone}`)
-      await markUserWhatsAppActivated(brazilianPhone)
+      
+      if (brazilianPhone) {
+        console.log(`📱 Número já mapeado: ${brazilianPhone}`)
+      }
+      
+      return
     }
     
     // Se não mudou, não precisa salvar novamente
@@ -308,6 +315,13 @@ async function savePhoneMapping(jid) {
  */
 async function markUserWhatsAppActivated(phone, jid = null) {
   try {
+    // Valida se o número parece válido (10-11 dígitos)
+    const cleanPhone = phone.replace(/\D/g, '')
+    if (cleanPhone.length < 10 || cleanPhone.length > 11) {
+      console.log(`⚠️  Número inválido (${phone}), pulando busca em tenants`)
+      return false
+    }
+    
     console.log(`\n🟢 ===== INICIANDO BUSCA EM TENANTS =====`)
     console.log(`📱 Buscando número: ${phone}`)
     if (jid) console.log(`📱 JID: ${jid}\n`)
