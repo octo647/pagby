@@ -61,6 +61,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
             'subscription_started_at',
             'subscription_ends_at', 
             'is_blocked',
+            'onboarding_completed',
+            'onboarding_progress',
             'data'
         ];
 
@@ -106,6 +108,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'subscription_started_at',
         'subscription_ends_at', 
         'is_blocked',
+        'onboarding_completed',
+        'onboarding_progress',
         'data',
         'crated_at',
         'updated_at',
@@ -123,6 +127,8 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'subscription_ends_at' => 'datetime',
         'asaas_account_activated_at' => 'datetime',
         'is_blocked' => 'boolean',
+        'onboarding_completed' => 'boolean',
+        'onboarding_progress' => 'array',
         'asaas_account_data' => 'array',
     ];
 

@@ -279,6 +279,12 @@ Route::get('/plans', function () {
             ->middleware(['auth', 'verified'])
             ->name('tenant.dashboard');
 
+        // Rota de Onboarding
+        Route::get('/onboarding', function () {
+            return view('layouts.onboarding');
+        })->middleware(['auth', 'verified'])
+            ->name('onboarding');
+
 
         Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])->name('logout');                    
     });

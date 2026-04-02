@@ -204,6 +204,21 @@
                     ];
                 @endphp
                 
+                {{-- Link de Onboarding (destaque) --}}
+                @if(!tenant()->onboarding_completed)
+                    <div class="mb-4 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg p-4 shadow-lg">
+                        <a href="{{ route('onboarding') }}" class="block text-white hover:opacity-90 transition-opacity">
+                            <div class="flex items-center space-x-3">
+                                <span class="text-3xl">🚀</span>
+                                <div>
+                                    <div class="font-bold text-sm">Configure sua Plataforma</div>
+                                    <div class="text-xs opacity-90">Siga os passos de onboarding</div>
+                                </div>
+                            </div>
+                        </a>
+                    </div>
+                @endif
+                
                 {{-- Itens principais --}}
                 @foreach($menuProprietario as $item)
                     <x-responsive-nav-link :href="route('tenant.dashboard', ['tabelaAtiva' => $item['tabelaAtiva'], 'menu' => $menuSelecionado])" :active="request()->input('tabelaAtiva') === $item['tabelaAtiva'] && request()->input('menu', $menuSelecionado) === 'proprietario'">
