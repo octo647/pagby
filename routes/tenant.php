@@ -14,6 +14,7 @@ use App\Http\Controllers\DashboardController;
 use App\Models\Service;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Auth\PasswordController;
 use Illuminate\Support\Facades\View;
 use App\Http\Controllers\PaymentController;
 use App\Models\Subscription;
@@ -196,6 +197,7 @@ Route::get('/plans', function () {
             Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
             Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
             Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+            Route::put('password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('password.update');
         });
 
      // PAGAMENTOS DE AGENDAMENTOS (dentro dos tenants)
