@@ -56,7 +56,7 @@
                                 </div>
 
                                 <p style="margin: 15px 0 0 0; font-size: 12px; text-align: center; color: #999999;">
-                                    Nosso WhatsApp: <strong>(32) 9 9829-4948</strong>
+                                    Nosso WhatsApp: <strong>(32) 99961-2957</strong>
                                 </p>
                             </div>
 
