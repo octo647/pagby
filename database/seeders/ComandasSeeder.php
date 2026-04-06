@@ -9,11 +9,14 @@ use App\Models\Comanda;
 use App\Models\Service;
 use App\Models\Estoque;
 use App\Models\User;
+use App\Models\Branch;
+use Carbon\Carbon;
 
 class ComandasSeeder extends Seeder
 {
     public function run(): void
     {
+        // Primeiro, cria comandas baseadas nos appointments existentes
         foreach (Appointment::all() as $appointment) {
             // Cria a comanda relacionada ao appointment
             $serviceNames = array_map('trim', explode('/', $appointment->services));
@@ -82,5 +85,161 @@ class ComandasSeeder extends Seeder
             $comanda->total_geral = $comanda->subtotal_servicos + $comanda->subtotal_produtos;
             $comanda->save();
         }
+
+        // Agora cria comandas adicionais com datas recentes para testes dos períodos
+        $this->criarComandasRecentes();
+    }
+
+    /**
+     * Cria comandas com datas de fechamento recentes para testes
+     * Distribui comandas nos últimos 30 dias para cobrir períodos semanal, quinzenal e mensal
+     */
+    private function criarComandasRecentes(): void
+    {
+        $branches = Branch::all();
+        if ($branches->isEmpty()) {
+            $this->command->warn('Nenhuma filial encontrada. Pulando criação de comandas recentes.');
+            return;
+        }
+
+        // Pega funcionários com a role 'Funcionário'
+        $funcionarios = User::whereHas('roles', function($q) {
+            $q->where('role', 'Funcionário');
+        })->get();
+
+        if ($funcionarios->isEmpty()) {
+            $this->command->warn('Nenhum funcionário encontrado. Pulando criação de comandas recentes.');
+            return;
+        }
+
+        // Pega clientes
+        $clientes = User::whereHas('roles', function($q) {
+            $q->where('role', 'Cliente');
+        })->get();
+
+        if ($clientes->isEmpty()) {
+            $this->command->warn('Nenhum cliente encontrado. Pulando criação de comandas recentes.');
+            return;
+        }
+
+        $hoje = Carbon::today();
+        
+        // Define os períodos de distribuição
+        $periodos = [
+            'semanal' => [
+                'inicio' => $hoje->copy()->subDays(6), // Últimos 7 dias
+                'fim' => $hoje->copy(),
+                'quantidade' => 15, // 15 comandas na última semana
+            ],
+            'quinzenal' => [
+                'inicio' => $hoje->copy()->subDays(14), // Dias 8 a 14 atrás
+                'fim' => $hoje->copy()->subDays(7),
+                'quantidade' => 10, // 10 comandas na segunda semana
+            ],
+            'mensal' => [
+                'inicio' => $hoje->copy()->subDays(30), // Dias 15 a 30 atrás
+                'fim' => $hoje->copy()->subDays(15),
+                'quantidade' => 8, // 8 comandas no resto do mês
+            ],
+        ];
+
+        $comandaCounter = Comanda::max('id') ?? 0;
+
+        foreach ($periodos as $nomePeriodo => $config) {
+            $this->command->info("Criando comandas para período {$nomePeriodo}...");
+            
+            for ($i = 0; $i < $config['quantidade']; $i++) {
+                $comandaCounter++;
+                
+                // Escolhe uma data aleatória dentro do período
+                $diasDiferenca = $config['inicio']->diffInDays($config['fim']);
+                $dataAbertura = $config['inicio']->copy()->addDays(rand(0, $diasDiferenca));
+                $dataFechamento = $dataAbertura->copy()->addHours(rand(1, 4));
+                
+                // Escolhe filial, funcionário e cliente aleatórios
+                $branch = $branches->random();
+                $funcionario = $funcionarios->random();
+                $cliente = $clientes->random();
+                
+                // Pega serviços disponíveis
+                $services = Service::where('branch_id', $branch->id)->inRandomOrder()->take(rand(1, 3))->get();
+                if ($services->isEmpty()) {
+                    $services = Service::inRandomOrder()->take(rand(1, 2))->get();
+                }
+                
+                $subtotal_servicos = $services->sum('price');
+                
+                // Cria a comanda
+                $comanda = Comanda::create([
+                    'appointment_id' => null,
+                    'branch_id' => $branch->id,
+                    'numero_comanda' => 'CMD-' . $dataAbertura->format('Ymd') . '-' . str_pad($comandaCounter, 4, '0', STR_PAD_LEFT),
+                    'cliente_nome' => $cliente->name,
+                    'cliente_telefone' => $cliente->phone ?? '(00) 00000-0000',
+                    'funcionario_id' => $funcionario->id,
+                    'data_abertura' => $dataAbertura,
+                    'status' => 'Finalizada',
+                    'data_fechamento' => $dataFechamento,
+                    'subtotal_servicos' => $subtotal_servicos,
+                    'subtotal_produtos' => 0,
+                    'desconto_servicos' => 0,
+                    'desconto_produtos' => 0,
+                    'total_geral' => $subtotal_servicos,
+                    'created_at' => $dataAbertura,
+                    'updated_at' => $dataFechamento,
+                ]);
+                
+                // Adiciona os serviços à comanda
+                foreach ($services as $service) {
+                    DB::table('comanda_servicos')->insert([
+                        'comanda_id' => $comanda->id,
+                        'service_id' => $service->id,
+                        'funcionario_id' => $funcionario->id,
+                        'quantidade' => 1,
+                        'preco_unitario' => $service->price,
+                        'subtotal' => $service->price,
+                        'status_servico' => 'Concluído',
+                        'created_at' => $dataAbertura,
+                        'updated_at' => $dataFechamento,
+                    ]);
+                }
+                
+                // Adiciona produtos aleatórios (50% de chance)
+                if (rand(0, 1) === 1) {
+                    $produtos = Estoque::where('branch_id', $branch->id)
+                        ->inRandomOrder()
+                        ->take(rand(1, 2))
+                        ->get();
+                    
+                    $total_produtos = 0;
+                    foreach ($produtos as $produto) {
+                        $quantidade = rand(1, 3);
+                        $subtotal = $produto->preco_unitario * $quantidade;
+                        
+                        DB::table('comanda_produtos')->insert([
+                            'comanda_id' => $comanda->id,
+                            'estoque_id' => $produto->id,
+                            'funcionario_id' => $funcionario->id,
+                            'quantidade' => $quantidade,
+                            'preco_unitario' => $produto->preco_unitario,
+                            'subtotal' => $subtotal,
+                            'percentual_produtos' => $produto->percentual_produtos ?? 10,
+                            'created_at' => $dataAbertura,
+                            'updated_at' => $dataFechamento,
+                        ]);
+                        
+                        $total_produtos += $subtotal;
+                    }
+                    
+                    // Atualiza totais da comanda
+                    $comanda->subtotal_produtos = $total_produtos;
+                    $comanda->total_geral = $comanda->subtotal_servicos + $total_produtos;
+                    $comanda->save();
+                }
+            }
+        }
+
+        $this->command->info('Comandas recentes criadas com sucesso!');
+        $this->command->info('Total de comandas adicionais: ' . array_sum(array_column($periodos, 'quantidade')));
     }
 }

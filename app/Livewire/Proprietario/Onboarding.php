@@ -14,7 +14,7 @@ class Onboarding extends Component
     public $steps = [];
     public $currentStep = 1;
     public $completedSteps = 0;
-    public $totalSteps = 7;
+    public $totalSteps = 0;
     
     public function mount()
     {
@@ -76,16 +76,29 @@ class Onboarding extends Component
                 'completed' => Schedule::count() > 0,
                 'route' => route('tenant.dashboard', ['tabelaAtiva' => 'horarios']),
                 'icon' => '⏰'
-            ],
-            [
+            ]
+        ];
+        
+        // Adicionar passo de customização apenas para template Padrão
+        if ($tenant && $tenant->template === 'Padrao') {
+            $this->steps[] = [
                 'number' => 7,
                 'title' => 'Customizar a Home',
                 'description' => 'Personalize a página inicial do seu salão',
-                'completed' => $tenant && $tenant->data && isset($tenant->data['home_customized']),
+                'completed' => $tenant->data && isset($tenant->data['home_customized']),
                 'route' => route('tenant.dashboard', ['tabelaAtiva' => 'customizar-home']),
                 'icon' => '🎨'
-            ]
-        ];
+            ];
+        }
+        
+        // Renumerar os passos
+        $this->steps = collect($this->steps)->values()->map(function($step, $index) {
+            $step['number'] = $index + 1;
+            return $step;
+        })->toArray();
+        
+        // Atualizar total de steps
+        $this->totalSteps = count($this->steps);
 
         // Contar passos completados
         $this->completedSteps = collect($this->steps)->where('completed', true)->count();

@@ -409,6 +409,7 @@ class PlanosDeAssinatura extends Component
         // Abrir modal de criação de plano
         $this->reset(['nomePlano', 'preco', 'duracaoDias', 'servicosIncluidos', 'servicosAdicionais', 'servicosAdicionaisDescontos', 'features_keys', 'features_values', 'allowedDays']);
         $this->modalNovoPlano = true;
+        $this->dispatch('abrir-modal-novo-plano');
     }
 
     public function salvarDadosFaltantes()
@@ -452,6 +453,7 @@ class PlanosDeAssinatura extends Component
         // Abrir modal de criação de plano
         $this->reset(['nomePlano', 'preco', 'duracaoDias', 'servicosIncluidos', 'servicosAdicionais', 'servicosAdicionaisDescontos', 'features_keys', 'features_values', 'allowedDays']);
         $this->modalNovoPlano = true;
+        $this->dispatch('abrir-modal-novo-plano');
         
         session()->flash('success', 'CNPJ salvo e subconta Asaas criada com sucesso!');
     }
@@ -733,6 +735,7 @@ class PlanosDeAssinatura extends Component
 
         // Atualiza a lista de planos
         $this->modalNovoPlano = false;
+        $this->dispatch('fechar-modal-novo-plano');
         $this->mount();
         \Log::debug('FIM salvarNovoPlano', [
             'user_id' => Auth::id(),
@@ -761,6 +764,7 @@ class PlanosDeAssinatura extends Component
         $this->preco = $this->planoSelecionado->price;
         $this->duracaoDias = $this->planoSelecionado->duration_days;
         $this->modalAberto = true;
+        $this->dispatch('abrir-modal');
         // Carregar os serviços incluídos e adicionais
         $this->servicosIncluidos = $this->planoSelecionado->services->pluck('id')->toArray();       
         $this->servicosAdicionais = $this->planoSelecionado->additionalServices->pluck('id')->toArray();
@@ -882,6 +886,7 @@ class PlanosDeAssinatura extends Component
         }
 
         $this->modalAberto = false;
+        $this->dispatch('fechar-modal');
         session()->flash('message', 'Plano atualizado com sucesso!');
     }   
     public function deletePlan($planoId)
@@ -895,6 +900,7 @@ class PlanosDeAssinatura extends Component
             if ($subscriptionCount > 0) {
                 session()->flash('error', "Não é possível excluir este plano pois existem {$subscriptionCount} cliente(s) com assinatura ativa vinculada a ele.");
                 $this->modalAberto = false;
+                $this->dispatch('fechar-modal');
                 return;
             }
             
@@ -915,6 +921,7 @@ class PlanosDeAssinatura extends Component
         }
         
         $this->modalAberto = false;
+        $this->dispatch('fechar-modal');
     }
     
     private function validarCPF($cpf)

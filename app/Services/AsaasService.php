@@ -257,10 +257,10 @@ class AsaasService {
         // 2. Preparar dados da assinatura
         $payload = [
             'customer' => $customerId,
-            'billingType' => $subscriptionData['billingType'] ?? 'UNDEFINED', // BOLETO, CREDIT_CARD, UNDEFINED, etc
+            'billingType' => $subscriptionData['billingType'] ?? 'UNDEFINED',
             'cycle' => $subscriptionData['cycle'] ?? 'MONTHLY',
             'value' => $subscriptionData['value'],
-            'nextDueDate' => $subscriptionData['nextDueDate'] ?? now()->format('Y-m-d'), // Gera cobrança imediatamente
+            'nextDueDate' => $subscriptionData['nextDueDate'] ?? now()->format('Y-m-d'),
             'description' => $subscriptionData['description'] ?? 'Assinatura PagBy',
             'externalReference' => $subscriptionData['externalReference'] ?? null,
         ];

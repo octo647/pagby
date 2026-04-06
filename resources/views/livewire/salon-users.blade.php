@@ -21,14 +21,7 @@
 <div x-data="{ showModal: @entangle('showModal') }" class="min-h-screen bg-gray-50">
     
     {{-- Cabeçalho da Página --}}
-    <div class="bg-white border-b border-gray-200 mb-8">
-        <div class="container mx-auto px-4 py-6">
-            <div>
-                <h1 class="text-3xl font-bold text-gray-900">Gestão de Usuários</h1>
-                <p class="text-gray-600 mt-1">Gerencie status dos usuários do salão</p>
-            </div>
-        </div>
-    </div>
+    
 
     {{-- Container Principal --}}
     <div class="container mx-auto px-4 pb-8">

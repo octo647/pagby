@@ -1,9 +1,4 @@
-<div class="p-4 md:p-8 bg-gradient-to-br from-blue-50 to-blue-100 min-h-screen">
-    <div class="max-w-5xl mx-auto">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-blue-900 mb-8 flex items-center gap-2">
-            <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4"/></svg>
-            Pagamento dos Planos - Funcionários
-        </h2>
+<div class="p-4 md:p-8 max-w-5xl mx-auto">
         <div class="mb-6 space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="flex flex-col w-full">

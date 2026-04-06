@@ -1,22 +1,6 @@
-<div>
-    {{-- Gestão de Horários - Interface Moderna --}}
-
-<div x-data="{ showEditPanel: @entangle('showEditPanel') }" class="min-h-screen bg-gray-50">
-    
-    {{-- Cabeçalho da Página --}}
-    <div class="bg-white border-b border-gray-200 mb-8">
-        <div class="container mx-auto px-4 py-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Gestão de Horários</h1>
-                    <p class="text-gray-600 mt-1">Configure os horários de trabalho dos funcionários</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<div x-data="{ showEditPanel: @entangle('showEditPanel') }">
     {{-- Container Principal --}}
-    <div class="container mx-auto px-4 pb-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {{-- Lista de Horários - Design Moderno --}}
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">

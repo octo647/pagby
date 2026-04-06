@@ -1,23 +1,4 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-100/40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {{-- Cabeçalho --}}
-        <div class="mb-8">
-            {{-- Breadcrumb --}}
-            <nav class="flex items-center space-x-2 text-sm text-slate-600 mb-4">
-                <a href="{{ route('dashboard') }}" class="hover:text-indigo-600 transition-colors duration-200">Dashboard</a>
-                <svg class="w-4 h-4 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                </svg>
-                <span class="text-slate-800 font-medium">Ranking de Serviços</span>
-            </nav>
-
-            {{-- Título principal --}}
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 class="text-3xl font-bold text-slate-900 mb-2">📊 Ranking de Serviços</h1>
-                    <p class="text-slate-600">Descubra quais são os serviços mais populares e solicitados</p>
-                </div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div class="mt-4 sm:mt-0 flex items-center space-x-3">
                     <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-3 rounded-xl shadow-lg">
                         <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -43,7 +43,12 @@ Route::get('/api/social-auth/{token}', function ($token) {
         Route::get('/barbearias', function () {
              return view('landing.barbearias');
         })->name('landing.barbearias');
-        
+        Route::get('/bemvindo', function () {
+             return view('landing.bemvindo');
+        })->name('landing.bemvindo');        
+
+
+
         // Rotas de registro e contrato
 
         // Rota para envio do formulário de dúvidas sobre o modelo de negócio

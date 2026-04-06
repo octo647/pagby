@@ -1,6 +1,4 @@
 <div>
-    {{-- Serviços Realizados - Sistema Moderno de Gestão --}}
-    
     {{-- Filtros Avançados --}}
     <div class="bg-white p-4 rounded-lg shadow-sm border mb-6">
         <div class="mb-4">

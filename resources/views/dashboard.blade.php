@@ -4,7 +4,7 @@
 <x-app-layout>
     <x-slot name="header">
     
-        <h2 class="text-xl font-semibold leading-tight text-center text-gray-800">
+        <h2 class="text-2xl font-semibold leading-tight text-center text-gray-800">
         @if(auth()->user()->hasrole('Admin'))
             {{ __($tabelaAtiva === 'contatos' ? 'Contatos' : 
             ($tabelaAtiva === 'contatos-booksy' ? 'Contatos Booksy' :
@@ -33,10 +33,55 @@
                     'clientes-novos-antigos' => 'Clientes Novos e Antigos',
                     'gerenciar-estoque' => 'Controle de Estoque',
                     'gerenciar-comandas' => 'Controle de Comandas',
-                    'link-agendamento' => 'Link de Agendamento para Redes Sociais'
+                    'link-agendamento' => 'Link de Agendamento para Redes Sociais',
+                    'controle-pagamento' => 'Controle de Pagamento',
+                    'controle-pagamento-planos' => 'Pagamento dos Planos',
+                    'balanco-diario' => 'Balanço Diário',
+                    'ajuste-balanco-diario' => 'Ajuste de Balanço Diário',
+                    'balanco-semanal' => 'Balanço Semanal',
+                    'controle-agenda' => 'Controle de Agendas',
+                    'customizar-home' => 'Customizar Home',
+                    'meu-pagby' => 'Meu PagBy',
+                    'relatorio-geral' => 'Relatório Geral',
+                    'relatorio-mensal' => 'Relatório Mensal',
+                    'relatorio-anual' => 'Relatório Anual',
+                    'clientes-inadimplentes' => 'Gestão de Inadimplência',
+                    'planos-de-assinatura' => 'Planos de Assinatura'
+                ];
+                $subtitles = [
+                    'agenda' => 'Visualize e gerencie seus compromissos',
+                    'usuarios' => 'Gerencie o status dos usuários',
+                    'filiais' => 'Gerencie as filiais do seu salão',
+                    'funcionarios' => 'Gerencie os funcionários de cada filial',
+                    'horarios' => 'Configure os horários de atendimento dos funcionários',
+                    'servicos' => 'Gerencie os serviços oferecidos pelo seu salão',
+                    'func_serv' => 'Associe funcionários aos serviços que eles oferecem',
+                    'servicos-realizados' => 'Acompanhe os serviços realizados por período',
+                    'assiduidade' => 'Analise a frequência dos clientes',
+                    'faturamento-mensal' => 'Monitore o faturamento mensal do seu salão',
+                    'origens' => 'Identifique as origens dos seus clientes',
+                    'ticket-medio' => 'Calcule o ticket médio por cliente',
+                    'horarios-pico' => 'Identifique os horários de maior movimento',
+                    'dias-pico' => 'Identifique os dias de maior movimento',
+                    'avaliacoes' => 'Avaliações e feedback dos clientes',
+                    'ranking-servicos' => 'Veja quais serviços são mais populares',
+                    'clientes-novos-antigos' => 'Analise a proporção de clientes novos e antigos',
+                    'gerenciar-estoque' => 'Controle o estoque de produtos do seu salão',
+                    'gerenciar-comandas' => '',
+                    'link-agendamento' => '',
+                    'controle-pagamento' => '',                  'controle-pagamento-planos' => 'Gerencie os pagamentos dos planos de assinatura',
+                    'planos-de-assinatura' => 'Gerencie os planos de assinatura disponíveis para seus clientes',
+                    'balanco-diario' => 'Acompanhe o balanço diário do seu salão',
+                    'ajuste-balanco-diario' => 'Faça ajustes no balanço diário para correções financeiras',
+                    'balanco-semanal' => '',
+                    'controle-agenda' => '',
+                    'customizar-home' => '',
+                    'meu-pagby' => '',
                 ];
             @endphp
-            {{ __($titles[$tabelaAtiva] ?? '') }}
+
+        {{ __($titles[$tabelaAtiva] ?? '') }}
+
         @elseif(auth()->user()->hasrole('Funcionário'))
             @php
                 $funcionarioTitles = [
@@ -60,7 +105,10 @@
             {{ __('Dashboard') }}
         @endif
             
-        </h2>   
+        </h2> 
+        @if(auth()->user()->hasrole('Proprietário'))
+            <p class="text-gray-600 mt-1 text-center">{{ __($subtitles[$tabelaAtiva] ?? '') }}</p>
+        @endif 
      </x-slot>
 <script>
     window.addEventListener('error', function(e) {
@@ -175,6 +223,8 @@
                 @can('Funcionário')
                 @if($tabelaAtiva === 'agenda')
                     @livewire('funcionario.agenda')
+                @elseif($tabelaAtiva === 'appointments' && $menuSelecionado === 'funcionario')
+                    @livewire('funcionario.agenda')
                 @elseif($tabelaAtiva === 'servicos' && $menuSelecionado === 'funcionario')
                     @livewire('funcionario.servicos')
                 @elseif($tabelaAtiva === 'servicos-planos')
@@ -197,7 +247,7 @@
 
                 @endcan
                 @can('Cliente')
-                @if($tabelaAtiva === 'appointments')
+                @if($tabelaAtiva === 'appointments' && $menuSelecionado !== 'funcionario')
                     @livewire('cliente.appointments') 
                 @elseif($tabelaAtiva === 'historico')
                     @livewire('cliente.historico')

@@ -1,6 +1,4 @@
 <div>
-    {{-- Análise de Origem dos Clientes --}}
-
     {{-- Tabela de dados --}}
     <div class="mb-6 bg-white rounded-lg shadow-sm border overflow-hidden">
         <div class="p-4 border-b bg-gray-50">

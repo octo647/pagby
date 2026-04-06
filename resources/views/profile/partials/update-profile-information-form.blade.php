@@ -274,7 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
         cepError.classList.add('hidden');
     });
 });
-
+</script>
 
 
 </section>

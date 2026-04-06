@@ -31,8 +31,6 @@ class PlanoPagbyModal extends Component
         'anual' => 0.40, // 40% desconto
     ];
 
-    public $checkoutUrl = null;
-
     public function mount()
     {
         $tenant = tenant();
@@ -128,9 +126,10 @@ class PlanoPagbyModal extends Component
                 'description' => $desc
             ]);
             // Redirecionar para tela de espera do pagamento
-            return redirect()->route('pagby-subscription.wait', ['paymentId' => $payment->id]);
+            return $this->redirectRoute('pagby-subscription.wait', ['paymentId' => $payment->id]);
         }
         session()->flash('error', 'Não foi possível gerar a assinatura. Tente novamente ou contate o suporte.');
+        return;
     }
 
     public function render()

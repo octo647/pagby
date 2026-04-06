@@ -32,10 +32,10 @@
     @endif
 
 <div x-data="{ 
-    open: @entangle('modalAberto'), 
+    open: false, 
     openServicos: false, 
     openServicosAdicionais: false, 
-    openNovoPlano: @entangle('modalNovoPlano'),
+    openNovoPlano: false,
     openServicosNovoPlano: false,
     openServicosAdicionaisNovoPlano: false,
     // Função para sincronizar descontos quando serviços adicionais mudam
@@ -43,18 +43,21 @@
         // Trigger do Livewire para atualizar descontos
         @this.call('sincronizarDescontos');
     }
-}" class="min-h-screen bg-gray-50">
+}" 
+x-on:abrir-modal.window="open = true"
+x-on:abrir-modal-novo-plano.window="openNovoPlano = true"
+x-on:fechar-modal.window="open = false"
+x-on:fechar-modal-novo-plano.window="openNovoPlano = false"
+class="min-h-screen bg-gray-50">
     
     {{-- Cabeçalho da Página --}}
     <div class="bg-white border-b border-gray-200 mb-8">
-        <div class="container mx-auto px-4 py-6">
+        <div class="container mx-auto px-2 py-2">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 class="text-3xl font-bold text-gray-900">Planos de Assinatura</h1>
-                    @can('Proprietário')
-                        <p class="text-gray-600 mt-1">Gerencie os planos disponíveis para seus clientes</p>
-                    @else
-                        <p class="text-gray-600 mt-1">Escolha o plano ideal para suas necessidades</p>
+                   
+                    @can('Cliente')                     
+                    <p class="text-gray-600 mt-1">Escolha o plano ideal para suas necessidades</p>
                     @endcan
                 </div>
                 
@@ -267,7 +270,7 @@
                         <h2 class="text-xl font-bold">Editar Plano</h2>
                         <p class="text-blue-100 text-sm">{{ $nomePlano }}</p>
                     </div>
-                    <button @click="open = false" class="text-white hover:text-gray-200 transition-colors">
+                    <button @click="open = false; $wire.set('modalAberto', false)" class="text-white hover:text-gray-200 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -444,8 +447,7 @@
             {{-- Footer do Modal --}}
             <div class="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
                 <button type="button" 
-                        @click="open = false" 
-                        wire:click="$set('modalAberto', false)" 
+                        @click="open = false; $wire.set('modalAberto', false)" 
                         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                     Cancelar
                 </button>
@@ -554,7 +556,7 @@
                         <h2 class="text-xl font-bold">Criar Novo Plano</h2>
                         <p class="text-green-100 text-sm">Configure os detalhes do novo plano de assinatura</p>
                     </div>
-                    <button @click="openNovoPlano = false" class="text-white hover:text-gray-200 transition-colors">
+                    <button @click="openNovoPlano = false; $wire.set('modalNovoPlano', false)" class="text-white hover:text-gray-200 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
@@ -730,8 +732,7 @@
             {{-- Footer do Modal --}}
             <div class="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
                 <button type="button" 
-                        @click="openNovoPlano = false" 
-                        wire:click="$set('modalNovoPlano', false)" 
+                        @click="openNovoPlano = false; $wire.set('modalNovoPlano', false)" 
                         class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 transition-colors">
                     Cancelar
                 </button>
@@ -836,7 +837,7 @@
 @if($modalDadosFaltantes)
     <div class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="$wire.modalDadosFaltantes = false"></div>
+            <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" @click="$wire.set('modalDadosFaltantes', false)"></div>
 
             <div class="inline-block w-full max-w-2xl overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl animate-fade-in">
                 {{-- Header --}}
@@ -848,7 +849,7 @@
                             </svg>
                             Dados Adicionais Necessários
                         </h3>
-                        <button @click="$wire.modalDadosFaltantes = false" class="text-white hover:text-gray-200 transition-colors">
+                        <button @click="$wire.set('modalDadosFaltantes', false)" class="text-white hover:text-gray-200 transition-colors">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                             </svg>
@@ -906,7 +907,7 @@
 
                 {{-- Footer --}}
                 <div class="bg-gray-50 px-6 py-4 border-t flex justify-end space-x-3">
-                    <button @click="$wire.modalDadosFaltantes = false" 
+                    <button @click="$wire.set('modalDadosFaltantes', false)" 
                             class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-100 transition-colors font-medium">
                         Cancelar
                     </button>

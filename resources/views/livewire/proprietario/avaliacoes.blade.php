@@ -1,6 +1,4 @@
 <div>
-    {{-- Sistema de Avaliações com Filtros e Estatísticas --}}
-
     {{-- Filtros --}}
     <div class="mb-6 bg-white p-4 rounded-lg shadow-sm border">
         <h2 class="text-lg font-semibold mb-4 text-gray-800">Filtros de Avaliações</h2>

@@ -27,7 +27,9 @@
     
     <title>PagBy - Plataforma para Salões de Beleza e Barbearias</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#e11d48">
@@ -41,8 +43,8 @@
         }
         
         .fade-in {
-            opacity: 0;
-            transform: translateY(20px);
+            opacity: 1;
+            transform: translateY(0);
             transition: opacity 0.6s, transform 0.6s;
         }
         

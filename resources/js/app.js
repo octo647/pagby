@@ -1,9 +1,11 @@
 import './bootstrap';
 
-/* import Alpine from 'alpinejs';
+import mask from '@alpinejs/mask';
 
-window.Alpine = Alpine;
-
-Alpine.start(); 
-*/
+// Registrar plugin mask no Alpine do Livewire
+document.addEventListener('livewire:init', () => {
+    if (window.Alpine) {
+        window.Alpine.plugin(mask);
+    }
+});
 

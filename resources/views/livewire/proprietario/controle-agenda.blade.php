@@ -1,10 +1,4 @@
-
-<div class="p-4 md:p-8 bg-gradient-to-br from-green-50 to-green-100 min-h-screen">
-    <div class="max-w-5xl mx-auto">
-        <h2 class="text-3xl md:text-4xl font-extrabold text-green-900 mb-8 flex items-center gap-2">
-            <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 1.343-3 3s1.343 3 3 3 3-1.343 3-3-1.343-3-3-3zm0 0V4m0 16v-4m8-4h-4m-8 0H4"/></svg>
-            Controle de Agenda dos Funcionários
-        </h2>
+<div class="p-4 md:p-8 max-w-5xl mx-auto">
         <div class="flex flex-col md:flex-row md:items-end gap-4 mb-6">
             <div class="flex flex-col">
                 <label class="font-semibold text-green-700 mb-1">Funcionário</label>

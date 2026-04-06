@@ -1,7 +1,7 @@
 
-<div class="min-h-screen bg-gray-50 py-6">
+<div class="min-h-screen bg-gradient-to-r from-blue-200 via-purple-200 to-pink-200 py-4">
  
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto px-4 sm:px-4 lg:px-8">
         {{-- Header com data e calendário --}}
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
             <div  class="relative flex items-center gap-2">
@@ -105,9 +105,9 @@
                 <div class="bg-white rounded-xl shadow p-4 flex flex-col gap-2">
                     <div class="flex items-center justify-between mb-2">
                         <div>
-                            <span class="text-xs text-gray-500">{{ \Carbon\Carbon::createFromFormat('H:i:s', $agendamento->start_time)->format('H:i') }} - {{\Carbon\Carbon::createFromFormat('H:i:s', $agendamento->end_time)->format('H:i') }}</span>
+                            <span class="text-xs">{{ \Carbon\Carbon::createFromFormat('H:i:s', $agendamento->start_time)->format('H:i') }} - {{\Carbon\Carbon::createFromFormat('H:i:s', $agendamento->end_time)->format('H:i') }}</span>
                         </div>
-                        <span class="inline-block px-2 py-1 rounded bg-blue-100 text-blue-700 text-xs font-medium">{{ $agendamento->services }}</span>
+                        <span class="inline-block px-2 py-1 rounded bg-blue-100 text-blue-800 text-xs font-medium">{{ $agendamento->services }}</span>
                     </div>
                     <div class="flex items-center gap-2">
                         @if($agendamento->customer && $agendamento->customer->photo)

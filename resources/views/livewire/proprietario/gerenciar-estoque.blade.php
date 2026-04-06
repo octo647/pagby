@@ -1,18 +1,4 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-    <!-- Header com Breadcrumb -->
-    <div class="bg-white shadow-sm border-b border-slate-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <nav class="flex items-center space-x-2 text-sm text-slate-600">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2V7"></path>
-                </svg>
-                <span>Proprietário</span>
-                <span>/</span>
-                <span class="text-indigo-600 font-semibold">Controle de Estoque</span>
-            </nav>
-        </div>
-    </div>
-
+<div>
     <!-- Notificações -->
     @if (session()->has('mensagem'))
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">

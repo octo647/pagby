@@ -1,15 +1,4 @@
-<div class="p-4 md:p-8 bg-gradient-to-br from-red-50 to-orange-50 min-h-screen">
-    <div class="max-w-7xl mx-auto">
-        {{-- Header --}}
-        <div class="mb-8">
-            <h2 class="text-3xl md:text-4xl font-extrabold text-red-900 flex items-center gap-2">
-                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-                Gestão de Inadimplência
-            </h2>
-            <p class="text-gray-600 mt-2">Monitore e gerencie clientes com pagamentos atrasados</p>
-        </div>
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
         {{-- Mensagem de sucesso --}}
         @if (session()->has('message'))

@@ -1,6 +1,4 @@
 <div>
-   
-   
     <!-- Frase informativa no topo -->
     <div class="mb-4">
         <p class="text-sm text-gray-600 flex items-center">

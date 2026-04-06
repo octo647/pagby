@@ -1,14 +1,6 @@
 <div class="min-h-screen bg-gray-50">
     {{-- Cabeçalho da Página --}}
-    <div class="bg-white border-b border-gray-200 mb-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="py-6">
-                <h1 class="text-3xl font-bold text-gray-900">🕒 Selecionar Horário</h1>
-                <p class="mt-2 text-gray-600">Escolha o melhor dia e horário para seu atendimento</p>
-            </div>
-        </div>
-    </div>
-
+    
     {{-- Conteúdo Principal --}}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
         {{-- Mensagens de Sucesso/Aviso --}}

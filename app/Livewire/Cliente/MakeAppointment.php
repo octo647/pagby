@@ -190,9 +190,10 @@ class MakeAppointment extends Component
         $this->addError('no_available_days', 'Não há dias disponíveis para agendamento com o profissional escolhido.');
         return;
     }
-    // Obtém os agendamentos do funcionário nos próximos 7 dias
+    // Obtém os agendamentos do funcionário nos próximos 7 dias (excluindo cancelados)
     $appointments = Appointment::where('employee_id', $ch_professional_id)
         ->whereIn('appointment_date', $this->forward_days)
+        ->where('status', '!=', 'Cancelado')
         ->get();
     
     $this->available_times = $this->getAvailableTimes($schedules, $appointments, $total_service_time);

@@ -134,14 +134,31 @@
                                 $comandas = $this->getComandasParaAgendamento($schedule['appointment_id']);
                             @endphp
                             @if($comandas && count($comandas) > 0)
-                                <div class="mt-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
-                                    <div class="flex items-center space-x-2 mb-3">
-                                        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                <div class="mt-6" x-data="{ mostrarComandas: false }">
+                                    {{-- Botão para exibir/ocultar comandas --}}
+                                    <button @click="mostrarComandas = !mostrarComandas" 
+                                            class="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg border border-gray-200 transition-colors">
+                                        <div class="flex items-center space-x-2">
+                                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            <span class="text-sm font-semibold text-gray-700">Comandas Relacionadas ({{ count($comandas) }})</span>
+                                        </div>
+                                        <svg class="w-5 h-5 text-gray-600 transition-transform" :class="{ 'rotate-180': mostrarComandas }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                         </svg>
-                                        <h4 class="text-sm font-semibold text-gray-700">Comandas Relacionadas</h4>
-                                    </div>
-                                    <div class="space-y-2">
+                                    </button>
+                                    
+                                    {{-- Conteúdo das comandas (oculto por padrão) --}}
+                                    <div x-show="mostrarComandas" 
+                                         x-transition:enter="transition ease-out duration-200"
+                                         x-transition:enter-start="opacity-0 transform scale-95"
+                                         x-transition:enter-end="opacity-100 transform scale-100"
+                                         x-transition:leave="transition ease-in duration-150"
+                                         x-transition:leave-start="opacity-100 transform scale-100"
+                                         x-transition:leave-end="opacity-0 transform scale-95"
+                                         class="mt-3 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200">
+                                        <div class="space-y-2">
                                         @foreach($comandas as $comanda)
                                             @php
                                                 // Verificar se há discrepância de preço
@@ -222,7 +239,8 @@
                                         </div>
                                     @endif
                                 </div>
-                            @endif
+                            </div>
+                        @endif
                         </div>
                         
                         {{-- Footer do Card - Ações --}}
