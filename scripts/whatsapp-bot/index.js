@@ -560,7 +560,34 @@ function formatPhoneNumber(phone) {
 // Salva conversas periodicamente (opcional)
 setInterval(() => {
   const leadsFile = 'leads.json'
-  fs.writeFileSync(leadsFile, JSON.stringify(conversations, null, 2))
+  try {
+    // Limpar conversas com mais de 30 dias
+    const now = Date.now()
+    for (const [key, data] of Object.entries(conversations)) {
+      if (now - data.lastMessage > 30 * 24 * 60 * 60 * 1000) {
+        delete conversations[key]
+      }
+    }
+    
+    // Salvar dados (máximo 10MB)
+    const data = JSON.stringify(conversations, null, 2)
+    if (Buffer.byteLength(data) > 10 * 1024 * 1024) {
+      console.warn('⚠️ leads.json ultrapassou 10MB, limpando conversas antigas...')
+      // Manter apenas últimas 500 conversas
+      const sortedConvs = Object.entries(conversations)
+        .sort((a, b) => b[1].lastMessage - a[1].lastMessage)
+        .slice(0, 500)
+      Object.assign(conversations, Object.fromEntries(sortedConvs))
+    }
+    
+    fs.writeFileSync(leadsFile, JSON.stringify(conversations, null, 2))
+  } catch (err) {
+    if (err.code === 'ENOSPC') {
+      console.error('❌ DISCO CHEIO! Limpe espaço em disco do VPS')
+    } else {
+      console.error('⚠️ Erro ao salvar leads:', err.message)
+    }
+  }
 }, 60000)
 
 // Inicia o bot
