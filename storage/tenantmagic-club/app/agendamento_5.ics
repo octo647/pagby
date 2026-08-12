@@ -1,0 +1,13 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//pagby//EN
+BEGIN:VEVENT
+UID:6959835c5caab
+DTSTAMP:20260105T093000
+DTSTART:20260105T093000
+DTEND:20260105T103000
+SUMMARY:Agendamento: corte na regua maxima, bigodinho fininho na régua
+DESCRIPTION:Agendamento com Dr. Christopher Luan Arruda no salão.
+LOCATION:
+END:VEVENT
+END:VCALENDAR

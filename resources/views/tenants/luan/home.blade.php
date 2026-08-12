@@ -1,0 +1,1 @@
+/var/www/pagby/resources/Templates/Barbearias/Moderna/home.blade.php

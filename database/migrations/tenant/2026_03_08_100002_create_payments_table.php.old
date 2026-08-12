@@ -1,0 +1,74 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Tabela para pagamentos avulsos via Asaas 
+     * (quando cliente paga serviço único, não assinatura)
+     * Modelo SEM split - subconta do salão
+     */
+    public function up(): void
+    {
+        Schema::create('payments', function (Blueprint $table) {
+            $table->id();
+            
+            // Relacionamentos
+            $table->foreignId('comanda_id')->nullable()->constrained()->onDelete('set null')
+                ->comment('Comanda relacionada (se houver)');
+            $table->foreignId('appointment_id')->nullable()->constrained()->onDelete('set null')
+                ->comment('Agendamento relacionado (se houver)');
+            $table->foreignId('customer_id')->nullable()->comment('ID do cliente no Asaas');
+            
+            // Asaas
+            $table->string('asaas_payment_id')->unique()->comment('ID do pagamento no Asaas');
+            $table->string('asaas_customer_id')->nullable()->comment('ID do customer no Asaas');
+            $table->string('asaas_invoice_url')->nullable()->comment('URL do boleto/invoice');
+            $table->string('asaas_invoice_number')->nullable()->comment('Número da NF');
+            
+            // Detalhes do pagamento
+            $table->decimal('amount', 10, 2)->comment('Valor total');
+            $table->decimal('net_value', 10, 2)->nullable()->comment('Valor líquido (descontando taxas)');
+            $table->string('billing_type')->comment('PIX, BOLETO, CREDIT_CARD, UNDEFINED');
+            $table->text('description')->nullable();
+            $table->date('due_date')->comment('Data de vencimento');
+            $table->date('payment_date')->nullable()->comment('Data do pagamento');
+            $table->date('estimated_credit_date')->nullable()->comment('Previsão de crédito');
+            
+            // Status
+            $table->enum('status', [
+                'pending',          // Aguardando pagamento
+                'confirmed',        // Confirmado mas não recebido
+                'received',         // Recebido ✅
+                'received_in_cash', // Recebido em dinheiro
+                'overdue',          // Vencido
+                'refunded',         // Estornado
+                'deleted',          // Deletado
+                'cancelled'         // Cancelado
+            ])->default('pending');
+            
+            // Dados adicionais
+            $table->json('asaas_data')->nullable()->comment('Payload completo do Asaas');
+            $table->string('external_reference')->nullable()->comment('Referência externa');
+            
+            // Auditoria
+            $table->timestamp('paid_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+            
+            // Índices
+            $table->index('status');
+            $table->index(['comanda_id', 'status']);
+            $table->index(['appointment_id', 'status']);
+            $table->index('due_date');
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('payments');
+    }
+};

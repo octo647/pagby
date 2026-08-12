@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tabela padrão escura */
+[x-cloak] { display: none !important; }
+.tabela-escura table {
+    @apply w-full divide-y divide-gray-200 dark:divide-gray-700;
+}
+.tabela-escura thead{
+    @apply text-xs uppercase text-black bg-orange-500 dark:bg-gray-700 dark:text-gray-200;
+}
+.tabela-escura thead th {
+    @apply px-4 py-2;
+}
+.tabela-escura tbody tr {
+    @apply odd:bg-white odd:dark:bg-gray-800 even:bg-gray-300 even:dark:bg-gray-700 border-b dark:border-gray-700 border-gray-200;
+}
+.tabela-escura tbody td {
+    @apply px-4 py-2 text-gray-900 dark:text-gray-100;
+}
+.tabela-escura a {
+    @apply font-medium hover:underline text-blue-600 dark:text-blue-500 hover:text-blue-800 dark:hover:text-blue-400;
+}
+.tabela-escura select {
+    @apply rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400;
+    @apply focus:border-blue-500 dark:focus:border-blue-400;
+}
+.tabela-escura input[type="text"] {
+    @apply rounded-lg bg-orange-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400;
+    @apply focus:border-blue-500 dark:focus:border-blue-400;
+}
+.tabela-escura input[type="file"] {
+    @apply rounded-lg bg-orange-200 dark:bg-gray-600 text-gray-900 dark:text-gray-100 px-3 py-2;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400;
+    @apply focus:border-blue-500 dark:focus:border-blue-400;
+}
+.alerta {
+    @apply bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative;
+}
+.alerta-sucesso {
+    @apply bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative;
+}
+
+.alerta-aviso {
+    @apply bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative;
+}
+.alerta-info {
+    @apply bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative;
+}
+
+  .btn {
+    @apply font-bold py-2 px-4 rounded;
+  }
+  .btn-primary {
+    @apply bg-blue-500 text-white;
+  }
+  .btn-primary:hover {
+    @apply bg-blue-700;
+  }
+    .btn-danger {
+        @apply bg-red-500 text-white;
+    }
+    .btn-danger:hover {
+        @apply bg-red-700;
+    }
+/* Estilos para os botões de login social */
+.social-login {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 1.5rem 0;
+    color: #6b7280;
+    font-size: 0.875rem;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.divider::before {
+    margin-right: 0.5rem;
+}
+
+.divider::after {
+    margin-left: 0.5rem;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    margin: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    min-width: 200px;
+}
+
+.btn-google {
+    background-color: #ffffff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+}
+
+.btn-google:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn-facebook {
+    background-color: #1877f2;
+    color: #ffffff;
+}
+
+.btn-facebook:hover {
+    background-color: #166fe5;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.btn i {
+    margin-right: 0.75rem;
+    font-size: 1.125rem;
+}
+
+/* Container principal de login */
+.login-container {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #ffffff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 0.375rem;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+button[type="submit"]:hover {
+    background-color: #2563eb;
+}

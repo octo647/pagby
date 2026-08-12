@@ -1,0 +1,1 @@
+/var/www/pagby/resources/Templates/Barbearias/Amizade/home.blade.php

@@ -1,0 +1,390 @@
+<div>
+       
+    <div class="flex justify-end mb-4">
+        <button class="btn btn-primary" wire:click="createSalon">Novo Salão</button>   
+       
+       
+    </div>
+        
+    <table class="table-auto w-full mt-4">
+        <thead>
+            <tr class='bg-gray-100 text-left'>
+                <th></th>
+                <th>Nome</th>
+                <th>Plano</th>
+                <th>Cidade</th>
+
+                <th class="text-center">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php $__currentLoopData = $saloes; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $salon): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+            <tr wire:key="<?php echo e($index); ?>" class="bg-white border-b hover:bg-gray-50">
+                <td>
+                    <div class="flex w-16 items-center">
+                    <a href="<?php echo e('https://'.$salon['slug'].'.'.config('app.url')); ?>" target="_blank">
+                        <img src="<?php echo e(asset($salon['logo'])); ?>" alt="Logo">
+                    </div>
+                </td>
+                <td><?php echo e($salon['fantasy_name']); ?></td>
+                <?php if($salon['plan'] && $salon['status']): ?>
+                <td><?php echo e($salon['plan']); ?> - <?php echo e($salon['status']); ?></td>
+                <?php else: ?>
+                <td></td>
+                <?php endif; ?>
+                <?php if($salon['city'] && $salon['state']): ?>
+                <td><?php echo e($salon['city']); ?>, <?php echo e($salon['state']); ?></td>
+                <?php else: ?>
+                <td></td>
+                <?php endif; ?>
+                <td class="text-center">
+                    <button class="btn btn-primary" wire:click.prevent="editSalon(<?php echo e($index); ?>)">Editar</button>
+                    <button class="btn btn-danger" wire:click.prevent="deleteSalon('<?php echo e($salon['id']); ?>')">Apagar</button>
+                </td>
+            </tr>
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>                
+        </tbody>
+    </table>
+    
+    
+    
+    
+    <?php if($editedSalonIndex !== null): ?>
+        <div class="fixed top-0 right-0 w-full max-w-md h-full bg-white shadow-lg z-50 p-8 overflow-auto">
+            <h2 class="text-xl font-bold mb-4">Editar Salão</h2>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Logo</label>
+                <input type="file" class="w-full border rounded px-2 py-1" wire:model="logoFile" accept="image/png,image/jpeg,image/jpg">
+                <?php if($logoFile): ?>
+                    <div class="mt-2">
+                        <img src="<?php echo e($logoFile->temporaryUrl()); ?>" alt="Prévia da logo" class="h-16 w-auto rounded shadow">
+                    </div>
+                <?php elseif(!empty($saloes[$editedSalonIndex]['logo'])): ?>
+                    <div class="mt-2">
+                        <img src="/<?php echo e($saloes[$editedSalonIndex]['logo']); ?>" alt="Logo atual" class="h-16 w-auto rounded shadow">
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Tipo de Estabelecimento</label>
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.type">
+                    <option value="">Selecione...</option>
+                    <option value="Barbearia">Barbearia</option>
+                    <option value="SalaoBeleza">Salão de Beleza</option>
+                    <option value="Spa">Spa</option>
+                    <option value="Estetica">Clinica Estética</option>
+                    <option value="PetShop">PetShop</option>
+                    <option value="Veterinaria">Clínica Veterinária</option>
+                    
+                
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Slug</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.slug">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Nome Fantasia</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.fantasy_name">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Rua</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.address">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Número</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.number">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Complemento</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.complement">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Bairro</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.neighborhood">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">CEP</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.cep">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Cidade</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.city">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Estado</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.state">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Email</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.email">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Plano</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.plan">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Status</label>
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="saloes.<?php echo e($editedSalonIndex); ?>.status">
+                    <option selected value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button class="btn btn-success" wire:click.prevent="saveSalon(<?php echo e($editedSalonIndex); ?>)">Salvar</button>
+                <button class="btn btn-secondary" wire:click.prevent="$set('editedSalonIndex', null)">Cancelar</button>
+            </div>
+        </div>
+    <?php endif; ?>
+    
+     
+    <?php if($showCreateSalonPanel): ?>
+        <div class="fixed top-0 right-0 w-full max-w-md h-full bg-white shadow-lg z-50 p-8 overflow-auto">
+            <h2 class="text-xl font-bold mb-4">Criar Novo Salão</h2>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Selecionar Contato Existente</label>
+                <div class="flex items-center gap-2 mb-2">
+                    <button type="button" class="px-2 py-1 rounded bg-gray-200" wire:click="loadContacts(<?php echo e($contactsPage-1); ?>)" <?php if($contactsPage <= 1): ?> disabled <?php endif; ?>>&lt;</button>
+                    <span>Página <?php echo e($contactsPage); ?> de <?php echo e($contactsTotalPages); ?></span>
+                    <button type="button" class="px-2 py-1 rounded bg-gray-200" wire:click="loadContacts(<?php echo e($contactsPage+1); ?>)" <?php if($contactsPage >= $contactsTotalPages): ?> disabled <?php endif; ?>>&gt;</button>
+                </div>
+                <select class="w-full border rounded px-2 py-1 mb-2" wire:change="selectContact($event.target.value)">
+                    <option value="">Selecione um contato...</option>
+                    <?php $__currentLoopData = $contacts; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $contact): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                        <option value="<?php echo e($contact->id); ?>" <?php if($selectedContactId == $contact->id): ?> selected <?php endif; ?>>
+                            <?php echo e($contact->owner_name); ?> (<?php echo e($contact->email); ?>)
+                        </option>
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Logo</label>
+                <input type="file" class="w-full border rounded px-2 py-1" wire:model="logoFile" accept="image/png,image/jpeg,image/jpg">
+                <?php if($logoFile): ?>
+                    <div class="mt-2">
+                        <img src="<?php echo e($logoFile->temporaryUrl()); ?>" alt="Prévia da logo" class="h-16 w-auto rounded shadow">
+                    </div>
+                <?php endif; ?>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Tipo de Template</label>
+                <input type="text" class="w-full border rounded px-2 py-1 mb-2" wire:model="newSalon.type" placeholder="Ex: Barbearia, Salao de Beleza, etc." >
+                <label class="block font-semibold mb-1">Template</label>
+                <input type="text" class="w-full border rounded px-2 py-1 mb-2" wire:model="newSalon.template" placeholder="Ex: Moderna, Atual, etc." >
+                <div class="flex gap-2 items-center mt-2">
+                    <button type="button" class="btn btn-primary w-full" onclick="document.getElementById('templateModal').classList.remove('hidden')">Escolher Template</button>
+                </div>
+            </div>
+
+            <!-- Modal de seleção de template -->
+            <div id="templateModal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg shadow-lg p-6 max-w-3xl w-full relative flex flex-col" style="overflow:visible;">
+                    <button type="button" class="absolute top-2 right-2 text-gray-500 hover:text-gray-800 text-2xl font-bold" onclick="document.getElementById('templateModal').classList.add('hidden')">&times;</button>
+                    <h3 class="text-lg font-bold mb-4">Escolha um template</h3>
+                    <div class="flex items-center justify-center gap-4 flex-1" style="height:100%;">
+                        <button id="carouselPrev" type="button" class="text-2xl px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 z-10">&#8592;</button>
+                        <div id="carouselContainer" class="flex overflow-x-auto gap-6 w-full scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100" style="scroll-behavior: smooth; height:100%;">
+                            <?php $__currentLoopData = $templateList; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $template): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <div class="min-w-[180px] max-w-[200px] flex-shrink-0 cursor-pointer group" style="height:100%;" onclick="window.dispatchEvent(new CustomEvent('template-selected', { detail: '<?php echo e($template['name']); ?>' })); document.getElementById('templateModal').classList.add('hidden')">
+                                    <img src="<?php echo e($template['thumbnail']); ?>" alt="<?php echo e($template['name']); ?>" class="rounded shadow group-hover:scale-105 transition-transform h-32 w-full object-cover mb-2">
+                                    <div class="text-center font-semibold"><?php echo e($template['name']); ?></div>
+                                </div>
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
+                        </div>
+                        <button id="carouselNext" type="button" class="text-2xl px-2 py-1 bg-gray-200 rounded hover:bg-gray-300 z-10">&#8594;</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mb-4">
+                <!-- Campo ID removido, será preenchido automaticamente com o valor do slug -->
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Email</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.email">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Telefone</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.phone">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Instagram</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.instagram">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Facebook</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.facebook">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Nome</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.name">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Nome Fantasia
+                    <span class="ml-1 relative group">
+                        <svg class="w-4 h-4 text-blue-400 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="white"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" fill="currentColor">?</text>
+                        </svg>
+                        <span class="absolute left-6 top-0 z-10 hidden group-hover:block bg-blue-50 text-blue-900 text-xs rounded shadow-lg px-3 py-2 w-56">
+                            O nome fantasia é o nome comercial pelo qual o salão será conhecido pelos clientes. Pode ser diferente do nome legal.
+                        </span>
+                    </span>
+                </label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.fantasy_name">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">CNPJ</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.cnpj">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">slug
+                    <span class="ml-1 relative group">
+                        <svg class="w-4 h-4 text-blue-400 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="white"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" fill="currentColor">?</text>
+                        </svg>
+                        <span class="absolute left-6 top-0 z-10 hidden group-hover:block bg-blue-50 text-blue-900 text-xs rounded shadow-lg px-3 py-2 w-56">
+                            O slug é uma versão simplificada do nome, sem espaços ou acentos, usada para criar o endereço do salão no sistema (exemplo: "meu-salao").
+                        </span>
+                    </span>
+                </label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.slug">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">CEP</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.cep">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Rua, Av. etc.</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.address">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Número</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.number">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Complemento</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.complement">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Bairro</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.neighborhood">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Cidade</label>
+                <input type="text" class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.city">
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Estado</label>
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.state">
+                    <option value="">Selecione...</option>
+                    <option value="AC">AC</option>
+                    <option value="AL">AL</option>
+                    <option value="AP">AP</option>
+                    <option value="AM">AM</option>
+                    <option value="BA">BA</option>
+                    <option value="CE">CE</option>
+                    <option value="DF">DF</option>
+                    <option value="ES">ES</option>
+                    <option value="GO">GO</option>
+                    <option value="MA">MA</option>
+                    <option value="MT">MT</option>
+                    <option value="MS">MS</option>
+                    <option value="MG">MG</option>
+                    <option value="PA">PA</option>
+                    <option value="PB">PB</option>
+                    <option value="PR">PR</option>
+                    <option value="PE">PE</option>
+                    <option value="PI">PI</option>
+                    <option value="RJ">RJ</option>
+                    <option value="RN">RN</option>
+                    <option value="RS">RS</option>
+                    <option value="RO">RO</option>
+                    <option value="RR">RR</option>
+                    <option value="SC">SC</option>
+                    <option value="SP">SP</option>
+                    <option value="SE">SE</option>
+                    <option value="TO">TO</option>
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Plano</label>
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.plan">
+                    <option value="">Selecione...</option> 
+                    <option value="mensal">Mensal</option>                    
+                    <option value="trimestral">Trimestral</option>
+                    <option selected value="semestral">Semestral</option>
+                    <option value="anual">Anual</option>
+                   
+                    
+                </select>
+            </div>
+            <div class="mb-4">
+                <label class="block font-semibold mb-1">Status</label>
+                <select class="w-full border rounded px-2 py-1" wire:model.defer="newSalon.status">
+                    <option value="">Selecione...</option>
+                    <option selected value="Ativo">Ativo</option>
+                    <option value="Inativo">Inativo</option>
+                </select>
+            </div>
+
+            <div class="flex gap-2">
+                <button class="btn btn-success" wire:click.prevent="saveNewSalon">Criar</button>
+                <button class="btn btn-secondary" wire:click.prevent="$set('showCreateSalonPanel', false)">Cancelar</button>
+            </div>
+        </div>
+    <?php endif; ?>
+
+</div>
+
+<script>
+    document.addEventListener('livewire:salonLogoUpdated', () => {
+        window.location.reload();
+    });
+    // Integração segura com Livewire para seleção de template
+    window.addEventListener('template-selected', function(e) {
+        // Corrige seletor para atributos com dois-pontos
+        const el = document.querySelector('[wire\\:id]');
+        if (!el) return;
+        const wireId = el.getAttribute('wire:id');
+        if (window.Livewire && Livewire.find) {
+            const component = Livewire.find(wireId);
+            if (component) {
+                component.set('newSalon.template', e.detail);
+            }
+        } else if (window.livewire && window.livewire.find) {
+            // fallback para Livewire v2
+            const component = window.livewire.find(wireId);
+            if (component) {
+                component.set('newSalon.template', e.detail);
+            }
+        }
+    });
+
+    // Carrossel horizontal para templates (reativa após Livewire updates)
+    function attachCarouselListeners() {
+        setTimeout(function() {
+            const container = document.getElementById('carouselContainer');
+            const prevBtn = document.getElementById('carouselPrev');
+            const nextBtn = document.getElementById('carouselNext');
+            if (container && prevBtn && nextBtn) {
+                const scrollAmount = container.offsetWidth > 0 ? container.offsetWidth * 0.8 : 220;
+                prevBtn.onclick = function(e) {
+                    e.preventDefault();
+                    container.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+                };
+                nextBtn.onclick = function(e) {
+                    e.preventDefault();
+                    container.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+                };
+            }
+        }, 150); // Pequeno delay para garantir que DOM foi atualizado
+    }
+    document.addEventListener('DOMContentLoaded', attachCarouselListeners);
+    document.addEventListener('livewire:load', function() {
+        window.Livewire.hook('message.processed', function() {
+            attachCarouselListeners();
+        });
+    });
+</script><?php /**PATH /var/www/pagby/resources/views/livewire/admin/saloes.blade.php ENDPATH**/ ?>

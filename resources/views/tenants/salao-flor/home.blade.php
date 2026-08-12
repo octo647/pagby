@@ -1,0 +1,1 @@
+/var/www/pagby/resources/Templates/Salões/Moderno/home.blade.php

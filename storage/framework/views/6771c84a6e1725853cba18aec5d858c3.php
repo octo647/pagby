@@ -1,0 +1,81 @@
+<div class="bg-white overflow-hidden shadow-sm rounded-lg">
+    <div class="p-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <svg class="h-8 w-8 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                
+                <div>
+                    <h3 class="text-lg font-semibold text-gray-900">Status da Assinatura</h3>
+                    <div class="flex items-center mt-1">
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium <?php echo e($statusColor); ?>">
+                            <?php echo e($statusMessage); ?>
+
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-right">
+                <?php if($tenant && ($tenant->isInTrial() || $tenant->hasActiveSubscription())): ?>
+                    <div class="text-2xl font-bold text-gray-900"><?php echo e($daysRemaining); ?></div>
+                    <div class="text-sm text-gray-500">dias restantes</div>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <?php if($tenant): ?>
+            <div class="mt-4 pt-4 border-t border-gray-200">
+                <?php if($tenant->isInTrial()): ?>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">
+                                Período de teste válido até: <strong><?php echo e($tenant->trial_ends_at->format('d/m/Y H:i')); ?></strong>
+                            </p>
+                            <?php if($daysRemaining <= 7): ?>
+                                <p class="text-sm text-red-600 mt-1">
+                                    ⚠️ Seu período de teste está acabando! Escolha um plano para continuar.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        <a href="<?php echo e(route('tenant.subscription.plans')); ?>" 
+                           class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium rounded-lg transition duration-200">
+                            Ver Planos
+                        </a>
+                    </div>
+                <?php elseif($tenant->hasActiveSubscription()): ?>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">
+                                Plano <strong><?php echo e($tenant->current_plan); ?></strong> válido até: <strong><?php echo e($tenant->subscription_ends_at->format('d/m/Y H:i')); ?></strong>
+                            </p>
+                            <?php if($daysRemaining <= 7): ?>
+                                <p class="text-sm text-orange-600 mt-1">
+                                    ⚠️ Sua assinatura está prestes a expirar. Renove para continuar usando a plataforma.
+                                </p>
+                            <?php endif; ?>
+                        </div>
+                        <a href="<?php echo e(route('tenant.subscription.plans')); ?>" 
+                           class="inline-flex items-center px-4 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-medium rounded-lg transition duration-200">
+                            Gerenciar
+                        </a>
+                    </div>
+                <?php else: ?>
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-red-600">
+                                Sua assinatura expirou. Escolha um plano para reativar seu acesso.
+                            </p>
+                        </div>
+                        <a href="<?php echo e(route('tenant.subscription.plans')); ?>" 
+                           class="inline-flex items-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition duration-200">
+                            Escolher Plano
+                        </a>
+                    </div>
+                <?php endif; ?>
+            </div>
+        <?php endif; ?>
+    </div>
+</div>
+<?php /**PATH /var/www/pagby/resources/views/livewire/subscription-status.blade.php ENDPATH**/ ?>

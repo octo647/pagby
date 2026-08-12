@@ -1,0 +1,134 @@
+<?php
+
+namespace App\Livewire\Proprietario;
+
+use Livewire\Component;
+use App\Models\Branch;
+
+
+class Filiais extends Component
+{
+   public $branches = [];
+   public $branch = [
+       'branch_name' => '',
+       'address' => '',
+       'phone' => '',
+       'email' => '',
+       'cnpj' => '',
+       'whatsapp' => '',
+       'city' => '',
+       'state' => '',
+       'complement' => '',
+       'require_advance_payment' => false,
+       'require_commission' => false,
+       'commission' => 0
+   ];
+
+   public $isEditing = false;
+   public $showForm = false;
+
+
+   public function mount()
+   {
+       $this->loadBranches();
+   }
+
+   public function loadBranches()
+   {
+       $this->branches = \App\Models\Branch::all();
+       
+      
+   }
+
+    public function edit($id)
+    {
+     $branch = \App\Models\Branch::find($id);
+     $branchArray = $branch->toArray();
+     // Cast boolean fields for Livewire checkboxes
+     $branchArray['require_advance_payment'] = (bool) $branchArray['require_advance_payment'];
+     // Se houver valor de comissão, marcar o checkbox
+     $branchArray['require_commission'] = (isset($branchArray['commission']) && $branchArray['commission'] > 0) ? true : false;
+     $this->branch = $branchArray;
+     $this->isEditing = true;
+     $this->showForm = true;
+    }
+
+   public function save()
+   {
+       $this->validate([
+           'branch.branch_name' => 'required|string|max:255',
+           'branch.address' => 'nullable|string|max:255',
+           'branch.phone' => 'nullable|string|max:20',
+           'branch.email' => 'nullable|email|max:255',
+           'branch.cnpj' => 'nullable|string|max:18',
+           'branch.whatsapp' => 'nullable|string|max:20',
+           'branch.city' => 'nullable|string|max:255',
+           'branch.state' => 'nullable|string|max:255',
+           'branch.complement' => 'nullable|string|max:255',
+       ]);
+
+       // Normaliza comissão: aceita vírgula e converte para ponto
+       if (isset($this->branch['commission'])) {
+           $this->branch['commission'] = str_replace(',', '.', $this->branch['commission']);
+       }
+
+       if ($this->isEditing) {
+           $branch = \App\Models\Branch::find($this->branch['id']);
+           $branch->update($this->branch);
+           session()->flash('message', 'Filial atualizada com sucesso!');
+       } else {
+           \App\Models\Branch::create($this->branch);
+           session()->flash('message', 'Filial criada com sucesso!');
+       }
+       
+       $this->resetForm();
+       $this->showForm = false;
+       $this->loadBranches();
+   }
+
+   public function delete($id)
+   {
+       \App\Models\Branch::destroy($id);
+       session()->flash('message', 'Filial excluída com sucesso!');
+       $this->resetForm();
+       $this->loadBranches();
+   }
+
+   public function resetForm()
+   {
+       $this->branch = [
+           'branch_name' => '',
+           'address' => '',
+           'phone' => '',
+           'email' => '',
+           'cnpj' => '',
+           'whatsapp' => '',
+           'city' => '',
+           'state' => '',
+           'complement' => '',
+           'require_advance_payment' => false,
+           // Se comissão for preenchida, marcar o checkbox
+           'require_commission' => false,
+           'commission' => 0
+       ];
+       $this->isEditing = false;
+   }
+   public function updated($propertyName)
+   {
+       // Se o valor da comissão for preenchido, marcar o checkbox automaticamente
+       if ($propertyName === 'branch.commission') {
+           $this->branch['require_commission'] = !empty($this->branch['commission']) && $this->branch['commission'] > 0 ? true : false;
+       }
+   }
+
+   public function cancelForm()
+   {
+       $this->resetForm();
+       $this->showForm = false;
+   }
+
+   public function render()
+   {
+       return view('livewire.proprietario.filiais');
+   }
+}

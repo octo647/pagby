@@ -1,0 +1,1 @@
+<?php namespace App\Livewire\Proprietario; use Livewire\Component; use Livewire\Attributes\Layout; #[Layout("layouts.app")] class PublicBookingStatsTest extends Component { public function render() { return view("livewire.proprietario.public-booking-stats-test"); } }
