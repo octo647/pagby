@@ -17,6 +17,7 @@ class Comanda extends Model
         'branch_id',
         'appointment_id',
         'numero_comanda',
+        'client_id',
         'cliente_nome',
         'cliente_telefone',
         'funcionario_id',
@@ -54,7 +55,7 @@ class Comanda extends Model
 
     public function cliente(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'cliente_id');
+        return $this->belongsTo(User::class, 'client_id');
     }
 
     public function comandaServicos(): HasMany
@@ -172,6 +173,9 @@ class Comanda extends Model
 
     public function cancelar(): void
     {
+        // Restaurar recompensas que foram usadas nesta comanda
+        FidelidadeReward::restaurarPorComanda($this->id);
+        
         $this->update([
             'status' => 'Cancelada',
             'data_fechamento' => now()
@@ -217,6 +221,7 @@ class Comanda extends Model
             'branch_id' => $appointment->branch_id,
             'appointment_id' => $appointment->id,
             'numero_comanda' => self::gerarNumeroComanda($appointment->branch_id),
+            'client_id' => $appointment->customer_id,
             'cliente_nome' => $appointment->customer->name,
             'cliente_telefone' => $appointment->customer->phone ?? $appointment->customer->telefone ?? null,
             'funcionario_id' => $appointment->employee_id,

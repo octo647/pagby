@@ -287,6 +287,34 @@ Route::get('/plans', function () {
         })->middleware(['auth', 'verified'])
             ->name('onboarding');
 
+        // SISTEMA DE PRODUTOS E FIDELIZAÇÃO
+        
+        // Proprietário: Gerenciar produtos recomendados por serviço
+        Route::middleware(['role:Proprietário'])->prefix('proprietario')->group(function () {
+            Route::get('/servicos/{service}/produtos', function($serviceId) {
+                return view('proprietario.produtos-servicos', [
+                    'serviceId' => $serviceId
+                ]);
+            })->name('proprietario.service.produtos');
+
+            // Dashboard de Fidelização
+            Route::get('/fidelidade', \App\Livewire\Proprietario\DashboardFidelidade::class)
+                ->name('proprietario.fidelidade');
+        });
+
+        // Cliente: Ver recompensas de fidelidade
+        Route::middleware(['role:Cliente'])->prefix('cliente')->group(function () {
+            Route::get('/recompensas', function() {
+                $recompensas = \App\Models\FidelidadeReward::where('user_id', auth()->id())
+                    ->ativos()
+                    ->orderBy('validade')
+                    ->get();
+                
+                $saldoCreditos = \App\Models\FidelidadeReward::saldoCreditosCliente(auth()->id());
+                
+                return view('cliente.recompensas', compact('recompensas', 'saldoCreditos'));
+            })->name('cliente.recompensas');
+        });
 
         Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])->name('logout');                    
     });

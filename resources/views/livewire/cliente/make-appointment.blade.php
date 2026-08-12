@@ -108,6 +108,52 @@
                 </div>
             @enderror
 
+            {{-- Banner Informativo de Recompensas Disponíveis --}}
+            @auth
+                @if(!empty($recompensasDisponiveis))
+                    <div class="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-5 border-2 border-purple-200 shadow-md">
+                        <div class="flex items-start gap-3">
+                            <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-full p-2 flex-shrink-0">
+                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-lg font-bold text-gray-800 mb-2">
+                                    🎉 Você tem {{ count($recompensasDisponiveis) }} recompensa(s) disponível(is)!
+                                </h3>
+                                <div class="space-y-2">
+                                    @foreach($recompensasDisponiveis as $recompensa)
+                                        <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-purple-200">
+                                            <div class="flex items-center gap-3">
+                                                <span class="text-2xl">💰</span>
+                                                <div>
+                                                    <p class="font-bold text-green-600 text-lg">
+                                                        R$ {{ number_format($recompensa['valor_credito'], 2, ',', '.') }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-600">
+                                                        Válido até: {{ $recompensa['validade'] }}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            @if($recompensa['dias_restantes'] <= 7)
+                                                <span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                                    ⏰ {{ $recompensa['dias_restantes'] }} {{ $recompensa['dias_restantes'] == 1 ? 'dia' : 'dias' }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+                                <p class="text-sm text-purple-700 mt-3 font-medium">
+                                    💡 Você poderá selecionar qual recompensa usar após escolher o horário do agendamento
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            @endauth
+
             {{-- Seção de Seleção de Dias --}}
             <div class="bg-white rounded-2xl shadow-lg p-8 mb-8">
                 <div class="text-center mb-8">
@@ -224,7 +270,152 @@
             @endif
             
             {{-- Confirmação do Horário --}}
-            @if(isset($selected_time))
+            @if(isset($selected_time) && $selected_time)
+                {{-- Recompensas Interativas (inline - sem componente filho) --}}
+                @auth
+                    @if(!empty($recompensasAtivasCompletas))
+                        <div class="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl p-6 border-2 border-purple-200 shadow-lg">
+                            {{-- Header --}}
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="bg-gradient-to-br from-purple-600 to-pink-600 rounded-full p-3">
+                                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                                <div class="flex-1">
+                                    <h3 class="text-xl font-bold text-gray-800">
+                                        🎉 Suas Recompensas Ativas
+                                    </h3>
+                                    <p class="text-sm text-gray-600">
+                                        Você tem {{ count($recompensasAtivasCompletas) }} recompensa(s) disponível(is). Clique para usar!
+                                    </p>
+                                </div>
+                            </div>
+
+                            {{-- Lista de Recompensas --}}
+                            <div class="space-y-3">
+                                @foreach($recompensasAtivasCompletas as $index => $recompensa)
+                                    <div wire:click="toggleRecompensa({{ $recompensa['id'] }})" 
+                                         class="cursor-pointer transition-all duration-200 
+                                                {{ in_array($recompensa['id'], $recompensasSelecionadas)
+                                                    ? 'bg-white border-purple-500 shadow-lg scale-[1.02] ring-2 ring-purple-300' 
+                                                    : 'bg-white border-gray-200 hover:border-purple-300 hover:shadow-md' }}
+                                                border-2 rounded-lg p-4">
+                                        
+                                        <div class="flex items-start justify-between">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-2 mb-2">
+                                                    {{-- Checkbox Visual --}}
+                                                    <div class="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center
+                                                                {{ in_array($recompensa['id'], $recompensasSelecionadas)
+                                                                    ? 'bg-purple-600 border-purple-600' 
+                                                                    : 'bg-white border-gray-300' }}">
+                                                        @if(in_array($recompensa['id'], $recompensasSelecionadas))
+                                                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/>
+                                                            </svg>
+                                                        @endif
+                                                    </div>
+
+                                                    {{-- Badge Crédito --}}
+                                                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border bg-green-100 text-green-800 border-green-300">
+                                                        💰 Crédito
+                                                    </span>
+
+                                                    {{-- Alerta de Validade --}}
+                                                    @if($recompensa['dias_restantes'] <= 7)
+                                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold">
+                                                            ⏰ Você tem {{ $recompensa['dias_restantes'] }} {{ $recompensa['dias_restantes'] == 1 ? 'dia' : 'dias' }} para aproveitar
+                                                        </span>
+                                                    @endif
+                                                    
+                                                    {{-- Badge de Prioridade --}}
+                                                    @if($index === 0)
+                                                        <span class="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 text-orange-700 rounded-full text-xs font-semibold border border-orange-300">
+                                                            🔥 Será usada primeiro
+                                                        </span>
+                                                    @endif
+                                                </div>
+
+                                                <div class="ml-8">
+                                                    <p class="text-2xl font-bold text-green-600">
+                                                        R$ {{ number_format($recompensa['valor_credito'], 2, ',', '.') }}
+                                                    </p>
+                                                    <p class="text-sm text-gray-600">
+                                                        Use este crédito para pagar ou ter desconto em serviços
+                                                    </p>
+
+                                                    <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                                                        <span>📅 Válido até: {{ $recompensa['validade'] }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- Indicador de Seleção --}}
+                                            @if(in_array($recompensa['id'], $recompensasSelecionadas))
+                                                <div class="ml-4 flex-shrink-0">
+                                                    <div class="bg-purple-100 rounded-full px-3 py-1">
+                                                        <span class="text-purple-700 font-semibold text-sm">✓ Selecionada</span>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            {{-- Resumo de Seleção --}}
+                            @if(count($recompensasSelecionadas) > 0)
+                                @php
+                                    $totalDesconto = collect($recompensasAtivasCompletas)
+                                        ->whereIn('id', $recompensasSelecionadas)
+                                        ->where('tipo', 'credito')
+                                        ->sum('valor_credito');
+                                @endphp
+                                <div class="mt-4 bg-gradient-to-r from-green-100 to-emerald-100 border-2 border-green-400 p-4 rounded-lg shadow-md">
+                                    <div class="flex items-center justify-between">
+                                        <div>
+                                            <p class="text-sm text-green-800 font-medium">
+                                                ✅ {{ count($recompensasSelecionadas) }} recompensa(s) selecionada(s)
+                                            </p>
+                                            <p class="text-xs text-green-700 mt-1">
+                                                🔥 Serão aplicadas por ordem de validade (as que expiram primeiro)
+                                            </p>
+                                        </div>
+                                        <div class="text-right">
+                                            <p class="text-sm text-green-700 font-medium">Total de desconto:</p>
+                                            <p class="text-2xl font-bold text-green-600">
+                                                R$ {{ number_format($totalDesconto, 2, ',', '.') }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="mt-4 bg-purple-100 border-l-4 border-purple-500 p-3 rounded">
+                                    <p class="text-sm text-purple-800">
+                                        <strong>💡 Dica:</strong> Você pode selecionar múltiplas recompensas! 
+                                        Os descontos serão somados e aplicados automaticamente ao confirmar.
+                                    </p>
+                                </div>
+                            @endif
+                        </div>
+                    @endif
+                @endauth
+
+                {{-- Sugestões de Produtos --}}
+                @if($ch_professional && !empty($ch_services))
+                    <div wire:key="produtos-wrapper-{{ $selected_time }}" class="mb-6">
+                        @livewire('cliente.sugestoes-produtos', [
+                            'serviceId' => $ch_services[0] ?? null,
+                            'branchId' => $ch_professional->branches->first()?->id ?? null,
+                        ], key('sugestoes-produtos-' . ($ch_services[0] ?? 'default') . '-' . str_replace(':', '', $selected_time)))
+                    </div>
+                @endif
+            @endif
+            
+            @if(isset($selected_time) && $selected_time)
+
                 <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl border border-green-200 p-8 text-center">
                     <div class="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
                         <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,9 +423,38 @@
                         </svg>
                     </div>
                     <h3 class="text-xl font-bold text-gray-900 mb-2">Horário Selecionado</h3>
-                    <p class="text-gray-600 mb-6">
+                    <p class="text-gray-600 mb-2">
                         {{ \Carbon\Carbon::parse($selected_day)->format('d/m/Y') }} às {{ $selected_time }}
                     </p>
+                    
+                    {{-- Resumo do agendamento --}}
+                    @if($ch_professional && !empty($ch_services))
+                        <div class="bg-white rounded-lg p-4 mb-6 border border-green-100">
+                            <div class="text-sm text-gray-600 space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="font-semibold">Profissional:</span>
+                                    <span>{{ $ch_professional->name }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="font-semibold">Serviço(s):</span>
+                                    <span>{{ count($ch_services) }} selecionado(s)</span>
+                                </div>
+                                @if(count($produtosSelecionados ?? []) > 0)
+                                    <div class="flex justify-between text-blue-600">
+                                        <span class="font-semibold">Produtos:</span>
+                                        <span>{{ count($produtosSelecionados) }} selecionado(s)</span>
+                                    </div>
+                                @endif
+                                @if(!empty($recompensasSelecionadas))
+                                    <div class="flex justify-between text-purple-600">
+                                        <span class="font-semibold">Recompensas:</span>
+                                        <span>{{ count($recompensasSelecionadas) }} aplicada(s)</span>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                    
                     <button 
                         wire:click="confirmTime" 
                         class="inline-flex items-center px-8 py-4 border border-transparent text-lg font-medium rounded-xl text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 transform hover:scale-105 shadow-lg hover:shadow-xl"
@@ -242,7 +462,7 @@
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        Confirmar Horário
+                        Confirmar Agendamento
                     </button>
                 </div>
             @endif

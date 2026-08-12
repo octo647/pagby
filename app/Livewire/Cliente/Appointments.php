@@ -82,6 +82,15 @@ class Appointments extends Component
     {
         $schedule = Appointment::find($schedule_id);
         if ($schedule) {
+            // Restaurar/cancelar recompensas antes de deletar a comanda
+            $comanda = \App\Models\Comanda::where('appointment_id', $schedule_id)->first();
+            if ($comanda) {
+                // Restaurar recompensas usadas (descontos aplicados)
+                \App\Models\FidelidadeReward::restaurarPorComanda($comanda->id);
+                // Cancelar recompensas geradas por produtos (venda cancelada)
+                \App\Models\FidelidadeReward::cancelarRecompensasGeradasPorComanda($comanda->id);
+            }
+            
             $schedule->status = 'Cancelado';
             $schedule->save();
             \App\Models\Comanda::where('appointment_id', $schedule_id)->delete();

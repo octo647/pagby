@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'checkTenantSubscription' => \App\Http\Middleware\CheckTenantSubscription::class,
             'scopeSessions' => \Stancl\Tenancy\Middleware\ScopeSessions::class,
             'handleSessionErrors' => \App\Http\Middleware\HandleSessionErrors::class,
+            'role' => \App\Http\Middleware\CheckRole::class,
         ]);
         $middleware->validateCsrfTokens(except: [
             'stripe/*',
@@ -60,6 +61,18 @@ return Application::configure(basePath: dirname(__DIR__))
                  ->hourly()
                  ->between('8:00', '20:00')
                  ->timezone('America/Sao_Paulo');
+        
+        // Sistema de Fidelização - Expirar recompensas vencidas (diariamente às 2h)
+        $schedule->command('fidelidade:expirar-recompensas')
+                 ->dailyAt('02:00')
+                 ->timezone('America/Sao_Paulo')
+                 ->withoutOverlapping();
+        
+        // Sistema de Fidelização - Notificar recompensas expirando (diariamente às 9h)
+        $schedule->command('fidelidade:notificar-expirando --dias=7')
+                 ->dailyAt('09:00')
+                 ->timezone('America/Sao_Paulo')
+                 ->withoutOverlapping();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

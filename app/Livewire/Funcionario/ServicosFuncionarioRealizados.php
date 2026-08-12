@@ -62,6 +62,19 @@ class ServicosFuncionarioRealizados extends Component
                 $servico->cancellation_by = Auth::id(); // Define o usuário que cancelou
                 $servico->cancellation_date = now(); // Define a data de cancelamento
 
+                // Restaurar/cancelar recompensas antes de cancelar
+                $comanda = \App\Models\Comanda::where('appointment_id', $id)->first();
+                if ($comanda) {
+                    // Restaurar recompensas usadas (descontos aplicados)
+                    \App\Models\FidelidadeReward::restaurarPorComanda($comanda->id);
+                    // Cancelar recompensas geradas por produtos (venda cancelada)
+                    \App\Models\FidelidadeReward::cancelarRecompensasGeradasPorComanda($comanda->id);
+                    \Log::info('Recompensas processadas ao cancelar agendamento', [
+                        'appointment_id' => $id,
+                        'comanda_id' => $comanda->id,
+                        'cancelado_por' => Auth::user()->name,
+                    ]);
+                }
             } else {
                 $servico->cancellation_reason = null; // Limpa o motivo de cancelamento se não for cancelado
             }

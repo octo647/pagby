@@ -40,6 +40,7 @@
             </div>
           
             <a href="#planos" 
+               onclick="fbq('track', 'Lead', {content_name: 'Hero CTA', content_category: 'Landing Page'});"
                class="inline-block bg-gradient-to-r from-pink-600 to-indigo-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:from-pink-700 hover:to-indigo-700 transition mb-8 pulse-animation">
                 Testar Grátis Agora
             </a>  
@@ -61,9 +62,102 @@
             </div>
         <span class="inline-block mt-4 text-yellow-300 font-bold text-xl">✨ Sem compromisso • Sem cartão de crédito • Acesso imediato</span>
 
+        <!-- 🆕 NOVA SEÇÃO: SISTEMA DE FIDELIDADE -->
+        <div class="fade-in mt-20 max-w-6xl w-full">
+            <div class="bg-gradient-to-br from-yellow-900/40 via-orange-900/40 to-red-900/40 border-4 border-yellow-400 rounded-3xl p-8 md:p-12 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl"></div>
+                <div class="absolute bottom-0 left-0 w-64 h-64 bg-orange-400/10 rounded-full blur-3xl"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-center mb-8">
+                        <span class="inline-block bg-gradient-to-r from-yellow-400 to-orange-400 text-gray-900 px-6 py-2 rounded-full font-bold text-lg mb-4 animate-pulse">
+                            🆕 NOVIDADE EXCLUSIVA
+                        </span>
+                        <h2 class="text-3xl md:text-5xl font-extrabold text-white mb-4">
+                            Sistema de Fidelidade Automático
+                        </h2>
+                        <p class="text-xl text-white/90 max-w-3xl mx-auto">
+                            Seus clientes ganham descontos automaticamente ao comprar produtos e você 
+                            <span class="text-yellow-300 font-bold">aumenta seu ticket médio em até 35%</span>
+                        </p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border-2 border-yellow-400/30 hover:scale-105 transition-transform">
+                            <div class="text-5xl mb-4 text-center">🎁</div>
+                            <h4 class="text-xl font-bold text-yellow-300 mb-3 text-center">Recompensas Automáticas</h4>
+                            <p class="text-white/90 text-center">
+                                Cliente compra produto e ganha <strong>15-25% de desconto</strong> para próxima visita. 
+                                Tudo automático pelo sistema!
+                            </p>
+                        </div>
+
+                        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border-2 border-yellow-400/30 hover:scale-105 transition-transform">
+                            <div class="text-5xl mb-4 text-center">💰</div>
+                            <h4 class="text-xl font-bold text-yellow-300 mb-3 text-center">Venda Mais Produtos</h4>
+                            <p class="text-white/90 text-center">
+                                Clientes compram mais sabendo que ganharão desconto. 
+                                <strong>Ticket médio aumenta 35%!</strong>
+                            </p>
+                        </div>
+
+                        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border-2 border-yellow-400/30 hover:scale-105 transition-transform">
+                            <div class="text-5xl mb-4 text-center">🔄</div>
+                            <h4 class="text-xl font-bold text-yellow-300 mb-3 text-center">Clientes Voltam Mais</h4>
+                            <p class="text-white/90 text-center">
+                                Com desconto na mão, cliente <strong>retorna 2x mais rápido</strong> 
+                                e ainda traz amigos!
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gradient-to-r from-green-900/50 to-emerald-900/50 border-2 border-green-400 rounded-2xl p-6 mb-6">
+                        <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                            <div class="flex-1">
+                                <h4 class="text-2xl font-bold text-white mb-3">
+                                    📊 Exemplo Real: Salão com 5 funcionários
+                                </h4>
+                                <div class="space-y-2 text-white/90">
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-green-400">✓</span>
+                                        <span>Venda média de produtos: R$ 150/dia = <strong>R$ 4.500/mês</strong></span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-green-400">✓</span>
+                                        <span>Com fidelidade: <strong class="text-yellow-300">+35% = R$ 6.075/mês</strong></span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-yellow-300 text-xl">💎</span>
+                                        <span class="font-bold text-xl text-yellow-300">
+                                            = R$ 1.575/mês a mais no faturamento!
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-yellow-400 text-gray-900 rounded-2xl p-6 text-center min-w-[200px]">
+                                <div class="text-sm font-semibold mb-1">Lucro Extra/Ano</div>
+                                <div class="text-4xl font-extrabold">R$ 18.900</div>
+                                <div class="text-xs mt-2">só com fidelidade!</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <a href="#planos" 
+                           class="inline-block bg-gradient-to-r from-yellow-400 to-orange-500 text-gray-900 px-10 py-5 rounded-full text-xl font-extrabold shadow-2xl hover:from-yellow-300 hover:to-orange-400 transition transform hover:scale-110">
+                            🚀 Quero Aumentar Meu Faturamento Agora
+                        </a>
+                        <p class="text-white/70 text-sm mt-4">
+                            ⚡ Sistema de fidelidade incluído em todos os planos • Configuração em 2 minutos
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Seção de Benefícios Rápidos -->
         <div class="fade-in mt-12 max-w-5xl w-full">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-center hover:scale-105 transition-transform">
                     <div class="text-5xl mb-4">⏰</div>
                     <h4 class="text-xl font-bold text-white mb-2">Economize 10h/semana</h4>
@@ -73,6 +167,12 @@
                     <div class="text-5xl mb-4">📈</div>
                     <h4 class="text-xl font-bold text-white mb-2">Reduza faltas em 70%</h4>
                     <p class="text-white/80">Lembretes automáticos garantem que seus clientes apareçam</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-center hover:scale-105 transition-transform border-2 border-yellow-400">
+                    <div class="text-5xl mb-4">🎁</div>
+                    <h4 class="text-xl font-bold text-yellow-300 mb-2">Sistema de Fidelidade</h4>
+                    <p class="text-white/80">Aumente vendas em 35% com recompensas automáticas</p>
+                    <span class="inline-block bg-yellow-400 text-gray-900 text-xs font-bold px-2 py-1 rounded-full mt-2">NOVO!</span>
                 </div>
                 <div class="bg-white/10 backdrop-blur rounded-2xl p-6 text-center hover:scale-105 transition-transform">
                     <div class="text-5xl mb-4">💰</div>
@@ -158,12 +258,53 @@
             
             <div class="text-center mt-8">
                 <a href="#planos" 
+                   onclick="fbq('track', 'Lead', {content_name: 'Comparison CTA', content_category: 'Landing Page'});"
                    class="inline-block bg-gradient-to-r from-green-600 to-emerald-600 text-white px-8 py-4 rounded-full text-lg font-bold shadow-lg hover:from-green-700 hover:to-emerald-700 transition">
                     Testar grátis agora →
                 </a>
             </div>
         </div>
         
+        <!-- Seção de Métricas de Impacto -->
+        <div class="fade-in mt-20 max-w-6xl w-full">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">
+                    O Impacto de um Sistema Profissional de Gestão
+                </h2>
+                <p class="text-xl text-white/80">
+                    Baseado em estudos do setor de beleza e bem-estar
+                </p>
+            </div>
+
+            <!-- Métricas de Impacto -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                <div class="bg-gradient-to-br from-green-900/40 to-emerald-900/40 border-2 border-green-500/30 rounded-2xl p-8 text-center hover:scale-105 transition-transform">
+                    <div class="text-6xl font-bold text-green-400 mb-2">+35%</div>
+                    <div class="text-xl font-semibold text-white mb-2">Potencial de Aumento</div>
+                    <p class="text-white/70">Programas de fidelidade aumentam ticket médio em salões*</p>
+                </div>
+                
+                <div class="bg-gradient-to-br from-blue-900/40 to-cyan-900/40 border-2 border-blue-500/30 rounded-2xl p-8 text-center hover:scale-105 transition-transform">
+                    <div class="text-6xl font-bold text-blue-400 mb-2">70%</div>
+                    <div class="text-xl font-semibold text-white mb-2">Redução de Faltas</div>
+                    <p class="text-white/70">Lembretes automáticos comprovadamente diminuem no-shows*</p>
+                </div>
+                
+                <div class="bg-gradient-to-br from-purple-900/40 to-pink-900/40 border-2 border-purple-500/30 rounded-2xl p-8 text-center hover:scale-105 transition-transform">
+                    <div class="text-6xl font-bold text-purple-400 mb-2">10h</div>
+                    <div class="text-xl font-semibold text-white mb-2">Tempo Economizado</div>
+                    <p class="text-white/70">Por semana com automação de agendamentos*</p>
+                </div>
+            </div>
+
+            <div class="text-center">
+                <p class="text-white/50 text-xs mb-6 italic">* Dados baseados em pesquisas do setor de beleza e bem-estar</p>
+                <a href="#planos" 
+                   class="inline-block bg-gradient-to-r from-pink-600 to-purple-600 text-white px-10 py-4 rounded-full text-lg font-bold shadow-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105">
+                    🚀 Começar Meu Teste Grátis
+                </a>
+            </div>
+        </div>
         
         
         <!-- Features Section -->
@@ -914,6 +1055,16 @@
     function selecionarPlano(periodicidade) {
         const numFuncionarios = parseInt(document.getElementById('numFuncionarios').value) || 1;
         
+        // Rastrear tentativa de início de checkout
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'InitiateCheckout', {
+                content_name: `Plano ${periodicidade}`,
+                content_category: 'Subscription Plan',
+                value: numFuncionarios,
+                currency: 'BRL'
+            });
+        }
+        
         // Só permite se até 7 funcionários
         /*if (numFuncionarios > 7) {
             document.getElementById('avisoFuncionarios').classList.remove('hidden');
@@ -923,6 +1074,46 @@
         
         const url = `/register-tenant?plan=${encodeURIComponent(periodicidade)}&employees=${numFuncionarios}`;
         window.location.href = url;
+    }
+    
+    // Rastreamento de visualização de seções importantes com Meta Pixel
+    if (typeof fbq !== 'undefined') {
+        const sectionsToTrack = [
+            { selector: '.fade-in:has(h2:contains("Sistema de Fidelidade"))', event: 'ViewContent', name: 'Fidelity System Section' },
+            { selector: '#planos', event: 'ViewContent', name: 'Pricing Section' }
+        ];
+        
+        const sectionObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting && !entry.target.dataset.tracked) {
+                    const sectionName = entry.target.dataset.trackName;
+                    const eventType = entry.target.dataset.trackEvent;
+                    
+                    fbq('track', eventType, {
+                        content_name: sectionName,
+                        content_category: 'Page Section'
+                    });
+                    
+                    entry.target.dataset.tracked = 'true';
+                }
+            });
+        }, { threshold: 0.5 });
+        
+        // Rastrear seção de fidelidade
+        const fidelidadeSection = document.querySelector('.fade-in.mt-20.max-w-6xl.w-full');
+        if (fidelidadeSection && fidelidadeSection.textContent.includes('Sistema de Fidelidade')) {
+            fidelidadeSection.dataset.trackName = 'Fidelity System Section';
+            fidelidadeSection.dataset.trackEvent = 'ViewContent';
+            sectionObserver.observe(fidelidadeSection);
+        }
+        
+        // Rastrear seção de planos
+        const planosSection = document.getElementById('planos');
+        if (planosSection) {
+            planosSection.dataset.trackName = 'Pricing Section';
+            planosSection.dataset.trackEvent = 'ViewContent';
+            sectionObserver.observe(planosSection);
+        }
     }
     
     // Menu Mobile

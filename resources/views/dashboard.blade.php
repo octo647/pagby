@@ -33,6 +33,7 @@
                     'clientes-novos-antigos' => 'Clientes Novos e Antigos',
                     'gerenciar-estoque' => 'Controle de Estoque',
                     'gerenciar-comandas' => 'Controle de Comandas',
+                    'dashboard-fidelidade' => 'Fidelidade & Produtos',
                     'link-agendamento' => 'Link de Agendamento para Redes Sociais',
                     'controle-pagamento' => 'Controle de Pagamento',
                     'controle-pagamento-planos' => 'Pagamento dos Planos',
@@ -68,6 +69,7 @@
                     'clientes-novos-antigos' => 'Analise a proporção de clientes novos e antigos',
                     'gerenciar-estoque' => 'Controle o estoque de produtos do seu salão',
                     'gerenciar-comandas' => '',
+                    'dashboard-fidelidade' => 'Gerencie vínculos de produtos com serviços e rewards de fidelidade',
                     'link-agendamento' => '',
                     'controle-pagamento' => '',                  'controle-pagamento-planos' => 'Gerencie os pagamentos dos planos de assinatura',
                     'planos-de-assinatura' => 'Gerencie os planos de assinatura disponíveis para seus clientes',
@@ -193,6 +195,8 @@
                         @livewire('proprietario.controle-pagamento-planos')
                     @elseif($tabelaAtiva === 'gerenciar-comandas')
                         @livewire('proprietario.gerenciar-comandas')
+                    @elseif($tabelaAtiva === 'dashboard-fidelidade')
+                        @livewire('proprietario.dashboard-fidelidade')
                     @elseif($tabelaAtiva === 'relatorio-geral')
                         @livewire('proprietario.relatorio-geral')
                     @elseif($tabelaAtiva === 'relatorio-mensal')

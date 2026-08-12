@@ -29,6 +29,19 @@ class Service extends Model
     {
         return $this->hasMany(BranchService::class);
     }
+
+    /**
+     * Relacionamento many-to-many com Produtos (estoque)
+     * Produtos recomendados manualmente para este serviço
+     */
+    public function produtosRecomendados()
+    {
+        return $this->belongsToMany(Estoque::class, 'service_estoque')
+            ->withPivot('priority', 'discount_percentage', 'is_active', 'observacoes')
+            ->withTimestamps()
+            ->wherePivot('is_active', true)
+            ->orderBy('priority');
+    }
     
     /**
      * Obter configuração específica para uma filial
@@ -100,6 +113,46 @@ class Service extends Model
         
         // Senão, usa a duração padrão do serviço
         return $this->time ?? 30;
+    }
+
+    /**
+     * LÓGICA HIERÁRQUICA DE RECOMENDAÇÃO DE PRODUTOS
+     * 
+     * Prioridade 1: Produtos relacionados manualmente (tabela pivot service_estoque)
+     * Prioridade 2: Se não houver relacionamento manual, retorna produtos mais vendidos
+     * 
+     * @param int $branchId - Filial para filtrar produtos disponíveis
+     * @param int $limit - Quantidade de produtos a retornar (default 3)
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getProdutosSugeridos(int $branchId, int $limit = 3)
+    {
+        // PRIORIDADE 1: Produtos relacionados manualmente
+        $produtosManuais = $this->produtosRecomendados()
+            ->where('branch_id', $branchId)
+            ->where('quantidade_atual', '>', 0) // Apenas produtos em estoque
+            ->limit($limit)
+            ->get();
+
+        // Se encontrou produtos relacionados manualmente, retorna eles
+        if ($produtosManuais->isNotEmpty()) {
+            return $produtosManuais;
+        }
+
+        // PRIORIDADE 2: Produtos mais vendidos da filial (fallback automático)
+        return Estoque::where('branch_id', $branchId)
+            ->maisVendidos($limit)
+            ->get();
+    }
+
+    /**
+     * Verifica se o serviço tem produtos recomendados configurados
+     */
+    public function temProdutosRecomendadosManuais(int $branchId): bool
+    {
+        return $this->produtosRecomendados()
+            ->where('branch_id', $branchId)
+            ->exists();
     }
     
     use HasFactory;

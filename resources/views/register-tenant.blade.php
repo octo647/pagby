@@ -584,6 +584,7 @@ document.addEventListener('DOMContentLoaded', function() {
     @if (session('success'))
     <script>
         if (typeof fbq !== 'undefined') {
+            fbq('track', 'Lead');
             fbq('track', 'CompleteRegistration');
         }
     </script>

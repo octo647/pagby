@@ -4,8 +4,10 @@ namespace App\Providers;
 
 use App\Models\User;
 use App\Models\Appointment;
+use App\Models\ComandaProduto;
 use App\Models\Tenant;
 use App\Observers\AppointmentObserver;
+use App\Observers\ComandaProdutoObserver;
 use App\Observers\TenantObserver;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -32,6 +34,9 @@ class AppServiceProvider extends ServiceProvider
         
         // Registrar Observer para Tenants (cria subconta Asaas automática)
         Tenant::observe(TenantObserver::class);
+        
+        // Registrar Observer para ComandaProduto (sistema de fidelização)
+        ComandaProduto::observe(ComandaProdutoObserver::class);
         
         // Configuração de regras de senha simples: mínimo 6 caracteres
         Password::defaults(function () {

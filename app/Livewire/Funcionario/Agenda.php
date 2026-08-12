@@ -22,8 +22,15 @@ class Agenda extends Component
             $agendamento->status = $status;
             $agendamento->save();
 
-            // Se for cancelado, apaga a comanda correspondente
+            // Se for cancelado, restaurar recompensas e apagar a comanda
             if ($status === 'Cancelado') {
+                $comanda = \App\Models\Comanda::where('appointment_id', $agendamento->id)->first();
+                if ($comanda) {
+                    // Restaurar recompensas usadas (descontos aplicados)
+                    \App\Models\FidelidadeReward::restaurarPorComanda($comanda->id);
+                    // Cancelar recompensas geradas por produtos (venda cancelada)
+                    \App\Models\FidelidadeReward::cancelarRecompensasGeradasPorComanda($comanda->id);
+                }
                 \App\Models\Comanda::where('appointment_id', $agendamento->id)->delete();
             }
         }
