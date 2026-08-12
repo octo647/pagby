@@ -109,7 +109,7 @@
                                     Estamos aqui para ajudá-lo! Entre em contato conosco:
                                 </p>
                                 <p style="margin: 10px 0 0 0; font-size: 14px; color: #1e3a8a;">
-                                    📱 WhatsApp: <strong>(32) 99961-2957</strong><br>
+                                    📱 WhatsApp: <strong>(32) 99854-8620</strong><br>
                                     📧 E-mail: <strong>suportepagby@gmail.com</strong>
                                 </p>
                             </div>

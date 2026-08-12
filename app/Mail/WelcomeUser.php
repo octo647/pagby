@@ -24,7 +24,7 @@ class WelcomeUser extends Mailable
     {
         $this->user = $user;
         $this->tenantName = tenancy()->tenant->name ?? 'PagBy';
-        $this->whatsappNumber = '5532999612957';
+        $this->whatsappNumber = '5532998548620';
     }
 
     /**
