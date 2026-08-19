@@ -37,14 +37,14 @@
                             </div>
                         </button>
                     </x-slot>
-                    <x-dropdown-link :href="route('profile.edit')">
+                    <x-dropdown-link :href="route('tenant.profile.edit')">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
                     <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
                     </svg>{{ __('Perfil') }}
                     </x-dropdown-link>
-                    <form method="POST" action="{{ route('logout') }}">
+                    <form method="POST" action="{{ route('tenant.logout') }}">
                         @csrf
-                        <x-dropdown-link :href="route('logout')"
+                        <x-dropdown-link :href="route('tenant.logout')"
                                 onclick="event.preventDefault();
                                             this.closest('form').submit();">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
@@ -94,13 +94,16 @@
                 $isProprietario = $user?->hasRole('Proprietário') ?? false;
                 $isFuncionario = $user?->hasRole('Funcionário') ?? false;
                 $isCliente = $user?->hasRole('Cliente') ?? false;
+                $primaryRole = $user?->getPrimaryRole();
                 
-                // Se for ambos (Proprietário e Funcionário), usar parâmetro de menu
+                // Se for ambos (Proprietário e Funcionário), priorizar o proprietário
                 $menuSelecionado = request()->input('menu');
                 if ($isProprietario && $isFuncionario) {
                     if (!$menuSelecionado) {
-                        $menuSelecionado = 'funcionario'; // padrão
+                        $menuSelecionado = 'proprietario';
                     }
+                } elseif ($primaryRole === 'Proprietário') {
+                    $menuSelecionado = 'proprietario';
                 } elseif ($isFuncionario) {
                     $menuSelecionado = 'funcionario';
                 } elseif ($isProprietario) {
@@ -365,15 +368,15 @@
             {{-- Links de perfil e logout --}}
             @auth
             <div class="mt-6 border-t pt-4">
-                <x-responsive-nav-link :href="route('profile.edit')">
+                <x-responsive-nav-link :href="route('tenant.profile.edit')">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">
                         <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
                     </svg>
                     {{ __('Perfil') }}
                 </x-responsive-nav-link>
-                <form method="POST" action="{{ route('logout') }}">
+                <form method="POST" action="{{ route('tenant.logout') }}">
                     @csrf
-                    <x-responsive-nav-link :href="route('logout')"
+                    <x-responsive-nav-link :href="route('tenant.logout')"
                             onclick="event.preventDefault();
                                         this.closest('form').submit();">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-5 inline mr-1 align-middle">

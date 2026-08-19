@@ -278,4 +278,8 @@
             </div>
         @endforelse
     </div>
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+    'route' => route('tenant.dashboard', ['tabelaAtiva' => 'usuarios']),
+    'description' => 'Cadastre os funcionários que trabalham no salão.',
+])
 </div>

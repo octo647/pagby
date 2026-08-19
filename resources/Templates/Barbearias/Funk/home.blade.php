@@ -760,7 +760,7 @@
                 <li><a href="#cuts"><i class="fas fa-scissors nav-icon"></i> CORTES</a></li>
                 <li><a href="#gallery"><i class="fas fa-images nav-icon"></i> FOTOS</a></li>
                 <li><a href="#events"><i class="fas fa-music nav-icon"></i> EVENTOS</a></li>
-                <li><a href="{{ route('login') }}" class="header-btn"><i class="fas fa-sign-in-alt nav-icon"></i> AGENDAR</a></li>
+                <li><a href="{{ route('tenant.login') }}" class="header-btn"><i class="fas fa-sign-in-alt nav-icon"></i> AGENDAR</a></li>
             </ul>
         </nav>
 

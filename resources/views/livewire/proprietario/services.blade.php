@@ -11,6 +11,16 @@
         </div>
     @endif
 
+    @if($editedServiceIndex === null && !array_filter($showBranchPricing ?? []))
+        <div class="mb-6 flex justify-end">
+            <button type="button"
+                    class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+                    wire:click.prevent="addService({{ count($salon_serv) }})">
+                ➕ Adicionar novo serviço
+            </button>
+        </div>
+    @endif
+
     <!-- Layout em Cards para todos os serviços -->
     <div class="space-y-6 p-4">
         @foreach($salon_serv as $index=>$service)
@@ -231,13 +241,9 @@
             @endif
         @endforeach
         
-        <!-- Botão Adicionar Serviço -->
-        @if($editedServiceIndex === null && !collect($showBranchPricing ?? [])->contains(true))
-        <div class="text-center py-6">
-            <button type="button" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 shadow-sm" wire:click.prevent="addService({{($salon_serv ? count($salon_serv) : 0)}})">
-                ➕ Adicionar novo serviço
-            </button>   
-        </div>
-        @endif
     </div>
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+    'route' => route('tenant.dashboard', ['tabelaAtiva' => 'func_serv']),
+    'description' => 'Atribua os serviços aos funcionários que os realizam.',
+])
 </div>

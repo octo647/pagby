@@ -5,13 +5,17 @@
     <x-slot name="header">
     
         <h2 class="text-2xl font-semibold leading-tight text-center text-gray-800">
-        @if(auth()->user()->hasrole('Admin'))
+        @php
+            $primaryRole = auth()->user()?->getPrimaryRole();
+        @endphp
+
+        @if($primaryRole === 'Admin')
             {{ __($tabelaAtiva === 'contatos' ? 'Contatos' : 
             ($tabelaAtiva === 'contatos-booksy' ? 'Contatos Booksy' :
             ($tabelaAtiva === 'saloes' ? 'Salões' : 
             ($tabelaAtiva === 'planos' ? 'Planos' :
             ($tabelaAtiva === 'ajustes-planos' ? 'Ajustes de Planos' : '')))))}}
-        @elseif(auth()->user()->hasrole('Proprietário'))
+        @elseif($primaryRole === 'Proprietário')
             @php
                 $titles = [
                     'agenda' => 'Minha Agenda',
@@ -84,7 +88,7 @@
 
         {{ __($titles[$tabelaAtiva] ?? '') }}
 
-        @elseif(auth()->user()->hasrole('Funcionário'))
+        @elseif($primaryRole === 'Funcionário')
             @php
                 $funcionarioTitles = [
                     'agenda' => 'Minha Agenda',
@@ -99,7 +103,7 @@
                 ];
             @endphp
             {{ __($funcionarioTitles[$tabelaAtiva] ?? '') }}
-        @elseif(auth()->user()->hasrole('Cliente'))
+        @elseif($primaryRole === 'Cliente')
             {{ __($tabelaAtiva === 'appointments' ? 'Agendamentos' :
             ($tabelaAtiva === 'historico' ? 'Histórico de Serviços':
             ($tabelaAtiva === 'notificacoes' ? 'Notificações' : ''))) }}
@@ -108,7 +112,7 @@
         @endif
             
         </h2> 
-        @if(auth()->user()->hasrole('Proprietário'))
+        @if($primaryRole === 'Proprietário')
             <p class="text-gray-600 mt-1 text-center">{{ __($subtitles[$tabelaAtiva] ?? '') }}</p>
         @endif 
      </x-slot>

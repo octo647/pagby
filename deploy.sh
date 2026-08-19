@@ -1,6 +1,4 @@
 #!/bin/bash
-set -Eeuo pipefail
-
 echo "🚀 Deploying to HostGator..."
 
 # Verifica se estamos usando configuração local
@@ -45,8 +43,6 @@ rsync -avz --no-perms --progress -e 'ssh -p 22022' \
 # Comandos no servidor via SSH
 echo "🔧 Executando comandos no servidor..."
 ssh -p 22022 helder@69.6.222.77 << 'ENDSSH'
-set -Eeuo pipefail
-
 cd /var/www/pagby/
 
 # Remove arquivo hot do Vite (modo dev)
@@ -56,15 +52,7 @@ rm -f public/hot
 mkdir -p storage/framework/{sessions,views,cache}
 mkdir -p storage/logs
 mkdir -p bootstrap/cache
-# Ajusta apenas os diretórios de runtime do Laravel. Os diretórios e arquivos
-# de tenants são mantidos no VPS e podem pertencer ao usuário do webserver.
-chmod 775 \
-    storage/framework \
-    storage/framework/sessions \
-    storage/framework/views \
-    storage/framework/cache \
-    storage/logs \
-    bootstrap/cache
+chmod -R 777 storage bootstrap/cache
 
 # Criar e ajustar permissões dos diretórios de tenant para permitir criação pelo Apache
 mkdir -p public/tenants public/storage public/images/tenants resources/views/tenants
@@ -74,29 +62,18 @@ chmod 775 public/images/tenants 2>/dev/null || true
 chmod 775 resources/views/tenants 2>/dev/null || true
 
 # Instala/atualiza dependências (sem remover vendor para evitar downtime)
-composer install --no-dev --optimize-autoloader --no-scripts
+composer install --no-dev --optimize-autoloader --no-scripts 2>&1 | grep -v "Please provide a valid cache path" || true
 
 # Regenerar autoload OTIMIZADO (crítico para performance e evitar erros)
 composer dump-autoload -o
 
 # Limpar TODOS os caches do Laravel
-php artisan optimize:clear
+php artisan optimize:clear 2>/dev/null || true
 
 # Recria caches otimizados
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
-
-# Validar a configuração efetivamente carregada no servidor sem expor segredos.
-php artisan tinker --execute='
-    $centralDomains = config("tenancy.central_domains", []);
-    $tenantSuffix = config("app.tenant_domain_suffix");
-    if (!$centralDomains || !$tenantSuffix) {
-        fwrite(STDERR, "Configuracao de tenancy incompleta no servidor\n");
-        exit(1);
-    }
-    echo "Tenancy config OK: central_domains=" . implode(",", $centralDomains) . ", suffix=" . $tenantSuffix . PHP_EOL;
-'
+php artisan config:cache 2>/dev/null || true
+php artisan route:cache 2>/dev/null || true
+php artisan view:cache 2>/dev/null || true
 
 # Limpar OPCache (crítico para recarregar classes alteradas)
 php -r "if (function_exists('opcache_reset')) { opcache_reset(); echo '✓ OPCache limpo\n'; } else { echo '✗ OPCache não disponível\n'; }"

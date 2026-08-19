@@ -97,7 +97,7 @@
                 <a href="#contato" class="text-gray-300 hover:text-yellow-500 transition">Contato</a>
             </div>
             <div class="flex items-center gap-4">
-                <a href="{{ route('login') }}" class="bg-yellow-600 text-gray-900 px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-yellow-700 transition">Entrar</a>
+                <a href="{{ route('tenant.login') }}" class="bg-yellow-600 text-gray-900 px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-yellow-700 transition">Entrar</a>
                 <a href="{{ route('register') }}" class="bg-yellow-600 text-gray-900 px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-yellow-700 transition">Registrar</a>
             </div>
         </div>

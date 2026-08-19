@@ -84,6 +84,22 @@ class User extends Authenticatable
     {
         return $this->roles()->where('role', $role)->exists();
     }
+
+    public function getPrimaryRole(): ?string
+    {
+        $roles = $this->roles()->pluck('role')->all();
+
+        $priority = ['Admin', 'Proprietário', 'Funcionário', 'Cliente'];
+
+        foreach ($priority as $role) {
+            if (in_array($role, $roles, true)) {
+                return $role;
+            }
+        }
+
+        return $roles[0] ?? null;
+    }
+
     public function assignRole($role): void
         {
             $this->roles()->attach(['role_id'=> $role]);

@@ -29,8 +29,9 @@ class RouteServiceProvider extends ServiceProvider
         });
 
         $this->routes(function () {
+            // Laravel 11 carrega routes/web.php via bootstrap/app.php.
+            // Registrar as rotas web novamente aqui duplica todos os nomes.
             $this->mapApiRoutes();
-            $this->mapWebRoutes();
         });
     }
     protected function mapWebRoutes()

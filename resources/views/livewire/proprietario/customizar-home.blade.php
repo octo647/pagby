@@ -1013,5 +1013,9 @@
             </div>
         @endif
 
-    </div>
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+    'route' => route('tenant.dashboard'),
+    'description' => 'Revise o progresso e conclua a configuração inicial.',
+])
+</div>
 </div>

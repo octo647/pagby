@@ -25,7 +25,7 @@ class WhatsAppCampaignController extends Controller
             ->get();
         
         // Carrega comandos existentes
-        $commandsFile = storage_path('app/whatsapp_commands.json');
+        $commandsFile = base_path('storage/app/whatsapp_commands.json');
         $commands = [];
         
         if (file_exists($commandsFile)) {
@@ -88,7 +88,7 @@ class WhatsAppCampaignController extends Controller
      */
     private function queueMessage($phone, $message, $metadata = [])
     {
-        $commandsFile = storage_path('app/whatsapp_commands.json');
+        $commandsFile = base_path('storage/app/whatsapp_commands.json');
         $commands = [];
         
         if (file_exists($commandsFile)) {

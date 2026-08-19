@@ -21,7 +21,23 @@ Route::post('/api/subconta-webhook', [\App\Http\Controllers\SubcontaWebhookContr
     ->withoutMiddleware([\App\Http\Middleware\VerifyCsrfToken::class])
     ->name('api.subconta-webhook');
 
-foreach (config('tenancy.central_domains') as $domain) {
+// Lista de tenants ativos, usada pelo bot do WhatsApp para varrer os subdomínios corretos
+Route::get('/api/tenants/domains', function () {
+    return response()->json([
+        'tenants' => \App\Models\Tenant::pluck('id'),
+    ]);
+})->name('api.tenants.domains');
+
+$centralDomains = config('tenancy.central_domains');
+$primaryCentralDomain = $centralDomains[0] ?? null;
+
+foreach ($centralDomains as $domain) {
+    // Keep the public route names on the primary domain. Secondary central
+    // domains still resolve the same URLs with a unique route-name prefix.
+    $routeNamePrefix = $domain === $primaryCentralDomain
+        ? ''
+        : 'central.' . str_replace(['.', '-'], '_', $domain) . '.';
+
     // Endpoint API para social login (central)
 Route::get('/api/social-auth/{token}', function ($token) {
     $data = \Cache::get('social_auth_' . $token);
@@ -36,7 +52,7 @@ Route::get('/api/social-auth/{token}', function ($token) {
 })->name('api.social-auth');
 
 
-    Route::domain($domain)->group(function () {
+    Route::name($routeNamePrefix)->domain($domain)->group(function () {
         Route::get('/', function () {
             return view('home');
         })->name('home');
@@ -130,7 +146,7 @@ Route::get('/api/social-auth/{token}', function ($token) {
         });
 
         // Rotas para assinaturas de planos dos tenants
-        Route::prefix('tenant-assinatura')->name('tenant-assinatura.')->group(function () {
+        Route::prefix('tenant-assinatura')->name('central.tenant-assinatura.')->group(function () {
            Route::get('/congrats', [SubscriptionController::class, 'congrats'])->name('congrats');
            Route::post('/webhook', [SubscriptionController::class, 'webhook'])->name('webhook');
            Route::match(['get', 'post'], '/store', [SubscriptionController::class, 'store'])->name('store');
@@ -167,9 +183,9 @@ Route::get('/api/social-auth/{token}', function ($token) {
         Route::middleware(['web'])->group(function () {
             // Google OAuth (com tenant opcional na query)
             Route::get('/auth/google', [SocialController::class, 'redirectToGoogle'])
-                ->name('login.google');
+                ->name('central.login.google');
             Route::get('/auth/google/callback', [SocialController::class, 'handleGoogleCallback'])
-                ->name('login.google.callback');
+                ->name('central.login.google.callback');
             // Facebook OAuth (com tenant opcional na query)
             Route::get('/auth/facebook', [SocialController::class, 'redirectToFacebook'])
                 ->name('login.facebook');
@@ -189,7 +205,9 @@ Route::get('/api/social-auth/{token}', function ($token) {
             ->name('mercado-pago.webhook')
             ->withoutMiddleware([VerifyCsrfToken::class]);
 
-        require __DIR__.'/auth.php';
+        Route::name('central.')->group(function () {
+            require __DIR__.'/auth.php';
+        });
     });
 }
 

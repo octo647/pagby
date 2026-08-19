@@ -16,12 +16,12 @@ return [
      * Only relevant if you're using the domain or subdomain identification middleware.
      */
     
-    'central_domains' => [
-        'localhost',
-        '127.0.0.1',
-        'pagby.com.br',
-        'www.pagby.com.br',       
-        ],
+    'central_domains' => array_values(array_filter(array_map(static function ($domain) {
+        return trim((string) $domain);
+    }, explode(',', env('CENTRAL_DOMAINS', 'localhost,127.0.0.1'))), static function ($domain) {
+        return $domain !== '';
+    })),
+
     /**
      * Tenancy bootstrappers are executed when tenancy is initialized.
      * Their responsibility is making Laravel features tenant-aware.

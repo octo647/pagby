@@ -28,7 +28,7 @@ class SendWhatsAppCampaign extends Command
         }
         
         // Carrega comandos existentes
-        $commandsFile = storage_path('app/whatsapp_commands.json');
+        $commandsFile = base_path('storage/app/whatsapp_commands.json');
         $commands = [];
         
         if (file_exists($commandsFile)) {

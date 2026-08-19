@@ -42,7 +42,7 @@ if [ $? -eq 0 ]; then
     echo "  ./start-pagby-bot.sh"
     echo ""
     echo "💡 Dica: O bot precisa ser reiniciado no VPS se já estiver rodando"
-    echo "  pm2 restart pagby-whatsapp-bot"
+    echo "  pm2 restart Lembrete_PagBy"
     echo ""
 else
     echo ""

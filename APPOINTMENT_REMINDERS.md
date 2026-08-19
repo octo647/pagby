@@ -4,7 +4,7 @@ Sistema integrado para enviar lembretes automáticos de agendamentos via WhatsAp
 
 ## 🎯 Como Funciona
 
-O sistema usa o bot WhatsApp já existente (`index-with-commands.js`) para processar lembretes de agendamentos:
+O sistema usa o bot WhatsApp Pagby já existente (`index.js`) para processar lembretes de agendamentos:
 
 ```
 Laravel Command          JSON Bridge            WhatsApp Bot
@@ -40,8 +40,8 @@ Isso adiciona o campo `reminder_sent_at` na tabela `appointments`.
 # Upload dos arquivos atualizados
 scp -P 22022 scripts/whatsapp-bot/index-with-commands.js helder@69.6.222.77:/var/www/pagby/scripts/whatsapp-bot/
 
-# Reiniciar o bot
-ssh -p 22022 helder@69.6.222.77 "pm2 restart whatsapp-bot"
+# Reiniciar o bot Pagby
+ssh -p 22022 helder@69.6.222.77 "pm2 restart Lembrete_PagBy"
 ```
 
 ### 3. Verificar agendamento
@@ -130,7 +130,7 @@ $schedule->command('appointments:send-reminders --hours=2')
 
 ### Alterar mensagem
 
-Edite a função `sendAppointmentReminder` em [scripts/whatsapp-bot/index-with-commands.js](scripts/whatsapp-bot/index-with-commands.js).
+Edite a função `sendAppointmentReminder` em [scripts/whatsapp-bot/index.js](scripts/whatsapp-bot/index.js).
 
 ### Adicionar novos tipos de lembrete
 

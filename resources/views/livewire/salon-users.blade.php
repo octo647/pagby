@@ -362,6 +362,10 @@
         </div>
     </div>
 
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+    'route' => route('tenant.dashboard', ['tabelaAtiva' => 'funcionarios']),
+    'description' => 'Atribua as filiais aos funcionários cadastrados.',
+])
 </div>
 </div>
 

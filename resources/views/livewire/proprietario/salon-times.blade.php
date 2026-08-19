@@ -284,5 +284,12 @@
     </div>
 
 </div>
+
+@if(tenant())
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+        'route' => route('tenant.dashboard', ['tabelaAtiva' => 'customizar-home']),
+        'description' => 'Personalize a página inicial do seu salão.',
+    ])
+@endif
 </div>
 

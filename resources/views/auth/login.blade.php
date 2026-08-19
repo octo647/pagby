@@ -3,7 +3,7 @@
     <x-auth-session-status class="mb-4" :status="session('status')" />
    
 
-    <form method="POST" action="{{ route('login') }}">
+    <form method="POST" action="{{ route(tenant() ? 'tenant.login' : 'central.login') }}">
         @csrf
 
         <!-- Email Address -->
@@ -47,7 +47,7 @@
                     {{ __('Esqueceu sua senha?') }}
                 </a>
             @else
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-4" href="{{ route('password.request') }}">
+                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ml-4" href="{{ route('central.password.request') }}">
                     {{ __('Esqueceu sua senha?') }}
                 </a>
             @endif

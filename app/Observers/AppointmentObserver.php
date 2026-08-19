@@ -4,6 +4,8 @@ namespace App\Observers;
 
 use App\Models\Appointment;
 use App\Models\Comanda;
+use App\Services\WhatsAppQueueService;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 class AppointmentObserver
@@ -15,6 +17,47 @@ class AppointmentObserver
     {
         // Verificar se o agendamento foi criado já com status 'Confirmado'
             // (Removido: lógica de status 'Confirmado')
+
+        $this->notifyEmployee($appointment);
+    }
+
+    /**
+     * Notifica o profissional via WhatsApp sobre o novo agendamento
+     */
+    private function notifyEmployee(Appointment $appointment): void
+    {
+        try {
+            $employee = $appointment->employee;
+
+            if (!$employee || !$employee->phone || !$employee->whatsapp_activated) {
+                return;
+            }
+
+            $serviceNames = is_string($appointment->services) && $appointment->services !== ''
+                ? $appointment->services
+                : 'Serviço agendado';
+
+            $tenantName = tenant('name') ?? tenant('id') ?? 'Salão';
+            $branchName = $appointment->branch?->branch_name ?? 'Unidade';
+            $date = Carbon::parse($appointment->appointment_date)->format('d/m/Y');
+            $time = Carbon::parse($appointment->start_time)->format('H:i');
+
+            $message = "📅 *Novo Agendamento*\n\n"
+                . "Olá, *{$employee->name}*!\n\n"
+                . "Você tem um novo horário marcado:\n\n"
+                . "🕐 *Data e hora:* {$date} às {$time}\n"
+                . "✂️ *Serviço:* {$serviceNames}\n"
+                . "📍 *Local:* {$branchName}\n\n"
+                . "_Mensagem automática de {$tenantName}_";
+
+            app(WhatsAppQueueService::class)->queue($employee->phone, $message, [
+                'type' => 'new_appointment_employee',
+                'appointment_id' => $appointment->id,
+                'employee_id' => $employee->id,
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Erro ao notificar profissional sobre agendamento {$appointment->id}: " . $e->getMessage());
+        }
     }
 
     /**

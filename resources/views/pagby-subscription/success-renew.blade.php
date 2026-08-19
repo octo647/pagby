@@ -66,7 +66,7 @@
 
             <!-- Botões de ação -->
             <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-                <a href="{{ route('login') }}" 
+                <a href="{{ route('central.login') }}"
                    class="bg-gradient-to-r from-green-600 to-blue-600 text-white px-8 py-4 rounded-lg hover:from-green-700 hover:to-blue-700 transition-all font-bold text-lg transform hover:scale-105">
                     🚀 Acessar Minha Conta
                 </a>

@@ -19,7 +19,7 @@
                 <div class="max-w-xl">
                     <h2 class="text-2xl font-bold text-red-600 mb-4">TESTE DIRETO - Alterar Senha</h2>
                     
-                    <form method="post" action="{{ route('password.update') }}" class="mt-6 space-y-6">
+                    <form method="post" action="{{ route('tenant.password.update') }}" class="mt-6 space-y-6">
                         @csrf
                         @method('put')
 

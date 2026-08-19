@@ -5,7 +5,7 @@
 
 cd "$(dirname "$0")"
 
-BOT_NAME="pagby-whatsapp-bot"
+BOT_NAME="Lembrete_PagBy"
 BOT_SCRIPT="index.js"
 
 echo "🚀 Iniciando WhatsApp Bot Pagby"

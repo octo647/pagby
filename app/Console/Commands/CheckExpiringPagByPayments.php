@@ -144,7 +144,7 @@ class CheckExpiringPagByPayments extends Command
      */
     private function storeReminder(array $data)
     {
-        $commandsFile = storage_path('app/whatsapp_commands.json');
+        $commandsFile = base_path('storage/app/whatsapp_commands.json');
         
         // Carrega comandos existentes
         $commands = [];

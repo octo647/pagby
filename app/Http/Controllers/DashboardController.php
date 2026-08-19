@@ -17,14 +17,16 @@ class DashboardController extends Controller
         
         if (Auth::check()) {
             $user = Auth::user();
-            
-            if ($user->hasRole('Funcionário')) {
-                $tabelaAtiva = $request->get('tabelaAtiva', 'agenda');
-            } elseif ($user->hasRole('Proprietário')) {
+
+            $primaryRole = $user->getPrimaryRole();
+
+            if ($primaryRole === 'Proprietário') {
                 $tabelaAtiva = $request->get('tabelaAtiva', 'gerenciar-comandas');
-            } elseif ($user->hasRole('Cliente')) {
+            } elseif ($primaryRole === 'Funcionário') {
+                $tabelaAtiva = $request->get('tabelaAtiva', 'agenda');
+            } elseif ($primaryRole === 'Cliente') {
                 $tabelaAtiva = $request->get('tabelaAtiva', 'appointments');
-            } elseif ($user->hasRole('Admin')) {
+            } elseif ($primaryRole === 'Admin') {
                 $tabelaAtiva = $request->get('tabelaAtiva', 'contatos');
         }
         }

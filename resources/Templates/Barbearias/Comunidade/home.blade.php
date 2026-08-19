@@ -727,7 +727,7 @@
             
             <div class="hero-buttons">
                 <button class="btn-call" type="button">
-                   <a href="{{route('login')}}"> <i class="fas fa-sign-in-alt"></i> AGENDAR</a>
+                   <a href="{{route('tenant.login')}}"> <i class="fas fa-sign-in-alt"></i> AGENDAR</a>
                 </button>
                 
             </div>
@@ -757,7 +757,7 @@
                     <li><i class="fas fa-check"></i> Acabamento na navalha</li>
                     <li><i class="fas fa-check"></i> Lavagem incluída</li>
                 </ul>
-                <button class="btn-whatsapp" style="width: 100%; justify-content: center;"><a href="{{route('login')}}">AGENDAR</a></button>
+                <button class="btn-whatsapp" style="width: 100%; justify-content: center;"><a href="{{route('tenant.login')}}">AGENDAR</a></button>
             </div>
             
             <div class="price-card">
@@ -769,7 +769,7 @@
                     <li><i class="fas fa-check"></i> Toalha quente</li>
                     <li><i class="fas fa-check"></i> Produtos premium</li>
                 </ul>
-                <button class="btn-whatsapp" style="width: 100%; justify-content: center; background-color: var(--favela-red);"><a href="{{route('login')}}">PROMOÇÃO</a></button>
+                <button class="btn-whatsapp" style="width: 100%; justify-content: center; background-color: var(--favela-red);"><a href="{{route('tenant.login')}}">PROMOÇÃO</a></button>
             </div>
             
             <div class="price-card">
@@ -781,7 +781,7 @@
                     <li><i class="fas fa-check"></i> Hena opcional (+R$5)</li>
                     <li><i class="fas fa-check"></i> Limpeza da pele</li>
                 </ul>
-                <button class="btn-whatsapp" style="width: 100%; justify-content: center;"><a href="{{route('login')}}">AGENDAR</a></button>
+                <button class="btn-whatsapp" style="width: 100%; justify-content: center;"><a href="{{route('tenant.login')}}">AGENDAR</a></button>
             </div>
         </div>
     </section>

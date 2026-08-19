@@ -1,10 +1,10 @@
 <section>
 @php use Illuminate\Support\Str; @endphp
     <header>
-    <form id="send-verification" method="post" action="{{ route('verification.send') }}">
+    <form id="send-verification" method="post" action="{{ route(tenant() ? 'tenant.verification.send' : 'central.verification.send') }}">
         @csrf
     </form>
-    <form method="POST" action="{{ route('profile.update') }}" enctype="multipart/form-data" class="mt-0 space-y-6">
+    <form method="POST" action="{{ route('tenant.profile.update') }}" enctype="multipart/form-data" class="mt-0 space-y-6">
     @if (session('status') === 'profile-updated')
         <div class="mb-4 p-3 rounded bg-green-100 border border-green-300 text-green-800 text-sm flex items-center gap-2 animate-fade-in" id="profile-success-message">
             <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
@@ -16,6 +16,14 @@
             if (document.getElementById('profile-success-message')) {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
+        });
+        </script>
+    @endif
+    @if (session('open_whatsapp_activation') && $user->whatsapp && !$user->whatsapp_activated)
+        <script>
+        // Só abre o WhatsApp depois que os dados já foram salvos no servidor
+        document.addEventListener('DOMContentLoaded', function() {
+            window.open('https://wa.me/{{ config('pagby.lembrete_pagby_whatsapp') }}?text=ATIVAR', '_blank');
         });
         </script>
     @endif
@@ -76,12 +84,13 @@
         <input type="checkbox" id="whatsapp" name="whatsapp" value="1" {{ old('whatsapp', $user->whatsapp) ? 'checked' : '' }}>
         <label for="whatsapp" class="ml-2">É WhatsApp?</label>
     </div>
+    <input type="hidden" name="open_whatsapp_after_save" id="open_whatsapp_after_save" value="0">
 
     <!-- Ativar Lembretes WhatsApp -->
     <div id="whatsapp-reminders-section" class="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
         <h3 class="text-sm font-medium text-green-900 mb-2">📱 Lembretes via WhatsApp</h3>
         <p class="text-sm text-green-700 mb-3">
-            Receba avisos de vencimento de planos diretamente no seu WhatsApp.
+            Receba avisos de agendamentos e vencimento de planos diretamente no seu WhatsApp.
         </p>
         @if($user->whatsapp_activated)
             <div class="flex items-center text-green-700">
@@ -96,17 +105,16 @@
                     ⚠️ <strong>Marque "É WhatsApp?"</strong> acima e salve antes de ativar os lembretes.
                 </p>
             </div>
-            <a href="https://wa.me/553298294948?text=ATIVAR" 
+            <button type="submit"
                id="whatsapp-activate-btn"
-               target="_blank"
                class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 transition">
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
                 </svg>
                 Ativar Lembretes
-            </a>
+            </button>
             <p class="text-xs text-green-600 mt-2">
-                Clique para enviar uma mensagem e ativar os lembretes.
+                Clique para salvar seus dados e abrir o WhatsApp automaticamente.
             </p>
         @endif
     </div>
@@ -220,14 +228,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Previne clique se não estiver marcado
+    // Previne clique se não estiver marcado, e garante que o formulário
+    // seja salvo antes de abrir o WhatsApp (evita ativar sem persistir os dados)
     if (whatsappActivateBtn) {
         whatsappActivateBtn.addEventListener('click', function(e) {
             if (!whatsappCheckbox.checked) {
                 e.preventDefault();
-                alert('⚠️ Marque "É WhatsApp?" acima e salve suas alterações antes de ativar os lembretes.');
+                alert('⚠️ Marque "É WhatsApp?" acima antes de ativar os lembretes.');
                 whatsappCheckbox.focus();
+                return;
             }
+            document.getElementById('open_whatsapp_after_save').value = '1';
         });
     }
     

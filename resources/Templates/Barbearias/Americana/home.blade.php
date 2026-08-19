@@ -405,7 +405,7 @@
             <h1>BARBER SHOP AMERICANA</h1>
             <p>Desde 1950, oferecendo cortes clássicos e cuidados masculinos com a tradição das barbearias americanas. Um lugar onde estilo, história e profissionalismo se encontram.</p>
             <!-- Botão para agendar horário -->
-            <a href="{{ route('login') }}" class="btn btn-primary" style="text-decoration: none; color: white; display: inline-block; margin-top: 20px;">
+            <a href="{{ route('tenant.login') }}" class="btn btn-primary" style="text-decoration: none; color: white; display: inline-block; margin-top: 20px;">
                 AGENDE SEU HORÁRIO
             </a>
         </div>

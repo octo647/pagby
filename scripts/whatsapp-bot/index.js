@@ -14,6 +14,42 @@ const COMMANDS_FILE = path.join(__dirname, '../../storage/app/whatsapp_commands.
 // Arquivo de mapeamento telefone → WhatsApp ID
 const PHONE_MAP_FILE = path.join(__dirname, '../../storage/app/whatsapp_phone_map.json')
 
+const MAX_RECONNECT_DELAY = 60 * 1000
+const SUPPORT_URL = 'https://wa.me/5532998548620'
+const CENTRAL_API_URL = 'https://pagby.com.br'
+
+// Evita que uma falha isolada (ex: envio durante reconexão) derrube o processo inteiro
+process.on('unhandledRejection', (reason) => {
+  console.error('⚠️ Unhandled rejection (bot continua rodando):', reason)
+})
+process.on('uncaughtException', (error) => {
+  console.error('⚠️ Uncaught exception (bot continua rodando):', error)
+})
+
+// Lista de tenants usada como fallback até a primeira atualização via API central
+let tenantSubdomains = ['magic-club', 'dumont', 'villebelle', 'labelle', 'bicholegal', 'dudu', 'bar', 'salao-cowboy', 'barba-e-cabelo', 'pets-cia']
+
+async function refreshTenantSubdomains() {
+  try {
+    const response = await fetch(`${CENTRAL_API_URL}/api/tenants/domains`)
+    const data = await response.json()
+
+    if (Array.isArray(data.tenants) && data.tenants.length > 0) {
+      tenantSubdomains = data.tenants
+      console.log(`🔄 Lista de tenants atualizada (${tenantSubdomains.length})`)
+    }
+  } catch (error) {
+    console.log(`⚠️ Erro ao atualizar lista de tenants: ${error.message}`)
+  }
+}
+
+refreshTenantSubdomains()
+setInterval(refreshTenantSubdomains, 10 * 60 * 1000)
+let reconnectAttempts = 0
+let reconnectTimer = null
+let commandProcessorTimer = null
+let currentSocket = null
+
 // Armazena o estado de cada conversa: { jid: { step: 0, data: {} } }
 const conversations = {}
 
@@ -28,53 +64,81 @@ try {
 }
 
 async function main() {
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys')
-  const { version } = await fetchLatestBaileysVersion()
-  const sock = makeWASocket({
-    version,
-    auth: state,
-  })
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info_baileys')
+    const { version } = await fetchLatestBaileysVersion()
+    const sock = makeWASocket({
+      version,
+      auth: state,
+    })
 
-  sock.ev.on('creds.update', saveCreds)
+    currentSocket = sock
 
-  sock.ev.on('connection.update', (update) => {
-    const { connection, lastDisconnect, qr } = update
-    if (qr) {
-      qrcode.generate(qr, { small: true })
-      console.log('Escaneie o QR code acima com o WhatsApp.')
-    }
-    if (connection === 'close') {
-      const shouldReconnect = lastDisconnect?.error?.output?.statusCode !== 401
-      if (shouldReconnect) main()
-    }
-    if (connection === 'open') {
-      console.log('✅ Bot conectado ao WhatsApp!')
-      
-      // Mostra o número do WhatsApp conectado
-      const connectedNumber = sock.user?.id || 'Número não identificado'
-      console.log(`📱 Número WhatsApp conectado: ${connectedNumber}`)
-      
-      // Inicia processador de comandos Laravel
-      startCommandProcessor(sock)
-    }
-  })
+    sock.ev.on('creds.update', saveCreds)
 
-  // Escuta mensagens recebidas
-  sock.ev.on('messages.upsert', async ({ messages }) => {
-    for (const msg of messages) {
-      if (!msg.message || msg.key.fromMe) continue
-      
-      const jid = msg.key.remoteJid
-      const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
-      
-      console.log(`📩 Mensagem de ${jid}: ${text}`)
-      
-      // Salva mapeamento de telefone → ID do WhatsApp
-      await savePhoneMapping(jid)
-      
-      await handleConversation(sock, jid, text)
-    }
-  })
+    sock.ev.on('connection.update', (update) => {
+      const { connection, lastDisconnect, qr } = update
+      if (qr) {
+        qrcode.generate(qr, { small: true })
+        console.log('Escaneie o QR code acima com o WhatsApp.')
+      }
+      if (connection === 'close') {
+        const statusCode = lastDisconnect?.error?.output?.statusCode
+        currentSocket = null
+
+        if (statusCode === 401) {
+          console.error('❌ Sessão WhatsApp desconectada. Novo pareamento necessário.')
+          return
+        }
+
+        scheduleReconnect(`conexão encerrada${statusCode ? ` (status ${statusCode})` : ''}`)
+      }
+      if (connection === 'open') {
+        reconnectAttempts = 0
+        console.log('✅ Bot conectado ao WhatsApp!')
+
+        const connectedNumber = sock.user?.id || 'Número não identificado'
+        console.log(`📱 Número WhatsApp conectado: ${connectedNumber}`)
+
+        startCommandProcessor()
+      }
+    })
+
+    // Escuta mensagens recebidas
+    sock.ev.on('messages.upsert', async ({ messages }) => {
+      for (const msg of messages) {
+        if (!msg.message || msg.key.fromMe) continue
+
+        const jid = msg.key.remoteJid
+        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || ''
+
+        console.log(`📩 Mensagem de ${jid}: ${text}`)
+
+        try {
+          await savePhoneMapping(jid)
+          await handleConversation(sock, jid, text)
+        } catch (error) {
+          console.error(`❌ Erro ao processar mensagem de ${jid}:`, error.message)
+        }
+      }
+    })
+  } catch (error) {
+    currentSocket = null
+    scheduleReconnect(`falha ao iniciar conexão: ${error.message}`)
+  }
+}
+
+function scheduleReconnect(reason) {
+  if (reconnectTimer) return
+
+  reconnectAttempts += 1
+  const delay = Math.min(5000 * 2 ** (reconnectAttempts - 1), MAX_RECONNECT_DELAY)
+  console.error(`⚠️ ${reason}. Nova tentativa em ${Math.ceil(delay / 1000)}s.`)
+
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null
+    await main()
+  }, delay)
 }
 
 async function handleConversation(sock, jid, text) {
@@ -188,23 +252,64 @@ async function handleConversation(sock, jid, text) {
   
   // Comandos especiais
   if (lowerText === 'menu' || lowerText === 'ajuda') {
+    await sendStatusAwareMenu(sock, jid)
+    return
+  }
+
+  await sendStatusAwareMenu(sock, jid)
+}
+
+async function sendStatusAwareMenu(sock, jid) {
+  const phone = jid.split('@')[0]
+  const status = await getWhatsAppStatus(phone, jid)
+
+  if (status.activated) {
     await sock.sendMessage(jid, {
-      text: '*🤖 Bot PagBy*\n\nComandos disponíveis:\n• ATIVAR - Ativar lembretes via WhatsApp\n• VINCULAR [número] - Vincular seu telefone\n\nEste bot processa comandos automáticos de lembretes.\n\nPara falar com o suporte, envie sua dúvida que retornaremos em breve!'
+      text: `*Lembrete PagBy*\n\nSeu telefone está ativado para receber lembretes!\n\nSe precisar falar com o suporte, envie sua dúvida para ${SUPPORT_URL}, que retornaremos em breve!`
     })
     return
   }
 
-  // Não responde outras mensagens - apenas processa comandos específicos
-  // Isso evita respostas automáticas quando clientes respondem aos lembretes
+  await sock.sendMessage(jid, {
+    text: `*Lembrete PagBy*\n\nComandos disponíveis:\n• ATIVAR - Ativar lembretes via WhatsApp\n• VINCULAR [número] - Vincular seu telefone\n\nEste bot processa comandos automáticos de lembretes.\n\nPara falar com o suporte, envie sua dúvida para ${SUPPORT_URL}, que retornaremos em breve!`
+  })
+}
+
+async function getWhatsAppStatus(phone, jid) {
+  const tenants = tenantSubdomains
+
+  for (const tenant of tenants) {
+    try {
+      const response = await fetch(`https://${tenant}.pagby.com.br/api/whatsapp/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, jid })
+      })
+      const data = await response.json()
+
+      if (data.found) {
+        return { activated: Boolean(data.activated) }
+      }
+    } catch (error) {
+      console.log(`⚠️ Erro ao consultar status no tenant ${tenant}: ${error.message}`)
+    }
+  }
+
+  return { activated: false }
 }
 
 /**
  * Processa comandos do Laravel a cada 30 segundos
  */
-function startCommandProcessor(sock) {
+function startCommandProcessor() {
+  if (commandProcessorTimer) return
+
   console.log('🔔 Processador de comandos Laravel iniciado')
   
-  setInterval(async () => {
+  commandProcessorTimer = setInterval(async () => {
+    const sock = currentSocket
+    if (!sock) return
+
     try {
       if (!fs.existsSync(COMMANDS_FILE)) {
         return
@@ -228,9 +333,13 @@ function startCommandProcessor(sock) {
             await sendMessageCommand(sock, cmd)
             executed.push(cmd)
             console.log(`✅ Mensagem enviada para ${cmd.to}`)
+          } else if (cmd.type === 'appointment_reminder') {
+            await sendAppointmentReminder(sock, cmd)
+            executed.push(cmd)
+            console.log(`✅ Lembrete de agendamento enviado para ${cmd.customer_name}`)
           }
         } catch (error) {
-          console.error(`❌ Erro ao enviar para ${cmd.to}:`, error.message)
+          console.error(`❌ Erro ao processar comando ${cmd.type} para ${cmd.to || cmd.customer_phone}:`, error.message)
           failed.push({ ...cmd, error: error.message, retries: (cmd.retries || 0) + 1 })
         }
       }
@@ -328,7 +437,7 @@ async function markUserWhatsAppActivated(phone, jid = null) {
     else console.log()
     
     // Descobre qual tenant tem esse número
-    const tenants = ['magic-club', 'dumont', 'villebelle', 'labelle', 'bicholegal', 'dudu', 'bar', 'salao-cowboy', 'barba-e-cabelo', 'pets-cia']
+    const tenants = tenantSubdomains
     
     for (const tenant of tenants) {
       const url = `https://${tenant}.pagby.com.br/api/whatsapp/activate`
@@ -384,7 +493,7 @@ async function linkPhoneToJid(phone, jid) {
     console.log(`📱 Telefone: ${phone}`)
     console.log(`📱 JID: ${jid}\n`)
     
-    const tenants = ['magic-club', 'dumont', 'villebelle', 'labelle', 'bicholegal', 'dudu', 'bar', 'salao-cowboy', 'barba-e-cabelo', 'pets-cia']
+    const tenants = tenantSubdomains
     
     for (const tenant of tenants) {
       const url = `https://${tenant}.pagby.com.br/api/whatsapp/link-jid`
@@ -468,6 +577,35 @@ function findWhatsAppId(phone) {
 }
 
 /**
+ * Busca em todos os tenants o whatsapp_jid salvo para um telefone.
+ * Necessário para contas @lid (vinculadas/business), onde o formato
+ * "55+número@s.whatsapp.net" adivinhado não alcança o destinatário real.
+ */
+async function resolveWhatsAppTarget(phone) {
+  const localId = findWhatsAppId(phone)
+  if (localId) return localId
+
+  for (const tenant of tenantSubdomains) {
+    try {
+      const response = await fetch(`https://${tenant}.pagby.com.br/api/whatsapp/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      })
+      const data = await response.json()
+
+      if (data.found && data.jid) {
+        return data.jid
+      }
+    } catch (error) {
+      console.log(`⚠️ Erro ao resolver JID no tenant ${tenant}: ${error.message}`)
+    }
+  }
+
+  return null
+}
+
+/**
  * Envia mensagem via comando
  */
 async function sendMessageCommand(sock, cmd) {
@@ -479,11 +617,11 @@ async function sendMessageCommand(sock, cmd) {
     return
   }
   
-  // Primeiro, tenta buscar ID salvo no mapeamento
-  const savedId = findWhatsAppId(to)
-  if (savedId) {
-    console.log(`📱 Usando ID salvo: ${to} → ${savedId}`)
-    await sock.sendMessage(savedId, { text: message })
+  // Tenta o JID real (mapeamento local ou whatsapp_jid salvo no tenant)
+  const resolvedId = await resolveWhatsAppTarget(to)
+  if (resolvedId) {
+    console.log(`📱 Usando JID resolvido: ${to} → ${resolvedId}`)
+    await sock.sendMessage(resolvedId, { text: message })
     return
   }
   
@@ -510,6 +648,38 @@ async function sendMessageCommand(sock, cmd) {
   
   // Se nenhum formato funcionou, lança erro
   throw lastError || new Error(`Não foi possível enviar para ${to}`)
+}
+
+async function sendAppointmentReminder(sock, cmd) {
+  const target = (await resolveWhatsAppTarget(cmd.customer_phone)) || formatPhoneNumber(cmd.customer_phone)[0]
+
+  if (!target) {
+    throw new Error(`Telefone inválido: ${cmd.customer_phone}`)
+  }
+
+  const pendingPayment = cmd.has_pending_payment
+    ? `💰 *Valor:* R$ ${Number(cmd.total_price || 0).toFixed(2).replace('.', ',')}\n⚠️ Pagamento pendente\n\n`
+    : ''
+  const observation = cmd.observation
+    ? `📝 *Observação:* ${cmd.observation}\n\n`
+    : ''
+
+  const message = `🔔 *Lembrete de Agendamento*
+
+Olá, *${cmd.customer_name}*! 👋
+
+📅 Você tem um horário marcado:
+
+🕐 *Data e hora:* ${cmd.appointment_date} às ${cmd.appointment_time}
+💈 *Profissional:* ${cmd.employee_name}
+✂️ *Serviço:* ${cmd.service_names}
+📍 *Local:* ${cmd.tenant_name} - ${cmd.branch_name}
+
+${observation}${pendingPayment}Nos vemos em breve! 😊
+
+_Mensagem automática de ${cmd.tenant_name}_`
+
+  await sock.sendMessage(target, { text: message })
 }
 
 /**
@@ -559,7 +729,7 @@ function formatPhoneNumber(phone) {
 
 // Salva conversas periodicamente (opcional)
 setInterval(() => {
-  const leadsFile = 'leads.json'
+  const leadsFile = path.join(__dirname, 'leads.json')
   try {
     // Limpar conversas com mais de 30 dias
     const now = Date.now()

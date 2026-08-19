@@ -8,7 +8,7 @@ class WhatsAppQueueService
     
     public function __construct()
     {
-        $this->commandsFile = storage_path('app/whatsapp_commands.json');
+        $this->commandsFile = base_path('storage/app/whatsapp_commands.json');
     }
     
     /**

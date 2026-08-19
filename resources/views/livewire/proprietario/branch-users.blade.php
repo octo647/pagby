@@ -353,4 +353,8 @@
             </div>
         @endif
     </div>
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+    'route' => route('tenant.dashboard', ['tabelaAtiva' => 'servicos', 'menu' => 'proprietario']),
+    'description' => 'Cadastre os serviços oferecidos pelo salão.',
+])
 </div>

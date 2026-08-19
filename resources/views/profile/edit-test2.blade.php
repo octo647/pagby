@@ -11,7 +11,7 @@
     <div style="background: white; padding: 20px; margin: 20px;">
         <h1 style="font-size: 24px; color: red; margin-bottom: 20px;">CARD 2 - Alterar Senha</h1>
         
-        <form method="post" action="{{ route('password.update') }}">
+        <form method="post" action="{{ route('tenant.password.update') }}">
             @csrf
             @method('put')
 

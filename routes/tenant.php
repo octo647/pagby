@@ -41,7 +41,7 @@ Route::middleware([
     Route::post('forgot-password', [\App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store']);
     Route::get('reset-password/{token}', [\App\Http\Controllers\Auth\NewPasswordController::class, 'create']);
     Route::post('reset-password', [\App\Http\Controllers\Auth\NewPasswordController::class, 'store']);
-    Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('register');
+    Route::get('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'create'])->name('tenant.register');
     Route::post('register', [\App\Http\Controllers\Auth\RegisteredUserController::class, 'store']);
     
     // Rota pública de agendamento (sem auth)
@@ -68,7 +68,7 @@ Route::middleware([
             }
             return view('tenants/' . ($tenant ? $tenant->id : 'default') . '/home', ['tenant' => $tenant, 'services' => $services]);
         })->name('tenant.home');
-        Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('login');
+        Route::get('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('tenant.login');
         Route::post('login', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'store']);
         // ... todas as outras rotas protegidas já existentes ...
     });
@@ -87,7 +87,7 @@ Route::middleware([
     // Rota para cancelar assinatura de plano do tenant (mantém usuário no tenant)
     Route::post('/tenant-assinatura/cancelar', function (Request $request) {
         if (!Auth::check()) {
-            return redirect()->route('login')->with('error', 'Você precisa estar logado para cancelar a assinatura.');
+            return redirect()->route('tenant.login')->with('error', 'Você precisa estar logado para cancelar a assinatura.');
         }
 
         $paymentId = $request->input('payment_id');
@@ -194,10 +194,13 @@ Route::get('/plans', function () {
         })->middleware(['auth', 'verified'])->name('agendamento');
 
         Route::middleware('auth')->group(function () {
-            Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-            Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-            Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-            Route::put('password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('password.update');
+            Route::get('/profile', [ProfileController::class, 'edit'])->name('tenant.profile.edit');
+            Route::patch('/profile', [ProfileController::class, 'update'])->name('tenant.profile.update');
+            Route::delete('/profile', [ProfileController::class, 'destroy'])->name('tenant.profile.destroy');
+            Route::put('password', [\App\Http\Controllers\Auth\PasswordController::class, 'update'])->name('tenant.password.update');
+            Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationNotificationController::class, 'store'])
+                ->middleware('throttle:6,1')
+                ->name('tenant.verification.send');
         });
 
      // PAGAMENTOS DE AGENDAMENTOS (dentro dos tenants)
@@ -316,7 +319,7 @@ Route::get('/plans', function () {
             })->name('cliente.recompensas');
         });
 
-        Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])->name('logout');                    
+        Route::post('logout', [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy'])->name('tenant.logout');
     });
 
     
@@ -327,6 +330,54 @@ Route::get('/plans', function () {
 Route::middleware([
     InitializeTenancyByDomain::class,
 ])->group(function () {
+    Route::post('/api/whatsapp/status', function(Request $request) {
+        $jid = $request->input('jid');
+        $phone = $request->input('phone');
+
+        if ($jid) {
+            $user = \App\Models\User::where('whatsapp_jid', $jid)->first();
+            if ($user) {
+                return response()->json([
+                    'found' => true,
+                    'activated' => (bool) $user->whatsapp_activated,
+                    'jid' => $user->whatsapp_jid,
+                ]);
+            }
+        }
+
+        if (!$phone) {
+            return response()->json(['found' => false, 'activated' => false]);
+        }
+
+        $normalizedPhone = preg_replace('/\D/', '', $phone);
+        $variations = [$normalizedPhone, '0' . $normalizedPhone];
+
+        if (strlen($normalizedPhone) === 10) {
+            $with9 = substr($normalizedPhone, 0, 2) . '9' . substr($normalizedPhone, 2);
+            $variations[] = $with9;
+            $variations[] = '0' . $with9;
+        }
+
+        if (strlen($normalizedPhone) === 11) {
+            $without9 = substr($normalizedPhone, 0, 2) . substr($normalizedPhone, 3);
+            $variations[] = $without9;
+            $variations[] = '0' . $without9;
+        }
+
+        $variations = array_unique($variations);
+        $user = \App\Models\User::where(function($query) use ($variations) {
+            foreach ($variations as $variant) {
+                $query->orWhereRaw("REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', '') = ?", [$variant]);
+            }
+        })->first();
+
+        return response()->json([
+            'found' => (bool) $user,
+            'activated' => (bool) ($user?->whatsapp_activated ?? false),
+            'jid' => $user?->whatsapp_jid,
+        ]);
+    });
+
     Route::post('/api/whatsapp/activate', function(Request $request) {
         $phone = $request->input('phone');
         $jid = $request->input('jid'); // Novo: aceitar JID também

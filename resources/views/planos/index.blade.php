@@ -6,8 +6,8 @@
                 <span class="text-3xl font-extrabold text-white tracking-wide">PagBy</span>
             </div>
             <div class="flex items-center gap-4">
-                <a href="{{ route('login') }}" class="bg-white text-pink-700 px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-pink-100 transition">Entrar</a>
-                <a href="{{ route('register') }}" class="bg-pink-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-pink-700 transition">Registrar</a>
+                <a href="{{ route('central.login') }}" class="bg-white text-pink-700 px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-pink-100 transition">Entrar</a>
+                <a href="{{ route('central.register') }}" class="bg-pink-600 text-white px-4 py-2 rounded-full text-sm font-bold shadow hover:bg-pink-700 transition">Registrar</a>
             </div>
         </div>   
     </header>

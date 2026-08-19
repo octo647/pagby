@@ -58,7 +58,7 @@ class SendAppointmentReminders extends Command
             return 0;
         }
 
-        $commandsFile = storage_path('app/whatsapp_commands.json');
+        $commandsFile = base_path('storage/app/whatsapp_commands.json');
         $commands = file_exists($commandsFile) ? json_decode(file_get_contents($commandsFile), true) : [];
         
         if (!is_array($commands)) {
@@ -106,7 +106,7 @@ class SendAppointmentReminders extends Command
                 'appointment_time' => Carbon::parse($appointment->start_time)->format('H:i'),
                 'employee_name' => $appointment->employee->name ?? 'Profissional',
                 'service_names' => $serviceNames,
-                'branch_name' => $appointment->branch->name ?? 'Unidade',
+                'branch_name' => $appointment->branch->branch_name ?? 'Unidade',
                 'observation' => $appointment->observation,
                 'has_pending_payment' => $hasPendingPayment,
                 'total_price' => $appointment->total_price ?? 0,

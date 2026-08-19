@@ -54,13 +54,15 @@ return Application::configure(basePath: dirname(__DIR__))
         // Lembretes de agendamento - 24h antes (às 18h)
         $schedule->command('appointments:send-reminders --hours=24')
                  ->dailyAt('18:00')
-                 ->timezone('America/Sao_Paulo');
+                 ->timezone('America/Sao_Paulo')
+                 ->appendOutputTo(storage_path('logs/appointments-reminders.log'));
         
         // Lembretes de agendamento - 2h antes (a cada hora)
         $schedule->command('appointments:send-reminders --hours=2')
                  ->hourly()
                  ->between('8:00', '20:00')
-                 ->timezone('America/Sao_Paulo');
+                 ->timezone('America/Sao_Paulo')
+                 ->appendOutputTo(storage_path('logs/appointments-reminders.log'));
         
         // Sistema de Fidelização - Expirar recompensas vencidas (diariamente às 2h)
         $schedule->command('fidelidade:expirar-recompensas')

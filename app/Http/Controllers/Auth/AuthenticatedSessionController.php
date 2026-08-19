@@ -77,16 +77,21 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('agendar');
         }
 
-    // Exemplo: ajuste conforme sua lógica de papéis
-    if ($user->hasRole('Funcionário')) {
-        return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'agenda']);
-        } elseif ($user->hasRole('Proprietário')) {
+        $primaryRole = $user->getPrimaryRole();
+
+        if ($primaryRole === 'Proprietário') {
             return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'gerenciar-comandas']);
-    } elseif ($user->hasRole('Admin')) {
-        return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'contatos']); // Redireciona para a página index
-    } else {
+        }
+
+        if ($primaryRole === 'Funcionário') {
+            return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'agenda']);
+        }
+
+        if ($primaryRole === 'Admin') {
+            return redirect()->route('tenant.dashboard', ['tabelaAtiva' => 'contatos']);
+        }
+
         return redirect()->route('tenant.dashboard');
-    }
     }
 
     /**

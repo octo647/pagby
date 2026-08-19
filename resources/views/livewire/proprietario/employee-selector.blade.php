@@ -60,4 +60,8 @@
             </div>
         @endif
     </div>
+    @include('livewire.proprietario.partials.onboarding-next-step', [
+    'route' => route('tenant.dashboard', ['tabelaAtiva' => 'horarios', 'menu' => 'proprietario']),
+    'description' => 'Defina os horários de trabalho dos funcionários.',
+])
 </div>

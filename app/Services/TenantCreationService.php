@@ -126,11 +126,12 @@ class TenantCreationService
     protected function dropExistingDatabase(string $tenantId): void
     {
         try {
-            $result = DB::select("SHOW DATABASES LIKE ?", [$tenantId]);
-            if (!empty($result)) {
-                DB::statement("DROP DATABASE IF EXISTS `$tenantId`");
-                Log::info("Banco de dados existente deletado: $tenantId");
-            }
+            $databaseName = config('tenancy.database.prefix', 'tenant')
+                . $tenantId
+                . config('tenancy.database.suffix', '');
+
+            DB::statement("DROP DATABASE IF EXISTS `{$databaseName}`");
+            Log::info("Banco de dados existente deletado: {$databaseName}");
         } catch (\Exception $e) {
             Log::warning('Erro ao tentar deletar banco de dados existente', [
                 'tenant_id' => $tenantId,

@@ -616,7 +616,7 @@
             </ul>
         </nav>
         
-        <button class="cta-header" onclick="window.location.href='{{ route('login') }}'">Agendar</button>
+        <button class="cta-header" onclick="window.location.href='{{ route('tenant.login') }}'">Agendar</button>
     </header>
 
     <!-- Seção Hero -->
@@ -634,7 +634,7 @@
             <p>Na {{ tenant()->fanatasy_name ?? 'Vibe Barber' }}, combinamos técnicas tradicionais com as últimas tendências para criar looks únicos que expressam sua personalidade. Experiência premium em um ambiente descontraído.</p>
             
             <div class="hero-buttons">
-                <button class="btn-primary" onclick="window.location.href='{{ route('login') }}'">AGENDAR HORÁRIO</button>
+                <button class="btn-primary" onclick="window.location.href='{{ route('tenant.login') }}'">AGENDAR HORÁRIO</button>
                 <button class="btn-secondary" onclick="scrollToHighlights()">CONHECER SERVIÇOS</button>
             </div>
         </div>
@@ -710,7 +710,7 @@
     <section class="final-cta" id="cta">
         <h2>PRONTO PARA TRANSFORMAR SEU VISUAL?</h2>
         <p>Agende seu horário agora mesmo e experimente o padrão Vibe Barber de qualidade e estilo. Sua primeira visita inclui uma bebida cortesia.</p>
-        <button class="cta-big" onclick="window.location.href='{{ route('login') }}'">AGENDAR AGORA</button>
+        <button class="cta-big" onclick="window.location.href='{{ route('tenant.login') }}'">AGENDAR AGORA</button>
     </section>
 
     <!-- Footer Moderno -->

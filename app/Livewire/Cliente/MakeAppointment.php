@@ -472,7 +472,7 @@ public function confirmTime()
             session()->put('booking_data', $bookingData);
             session()->put('requires_login_for_booking', true);
             
-            return redirect()->route('login')->with('message', 'Faça login para confirmar seu agendamento');
+            return redirect()->route('tenant.login')->with('message', 'Faça login para confirmar seu agendamento');
         }
         
         if (!$this->selected_day || !$this->selected_time) {

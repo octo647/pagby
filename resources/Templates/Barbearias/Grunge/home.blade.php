@@ -699,7 +699,7 @@
             </ul>
         </nav>
         
-        <button class="header-btn" onclick="window.location.href='{{ route('login') }}'">ENTRAR NA MATILHA</button>
+        <button class="header-btn" onclick="window.location.href='{{ route('tenant.login') }}'">ENTRAR NA MATILHA</button>
     </header>
 
     <!-- Seção Hero -->
@@ -813,7 +813,7 @@
     <section class="cta" id="cta">
         <h2>PRONTO PARA SE TORNAR LENDA?</h2>
         <p>Agende seu horário e entre para a irmandade. Primeira visita inclui uma cerveja artesanal e uma dose de atitude.</p>
-        <button class="cta-btn" onclick="window.location.href='{{ route('login') }}'">AGENDAR NO BATIMENTO</button>
+        <button class="cta-btn" onclick="window.location.href='{{ route('tenant.login') }}'">AGENDAR NO BATIMENTO</button>
     </section>
 
     <!-- Footer -->

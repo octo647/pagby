@@ -44,7 +44,9 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        return Redirect::route(tenant() ? 'tenant.profile.edit' : 'profile.edit')
+            ->with('status', 'profile-updated')
+            ->with('open_whatsapp_activation', $request->boolean('open_whatsapp_after_save'));
     }
 
     /**

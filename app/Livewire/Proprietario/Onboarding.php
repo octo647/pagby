@@ -58,7 +58,7 @@ class Onboarding extends Component
                 'title' => 'Criar Serviços',
                 'description' => 'Cadastre os serviços oferecidos (preferencialmente com imagens)',
                 'completed' => Service::count() > 0,
-                'route' => route('tenant.dashboard', ['tabelaAtiva' => 'servicos']),
+                'route' => route('tenant.dashboard', ['tabelaAtiva' => 'servicos', 'menu' => 'proprietario']),
                 'icon' => '✂️'
             ],
             [
@@ -74,13 +74,14 @@ class Onboarding extends Component
                 'title' => 'Definir Horários de Trabalho',
                 'description' => 'Configure o horário de atendimento de cada funcionário',
                 'completed' => Schedule::count() > 0,
-                'route' => route('tenant.dashboard', ['tabelaAtiva' => 'horarios']),
+                'route' => route('tenant.dashboard', ['tabelaAtiva' => 'horarios', 'menu' => 'proprietario']),
                 'icon' => '⏰'
             ]
         ];
         
-        // Adicionar passo de customização apenas para template Padrão
-        if ($tenant && $tenant->template === 'Padrao') {
+        // A customização também faz parte do onboarding dos templates não padrão;
+        // a própria tela orienta a migração quando necessário.
+        if ($tenant) {
             $this->steps[] = [
                 'number' => 7,
                 'title' => 'Customizar a Home',
@@ -96,7 +97,7 @@ class Onboarding extends Component
             $step['number'] = $index + 1;
             return $step;
         })->toArray();
-        
+
         // Atualizar total de steps
         $this->totalSteps = count($this->steps);
 
@@ -135,7 +136,6 @@ class Onboarding extends Component
     public function render()
     {
         $progressPercentage = ($this->completedSteps / $this->totalSteps) * 100;
-        
         return view('livewire.proprietario.onboarding', [
             'progressPercentage' => $progressPercentage
         ]);

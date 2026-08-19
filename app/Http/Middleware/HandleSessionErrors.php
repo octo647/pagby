@@ -32,7 +32,7 @@ class HandleSessionErrors
             $request->session()->regenerate();
 
             // Redirecionar para login com mensagem amigável
-            return redirect()->route('login')->with('warning', 'Sua sessão expirou. Por favor, faça login novamente.');
+            return redirect()->route(tenant() ? 'tenant.login' : 'login')->with('warning', 'Sua sessão expirou. Por favor, faça login novamente.');
         } catch (\Exception $e) {
             // Capturar outros erros relacionados a sessão
             if (str_contains($e->getMessage(), 'session') || str_contains($e->getMessage(), 'token')) {
@@ -54,7 +54,7 @@ class HandleSessionErrors
                     ]);
                 }
 
-                return redirect()->route('login')->with('error', 'Ocorreu um erro de sessão. Tente fazer login novamente.');
+                return redirect()->route(tenant() ? 'tenant.login' : 'login')->with('error', 'Ocorreu um erro de sessão. Tente fazer login novamente.');
             }
 
             // Re-throw other exceptions
